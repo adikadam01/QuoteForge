@@ -1,0 +1,131 @@
+<?php
+
+ini_set('display_errors', 1);
+ini_set('display_startup_errors', 1);
+error_reporting(E_ALL);
+
+require_once 'utils.php';
+
+// Handle CORS for all requests
+handleCors();
+
+// Request Routing
+$requestUri = parse_url($_SERVER['REQUEST_URI'], PHP_URL_PATH);
+$method = $_SERVER['REQUEST_METHOD'];
+
+// Prefix check
+$basePrefix = '/api';
+if (strpos($requestUri, $basePrefix) !== 0) {
+    // Not an API request
+    http_response_code(404);
+    echo "Not Found";
+    exit;
+}
+
+// Remove prefix for internal routing
+$path = substr($requestUri, strlen($basePrefix));
+
+// --- Auth Middleware ---
+requireAuth();
+
+// --- Router ---
+
+// Auth
+if ($path === '/auth/login' && $method === 'POST') {
+    require 'api/auth.php';
+    exit;
+}
+
+// Clients
+if (preg_match('#^/clients(/.*)?$#', $path)) {
+    require 'api/clients.php';
+    exit;
+}
+
+// Services
+if (preg_match('#^/services(/.*)?$#', $path)) {
+    require 'api/services.php';
+    exit;
+}
+
+// Quotations
+if (preg_match('#^/quotations(/.*)?$#', $path)) {
+    require 'api/quotations.php';
+    exit;
+}
+
+// Invoices
+// Matches /invoices, /invoices/:id, /invoices/:id/items
+if (preg_match('#^/invoices(/.*)?$#', $path)) {
+    require 'api/invoices.php';
+    exit;
+}
+
+// Invoice Items direct access (if needed)
+if (preg_match('#^/invoice-items(/.*)?$#', $path)) {
+    require 'api/invoices.php'; // Map to same handler for simplicity or separate
+    exit;
+}
+
+// Receipts
+if (preg_match('#^/receipts(/.*)?$#', $path)) {
+    require 'api/receipts.php';
+    exit;
+}
+
+// Brand Kit
+if (preg_match('#^/brand-kit(/.*)?$#', $path)) {
+    require 'api/brand-kit.php';
+    exit;
+}
+
+// Templates
+if (preg_match('#^/templates(/.*)?$#', $path)) {
+    require 'api/templates.php';
+    exit;
+}
+
+// Workflow / Phase 4
+if (preg_match('#^/contracts(/.*)?$#', $path) || 
+    preg_match('#^/workflow-invoices(/.*)?$#', $path) || 
+    preg_match('#^/payment-receipts(/.*)?$#', $path)) {
+    // Map these to a workflow handler if you want, or separate files.
+    // For now, let's create a workflow.php or separate
+    require 'api/workflow.php';
+    exit;
+}
+
+
+if ($path === '/db-test') {
+
+    global $pdo;
+
+    try {
+
+        $db = $pdo->query("SELECT DATABASE() AS db")->fetch();
+
+        $tables = $pdo->query("SHOW TABLES")->fetchAll(PDO::FETCH_COLUMN);
+
+        jsonResponse([
+            'database' => $db,
+            'tables' => $tables
+        ]);
+
+    } catch (Throwable $e) {
+
+        jsonResponse([
+            'error' => $e->getMessage()
+        ], 500);
+
+    }
+
+    exit;
+}
+// Health Check
+if ($path === '/health') {
+    jsonResponse(['status' => 'ok', 'server' => 'php']);
+    exit;
+}
+
+// 404
+jsonResponse(['error' => 'Not Found', 'path' => $path], 404);

@@ -1,0 +1,1550 @@
+@import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@300;400;500;600;700;800&family=Inter:wght@300;400;500;600;700&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --background: 0 0% 100%;
+    --foreground: 0 0% 5%;
+
+    --card: 0 0% 100%;
+    --card-foreground: 0 0% 5%;
+
+    --popover: 0 0% 100%;
+    --popover-foreground: 0 0% 5%;
+
+    --primary: 0 0% 5%;
+    --primary-foreground: 0 0% 100%;
+
+    --secondary: 0 0% 96%;
+    --secondary-foreground: 0 0% 5%;
+
+    --muted: 0 0% 94%;
+    --muted-foreground: 0 0% 40%;
+
+    --accent: 0 0% 10%;
+    --accent-foreground: 0 0% 100%;
+
+    --destructive: 0 84% 60%;
+    --destructive-foreground: 0 0% 100%;
+
+    --success: 142 76% 36%;
+    --success-foreground: 0 0% 100%;
+
+    --warning: 45 93% 47%;
+    --warning-foreground: 0 0% 5%;
+
+    --border: 0 0% 90%;
+    --input: 0 0% 90%;
+    --ring: 0 0% 5%;
+
+    --radius: 1rem;
+
+    --sidebar-background: 0 0% 3%;
+    --sidebar-foreground: 0 0% 98%;
+    --sidebar-primary: 0 0% 100%;
+    --sidebar-primary-foreground: 0 0% 5%;
+    --sidebar-accent: 0 0% 12%;
+    --sidebar-accent-foreground: 0 0% 98%;
+    --sidebar-border: 0 0% 15%;
+    --sidebar-ring: 0 0% 100%;
+
+    --glass-bg: 0 0% 100% / 0.7;
+    --glass-border: 0 0% 100% / 0.2;
+    --glass-shadow: 0 0% 0% / 0.1;
+
+    --gradient-glass: linear-gradient(135deg, hsla(0, 0%, 100%, 0.9) 0%, hsla(0, 0%, 100%, 0.7) 100%);
+    --gradient-dark: linear-gradient(135deg, hsl(0 0% 5%) 0%, hsl(0 0% 15%) 100%);
+
+    --shadow-glass: 0 8px 32px 0 hsla(0, 0%, 0%, 0.1);
+    --shadow-glow: 0 0 20px rgba(0, 0, 0, .12);
+    --shadow-subtle: 0 2px 10px hsla(0, 0%, 0%, 0.05);
+
+    --font-heading: 'Montserrat', sans-serif;
+    --font-body: 'Inter', sans-serif;
+  }
+
+
+
+  .dark {
+    --background: 0 0% 5%;
+    --foreground: 0 0% 98%;
+
+    --card: 0 0% 8%;
+    --card-foreground: 0 0% 98%;
+
+    --popover: 0 0% 8%;
+    --popover-foreground: 0 0% 98%;
+
+    --primary: 0 0% 98%;
+    --primary-foreground: 0 0% 5%;
+
+    --secondary: 0 0% 12%;
+    --secondary-foreground: 0 0% 98%;
+
+    --muted: 0 0% 15%;
+    --muted-foreground: 0 0% 60%;
+
+    --accent: 0 0% 20%;
+    --accent-foreground: 0 0% 98%;
+
+    --destructive: 0 62% 50%;
+    --destructive-foreground: 0 0% 98%;
+
+    --border: 0 0% 18%;
+    --input: 0 0% 18%;
+    --ring: 0 0% 98%;
+
+    --sidebar-background: 0 0% 3%;
+    --sidebar-foreground: 0 0% 98%;
+    --sidebar-primary: 0 0% 100%;
+    --sidebar-primary-foreground: 0 0% 5%;
+    --sidebar-accent: 0 0% 12%;
+    --sidebar-accent-foreground: 0 0% 98%;
+    --sidebar-border: 0 0% 15%;
+    --sidebar-ring: 0 0% 100%;
+
+    --glass-bg: 0 0% 10% / 0.7;
+    --glass-border: 0 0% 100% / 0.1;
+    --glass-shadow: 0 0% 0% / 0.3;
+
+    --gradient-glass: linear-gradient(135deg, hsla(0, 0%, 15%, 0.9) 0%, hsla(0, 0%, 10%, 0.7) 100%);
+    --gradient-dark: linear-gradient(135deg, hsl(0 0% 3%) 0%, hsl(0 0% 8%) 100%);
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+
+  html {
+    font-family: var(--font-body);
+  }
+
+  body {
+    @apply bg-background text-foreground antialiased;
+    font-feature-settings: "cv02", "cv03", "cv04", "cv11";
+  }
+
+  h1,
+  h2,
+  h3,
+  h4,
+  h5,
+  h6 {
+    font-family: var(--font-heading);
+    @apply font-semibold tracking-tight;
+  }
+}
+
+@layer components {
+  .glass {
+    background: var(--gradient-glass);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    border: 1px solid hsl(var(--glass-border));
+    box-shadow: var(--shadow-glass);
+  }
+
+  /* .glass-card {
+    @apply glass rounded-2xl;
+  } */
+
+  .glass-card {
+    background: white;
+    border: 1px solid #ECECEC;
+    border-radius: 18px;
+    box-shadow: 0 6px 20px rgba(0, 0, 0, .05);
+  }
+
+  .glass-button {
+    @apply glass rounded-xl px-6 py-3 font-medium transition-all duration-300;
+    @apply hover:shadow-lg hover:scale-[1.02];
+  }
+
+  /* .card-hover {
+    @apply transition-all duration-300 hover:shadow-lg hover:-translate-y-1;
+  } */
+  .card-hover {
+    transition: .3s;
+
+  }
+
+  .card-hover:hover {
+    transform: translateY(-4px);
+    border-color: #000000;
+    box-shadow:
+      0 4px 12px rgba(0, 0, 0, .12);
+    background-color: rgba(208, 206, 206, 0.209);
+  }
+
+  /* .btn-primary {
+    @apply bg-primary text-primary-foreground rounded-xl px-6 py-3 font-medium;
+    @apply transition-all duration-300 hover:shadow-lg hover:scale-[1.02];
+  }
+
+  .btn-secondary {
+    @apply bg-secondary text-secondary-foreground rounded-xl px-6 py-3 font-medium;
+    @apply transition-all duration-300 hover:bg-secondary/80;
+  } */
+
+  .btn-primary {
+    background: #111111;
+  }
+
+  .btn-primary:hover {
+    background: #000000;
+  }
+
+  .input-glass {
+    @apply glass rounded-xl px-4 py-3 w-full;
+    @apply focus:outline-none focus:ring-2 focus:ring-primary/20;
+    @apply placeholder:text-muted-foreground;
+  }
+
+  .sidebar-glass {
+    background: var(--gradient-dark);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+  }
+
+  .stat-card {
+    @apply glass-card p-6 transition-all duration-300;
+    @apply hover:shadow-xl hover:-translate-y-1;
+  }
+
+  .nav-item {
+    @apply flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-200;
+    @apply hover:bg-sidebar-accent;
+  }
+
+  .nav-item:hover {
+
+    background: rgba(255, 255, 255, .06);
+  }
+
+  /* .nav-item-active {
+    @apply bg-sidebar-accent text-sidebar-primary;
+  } */
+
+  .nav-item-active {
+    background: #111111;
+    color: white;
+  }
+
+  .nav-item-active svg {
+    color: white !important;
+    stroke: white !important;
+  }
+
+  .nav-item:hover svg {
+    color: white;
+  }
+
+  .nav-item-active {
+    font-weight: 600;
+  }
+}
+
+@layer utilities {
+  .text-balance {
+    text-wrap: balance;
+  }
+
+  .animate-in {
+    animation: fadeIn 0.4s ease-out;
+  }
+
+  .animate-slide-up {
+    animation: slideUp 0.4s ease-out;
+  }
+
+  .animate-scale-in {
+    animation: scaleIn 0.3s ease-out;
+  }
+
+  @keyframes fadeIn {
+    from {
+      opacity: 0;
+      transform: translateY(10px);
+    }
+
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
+  @keyframes slideUp {
+    from {
+      opacity: 0;
+      transform: translateY(20px);
+    }
+
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
+  @keyframes scaleIn {
+    from {
+      opacity: 0;
+      transform: scale(0.95);
+    }
+
+    to {
+      opacity: 1;
+      transform: scale(1);
+    }
+  }
+
+  .gradient-text {
+    @apply bg-clip-text text-transparent;
+    background-image: linear-gradient(135deg, hsl(var(--foreground)) 0%, hsl(var(--muted-foreground)) 100%);
+  }
+
+  .line-clamp-2 {
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
+
+  .scrollbar-hide {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+
+  .scrollbar-hide::-webkit-scrollbar {
+    display: none;
+  }
+
+  /* Modern scrollbar */
+  .scrollbar-modern {
+    scrollbar-color: #555 transparent;
+  }
+
+  .scrollbar-modern::-webkit-scrollbar {
+    width: 8px;
+  }
+
+  .scrollbar-modern::-webkit-scrollbar-track {
+    background: transparent;
+  }
+
+  .scrollbar-modern::-webkit-scrollbar-thumb {
+    background: linear-gradient(180deg,
+        #555,
+        #222);
+  }
+
+  .scrollbar-modern::-webkit-scrollbar-thumb:hover {
+    background: #111;
+  }
+}
+
+/* Quotation document (shared layout styles)
+   - Keep on-screen style consistent with the app.
+   - Print style is scoped to the quotation document only, to avoid affecting other pages.
+*/
+/* ===== Quotation (premium document-only) styling ===== */
+.quotation-preview-page {
+  background: #ffffff;
+  /* white, document-first canvas */
+  min-height: 100vh;
+  padding: 24px;
+}
+
+.quotation-preview-actions {
+  max-width: 940px;
+  margin: 0 auto 18px auto;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.quotation-preview-title {
+  font-family: var(--font-heading);
+  font-weight: 700;
+  font-size: 22px;
+  line-height: 1.2;
+  color: #111827;
+}
+
+.quotation-preview-subtitle {
+  font-family: var(--font-body);
+  font-size: 14px;
+  color: #6b7280;
+}
+
+.quotation-doc {
+  max-width: 940px;
+  margin: 0 auto;
+  color: #111827;
+}
+
+/* ===== Quotation: Modern Premium v2 =====
+   1A: Clean white header + accent line
+   2B: Services as proposal cards
+   3B: Premium airy typography
+*/
+
+.quotation-doc {
+  --quotation-accent: #111827;
+  /* provided by QuotationLayout */
+}
+
+.quotation-header {
+  border-radius: 16px !important;
+  border: 1px solid #e6eaf0 !important;
+  box-shadow: 0 10px 28px rgba(17, 24, 39, 0.08) !important;
+  overflow: hidden;
+  background: #ffffff;
+}
+
+.quotation-header__inner {
+  padding: 24px 26px;
+  display: grid;
+  grid-template-columns: 1.8fr 1fr 1fr;
+  gap: 20px;
+  align-items: center;
+}
+
+.quotation-header__brand {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  min-width: 0;
+}
+
+.quotation-header__logo {
+  width: 220px;
+  height: 80px;
+  object-fit: contain;
+  border-radius: 12px;
+  background: #000000;
+  border: 1px solid #eef2f7;
+  padding: 8px;
+}
+
+.quotation-header__logo-fallback {
+  width: 52px;
+  height: 52px;
+  border-radius: 12px;
+  background: #ffffff;
+  border: 1px solid #eef2f7;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.quotation-header__logo-fallback-text {
+  font-family: var(--font-heading);
+  font-weight: 900;
+  font-size: 36px;
+  color: var(--quotation-accent);
+}
+
+.quotation-header__company {
+  font-family: var(--font-heading);
+  font-weight: 900;
+  letter-spacing: 0.01em;
+  font-size: 16px;
+  color: #0f172a;
+}
+
+.quotation-header__contact {
+  font-family: var(--font-body);
+  font-size: 13px;
+  color: #64748b;
+  opacity: 1;
+}
+
+.quotation-header__titleblock {
+  min-width: 0;
+}
+
+.quotation-header__title {
+  font-family: var(--font-heading);
+  font-weight: 900;
+  font-size: 24px;
+  letter-spacing: 0.01em;
+  line-height: 1.1;
+  color: #0f172a;
+}
+
+.quotation-header__subtitle {
+  font-family: var(--font-body);
+  font-size: 13px;
+  color: #64748b;
+  opacity: 1;
+  margin-top: 6px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.quotation-header__details {
+  justify-self: end;
+  background: #fbfdff;
+  border: 1px solid #e6eaf0;
+  border-radius: 14px;
+  padding: 12px 12px;
+  min-width: 230px;
+}
+
+.quotation-kv--header {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.quotation-header__meta {
+  font-family: var(--font-body);
+  font-size: 12px;
+  color: #64748b;
+  opacity: 1;
+}
+
+.quotation-header__number {
+  font-family: var(--font-heading);
+  font-weight: 900;
+  font-size: 14px;
+  color: #0f172a;
+}
+
+.quotation-header__metaVal {
+  font-family: var(--font-body);
+  font-weight: 700;
+  font-size: 12px;
+  color: #0f172a;
+  opacity: 1;
+}
+
+.quotation-header__strip {
+  height: 6px;
+  background: linear-gradient(90deg, var(--quotation-accent), rgba(255, 255, 255, 0));
+}
+
+/* Body stack */
+.quotation-stack {
+  margin-top: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.quotation-card {
+  background: #ffffff !important;
+  border: 1px solid #e6eaf0 !important;
+  border-radius: 16px !important;
+  box-shadow: 0 8px 22px rgba(17, 24, 39, 0.06) !important;
+}
+
+.quotation-section-card__content {
+  padding: 22px 24px;
+}
+
+/* From / Bill To */
+.quotation-frombill {
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
+  gap: 18px;
+  align-items: start;
+}
+
+.quotation-frombill__divider {
+  width: 1px;
+  background: #eef2f7;
+  height: 100%;
+}
+
+/* Totals card */
+.quotation-totals-card__content {
+  padding: 20px 22px;
+}
+
+.quotation-totals-box {
+  margin-left: auto;
+  max-width: 380px;
+  border: 1px solid #e6eaf0;
+  background: linear-gradient(180deg, #fbfdff 0%, #f8fafc 100%);
+  border-radius: 14px;
+  padding: 16px;
+}
+
+.quotation-totals-row {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 4px 0;
+}
+
+.quotation-totals-divider {
+  height: 1px;
+  background: #e5e7eb;
+  margin: 10px 0;
+}
+
+.quotation-totals-row--total .quotation-total-value {
+  font-size: 20px;
+}
+
+@media (max-width: 800px) {
+  .quotation-header__inner {
+    grid-template-columns: 1fr;
+  }
+
+  .quotation-header__details {
+    justify-self: start;
+    width: 100%;
+    min-width: 0;
+  }
+
+  .quotation-frombill {
+    grid-template-columns: 1fr;
+  }
+
+  .quotation-frombill__divider {
+    display: none;
+  }
+}
+
+.quotation-meta-strong {
+  font-family: var(--font-body);
+  font-weight: 700;
+  color: #111827;
+}
+
+.quotation-kv {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.quotation-meta-inline {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+/* Services cards (Modern Premium v2) */
+.quotation-serviceCards {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.quotation-serviceCard {
+  border: 1px solid #e6eaf0;
+  border-radius: 14px;
+  background: #ffffff;
+  padding: 14px 16px;
+  display: grid;
+  grid-template-columns: 1fr 260px;
+  gap: 16px;
+}
+
+.quotation-serviceCard__titleRow {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.quotation-pill {
+  display: inline-flex;
+  align-items: center;
+  border-radius: 999px;
+  padding: 4px 10px;
+  font-family: var(--font-body);
+  font-size: 12px;
+  font-weight: 600;
+  color: #0f172a;
+  background: color-mix(in srgb, var(--quotation-accent) 10%, #ffffff);
+  border: 1px solid color-mix(in srgb, var(--quotation-accent) 22%, #e6eaf0);
+}
+
+.quotation-serviceCard__right {
+  border-left: 1px dashed #e6eaf0;
+  padding-left: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.quotation-serviceCard__kv {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.quotation-serviceCard__kv--total .quotation-total-value {
+  font-size: 18px;
+}
+
+@media (max-width: 800px) {
+  .quotation-serviceCard {
+    grid-template-columns: 1fr;
+  }
+
+  .quotation-serviceCard__right {
+    border-left: 0;
+    padding-left: 0;
+    padding-top: 12px;
+    border-top: 1px dashed #e6eaf0;
+  }
+}
+
+/* Services table (legacy) */
+.quotation-table-wrap {
+  border: 1px solid #e6eaf0;
+  border-radius: 14px;
+  overflow: hidden;
+  background: #ffffff;
+}
+
+.quotation-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.quotation-th {
+  font-family: var(--font-body);
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: #6b7280;
+  background: #f8fafc;
+  text-align: left;
+  padding: 12px 14px;
+  border-bottom: 1px solid #e6eaf0;
+}
+
+.quotation-th--num {
+  text-align: right;
+}
+
+.quotation-th--service {
+  width: 48%;
+}
+
+.quotation-tr {
+  background: #ffffff;
+}
+
+.quotation-td {
+  padding: 12px 14px;
+  border-bottom: 1px solid #eef2f7;
+  vertical-align: top;
+  font-family: var(--font-body);
+  font-size: 14px;
+  color: #111827;
+}
+
+/* Subtle zebra striping for readability */
+.quotation-table tbody tr:nth-child(even) {
+  background: #fcfdff;
+}
+
+.quotation-td--service {
+  padding-right: 18px;
+}
+
+.quotation-td--num {
+  text-align: right;
+  white-space: nowrap;
+}
+
+.quotation-td--strong {
+  font-weight: 700;
+}
+
+.quotation-table tbody tr:last-child .quotation-td {
+  border-bottom: 0;
+}
+
+@media (max-width: 640px) {
+  .quotation-th--service {
+    width: auto;
+  }
+}
+
+.quotation-title {
+  font-family: var(--font-heading);
+  font-weight: 800;
+  font-size: 26px;
+  line-height: 1.15;
+  color: #111827;
+}
+
+.quotation-meta {
+  font-family: var(--font-body);
+  font-size: 13px;
+  line-height: 1.4;
+  color: #6b7280;
+}
+
+.quotation-section-title {
+  font-family: var(--font-heading);
+  font-weight: 800;
+  font-size: 14px;
+  letter-spacing: 0.02em;
+  text-transform: none;
+  color: #111827;
+}
+
+.quotation-paragraph {
+  font-family: var(--font-body);
+  font-size: 14px;
+  line-height: 1.7;
+  color: #334155;
+}
+
+.quotation-row {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 12px 14px;
+  border-radius: 12px;
+  background: #f9fafb;
+  border: 1px solid #eef2f7;
+}
+
+.quotation-row__title {
+  font-family: var(--font-body);
+  font-weight: 600;
+  color: #111827;
+}
+
+.quotation-row__desc {
+  font-family: var(--font-body);
+  font-size: 13px;
+  color: #6b7280;
+}
+
+.quotation-row__price {
+  font-family: var(--font-body);
+  font-weight: 700;
+  color: #111827;
+}
+
+/* (legacy section spacing removed: sections are individual cards now) */
+
+.quotation-value {
+  font-family: var(--font-body);
+  font-size: 13px;
+  color: #111827;
+}
+
+.quotation-total-label {
+  font-family: var(--font-heading);
+  font-weight: 800;
+  color: #111827;
+}
+
+.quotation-total-value {
+  font-family: var(--font-heading);
+  font-weight: 900;
+  font-size: 18px;
+  color: #111827;
+}
+
+.quotation-summary {
+  margin-top: 10px;
+  font-family: var(--font-body);
+  font-size: 13px;
+  line-height: 1.55;
+  color: #6b7280;
+}
+
+/* PDF capture: keep overrides minimal and stable.
+   Margins/padding are handled by jsPDF generation to avoid cropping. */
+body.pdf-capture .quotation-preview-page {
+  background: #ffffff !important;
+  padding: 24px !important;
+  box-sizing: border-box;
+}
+
+
+
+/* ===== Print isolation ===== */
+@media print {
+  body {
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+
+  /* Page setup */
+  @page {
+    margin: 24mm;
+  }
+
+  /* Print isolation (Brave/Chromium-safe):
+     1) Hide everything in <body> except the quotation preview container
+     2) Inside that container, hide everything except the quotation document node
+     Using display:none ensures no layout space is reserved.
+  */
+  html,
+  body.print-quotation {
+    margin: 0 !important;
+    padding: 0 !important;
+    background: #ffffff !important;
+  }
+
+  /* React apps render inside #root. Keep #root, then isolate within it. */
+  body.print-quotation> :not(#root) {
+    display: none !important;
+  }
+
+  body.print-quotation #root {
+    display: block !important;
+  }
+
+  /* Inside #root, keep only the quotation preview page */
+  body.print-quotation #root> :not(.quotation-preview-page) {
+    display: none !important;
+  }
+
+  body.print-quotation .quotation-preview-page {
+    display: block !important;
+    padding: 0 !important;
+    min-height: auto !important;
+    background: #ffffff !important;
+  }
+
+  /* Inside quotation preview page, keep only the document */
+  body.print-quotation .quotation-preview-page> :not([data-quotation-doc]) {
+    display: none !important;
+  }
+
+  /* Receipt print isolation */
+  body.print-receipt #root> :not(.quotation-preview-page) {
+    display: none !important;
+  }
+
+  body.print-receipt .quotation-preview-page {
+    display: block !important;
+    padding: 0 !important;
+    min-height: auto !important;
+    background: #ffffff !important;
+  }
+
+  body.print-receipt .quotation-preview-page> :not([data-receipt-doc]) {
+    display: none !important;
+  }
+
+  body.print-receipt [data-receipt-doc] {
+    display: block !important;
+    position: static !important;
+    width: 100% !important;
+    max-width: none !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    background: #ffffff !important;
+  }
+
+  /* Invoice print isolation */
+  body.print-invoice #root> :not(.quotation-preview-page) {
+    display: none !important;
+  }
+
+  body.print-invoice .quotation-preview-page {
+    display: block !important;
+    padding: 0 !important;
+    min-height: auto !important;
+    background: #ffffff !important;
+  }
+
+  body.print-invoice .quotation-preview-page> :not([data-invoice-doc]) {
+    display: none !important;
+  }
+
+  body.print-invoice [data-invoice-doc] {
+    display: block !important;
+    position: static !important;
+    width: 100% !important;
+    max-width: none !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    background: #ffffff !important;
+  }
+
+  body.print-quotation [data-quotation-doc] {
+    display: block !important;
+    position: static !important;
+    width: 100% !important;
+    max-width: none !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    background: #ffffff !important;
+    break-before: auto;
+    page-break-before: auto;
+  }
+
+  /* When printing, keep a clean white page background */
+  body.print-quotation {
+    background: #ffffff !important;
+  }
+
+  /* Ensure header background prints */
+  body.print-quotation .quotation-header {
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+
+  body.print-quotation {
+    background: #ffffff !important;
+  }
+
+  /* Remove non-document chrome in print */
+  .no-print {
+    display: none !important;
+  }
+
+  .print-break {
+    page-break-before: always;
+  }
+
+  /* Ensure clean printable page */
+  .quotation-preview-page {
+    background: #ffffff !important;
+    padding: 0 !important;
+    min-height: auto !important;
+  }
+
+  /* Preserve the premium look but avoid overly heavy shadows in print */
+  .quotation-header,
+  .quotation-card {
+    box-shadow: none !important;
+  }
+
+  /* Page-break control:
+     Avoid splitting only the compact blocks that should stay together.
+     Do NOT apply break-inside:avoid to every card, because that causes large blank gaps
+     and pushes the next section to a new page in Chromium/Brave.
+  */
+  .quotation-header,
+  .quotation-totals-card,
+  .quotation-totals-box {
+    break-inside: avoid;
+  }
+
+  /* Keep each service card together where possible */
+  .quotation-serviceCard {
+    break-inside: avoid;
+    page-break-inside: avoid;
+    -webkit-box-decoration-break: clone;
+    box-decoration-break: clone;
+  }
+
+  /* Keep the From/Bill To block together where possible */
+  .quotation-frombill {
+    break-inside: avoid;
+  }
+
+  /* Allow content section cards to split naturally across pages,
+     but make them *look good* when they split.
+     This clones background/border/padding across the fragments.
+  */
+  .quotation-section-card,
+  .quotation-terms-card {
+    break-inside: auto;
+    -webkit-box-decoration-break: clone;
+    box-decoration-break: clone;
+  }
+
+  /* Notes should stay together if possible, but must NOT force a new page */
+  .quotation-notes-card {
+    break-inside: avoid;
+  }
+
+  /* Tables: allow the table to flow to the next page, repeat header,
+     keep rows intact where possible.
+  */
+  .quotation-table-wrap {
+    break-inside: auto;
+  }
+
+  .quotation-table thead {
+    display: table-header-group;
+  }
+
+  .quotation-table tfoot {
+    display: table-footer-group;
+  }
+
+  .quotation-tr {
+    break-inside: avoid;
+    page-break-inside: avoid;
+  }
+
+  .quotation-td,
+  .quotation-th {
+    break-inside: avoid;
+    page-break-inside: avoid;
+  }
+}
+
+
+/* --- Brand Kit color input swatch styling --- */
+.color-swatch {
+  -webkit-appearance: none;
+  appearance: none;
+}
+
+.color-swatch::-webkit-color-swatch-wrapper {
+  padding: 0;
+}
+
+.color-swatch::-webkit-color-swatch {
+  border: none;
+  border-radius: 9999px;
+}
+
+.color-swatch::-moz-color-swatch {
+  border: none;
+  border-radius: 9999px;
+}
+
+/* ===== Premium Document Layout (Quotation/Invoice) ===== */
+.doc {
+  --doc-accent: #111827;
+  max-width: 940px;
+  margin: 0 auto;
+  color: #0f172a;
+}
+
+/* A more premium, consistent page feel */
+.doc-header {
+  border-radius: 18px !important;
+}
+
+.doc-card {
+  break-inside: avoid;
+}
+
+.doc-card {
+  background: #ffffff !important;
+  border: 1px solid #e6eaf0 !important;
+  border-radius: 16px !important;
+  box-shadow: none !important;
+}
+
+/* Subtle, agency-grade separators */
+.doc-divider {
+  height: 1px;
+  background: #eef2f7;
+  width: 100%;
+}
+
+.doc-pad {
+  padding: 26px 28px;
+}
+
+.doc-stack {
+  margin-top: 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.doc-header__top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.quotation-header__brand {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  min-width: 320px;
+}
+
+.doc-logo {
+  width: 48px;
+  height: 48px;
+  object-fit: contain;
+  border-radius: 12px;
+  border: 1px solid #eef2f7;
+  background: #ffffff;
+  padding: 6px;
+}
+
+.doc-logoFallback {
+  width: 48px;
+  height: 48px;
+  border-radius: 12px;
+  border: 1px solid #eef2f7;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #ffffff;
+}
+
+.doc-logoFallbackText {
+  font-family: var(--font-heading);
+  font-weight: 900;
+  color: var(--doc-accent);
+}
+
+.doc-company {
+  font-family: var(--font-heading);
+  font-weight: 800;
+  font-size: 14px;
+}
+
+.doc-badge {
+  font-family: var(--font-body);
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  padding: 6px 10px;
+  border-radius: 999px;
+}
+
+.doc-title {
+  font-family: var(--font-heading);
+  font-weight: 900;
+  font-size: 30px;
+  line-height: 1.08;
+  margin-top: 14px;
+}
+
+.doc-subtitle {
+  font-family: var(--font-body);
+  font-size: 13px;
+  color: #64748b;
+  margin-top: 6px;
+}
+
+.doc-header__titleRow {
+  display: grid;
+  grid-template-columns: 1fr 280px;
+  gap: 18px;
+  align-items: start;
+  margin-top: 6px;
+}
+
+.doc-header__metaBox {
+  border: 1px solid #e6eaf0;
+  background: #fbfdff;
+  border-radius: 14px;
+  padding: 12px 14px;
+}
+
+.doc-twoCol {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 18px;
+}
+
+.doc-sectionTitle {
+  font-family: var(--font-heading);
+  font-weight: 800;
+  font-size: 14px;
+  color: #111827;
+  margin-bottom: 10px;
+}
+
+.doc-sectionTitle+.doc-sectionBody {
+  margin-top: 2px;
+}
+
+.doc-block {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.doc-strong {
+  font-family: var(--font-body);
+  font-weight: 700;
+  color: #111827;
+}
+
+.doc-meta {
+  font-family: var(--font-body);
+  font-size: 13px;
+  color: #64748b;
+}
+
+.doc-kv {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 3px 0;
+}
+
+.doc-k {
+  font-family: var(--font-body);
+  font-size: 12px;
+  color: #64748b;
+}
+
+.doc-v {
+  font-family: var(--font-body);
+  font-size: 12px;
+  font-weight: 700;
+  color: #111827;
+}
+
+.doc-sectionBody {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.doc-paragraphTitle {
+  font-family: var(--font-body);
+  font-weight: 700;
+  color: #111827;
+}
+
+.doc-paragraph {
+  font-family: var(--font-body);
+  font-size: 14px;
+  line-height: 1.7;
+  color: #334155;
+  margin-top: 6px;
+}
+
+.doc-tableWrap {
+  border: 1px solid #e6eaf0;
+  border-radius: 14px;
+  overflow: hidden;
+  margin-top: 12px;
+}
+
+.doc-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.doc-table th {
+  background: #f8fafc;
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: #64748b;
+  padding: 12px 14px;
+  text-align: left;
+  border-bottom: 1px solid #e6eaf0;
+}
+
+.doc-table td {
+  padding: 12px 14px;
+  border-bottom: 1px solid #eef2f7;
+  vertical-align: top;
+  font-family: var(--font-body);
+  font-size: 14px;
+  color: #111827;
+}
+
+/* Keep long descriptions readable */
+.doc-table td:nth-child(2) {
+  color: #475569;
+}
+
+.doc-table tbody tr:nth-child(even) {
+  background: #fcfdff;
+}
+
+.doc-table td.muted {
+  font-size: 13px;
+  color: #64748b;
+}
+
+.doc-table td.strong {
+  font-weight: 700;
+}
+
+.doc-table .num {
+  text-align: right;
+  white-space: nowrap;
+}
+
+.doc-totals {
+  max-width: 380px;
+  margin-left: auto;
+  margin-top: 14px;
+  border: 1px solid #e6eaf0;
+  border-radius: 14px;
+  padding: 12px 14px;
+  background: #fbfdff;
+}
+
+.doc-totalHighlight {
+  margin-top: 10px;
+  padding-top: 10px;
+  border-top: 2px solid var(--doc-accent);
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.doc-totalLabel {
+  font-family: var(--font-heading);
+  font-weight: 800;
+  color: #111827;
+}
+
+.doc-totalValue {
+  font-family: var(--font-heading);
+  font-weight: 900;
+  font-size: 18px;
+}
+
+/* Invoice emphasis */
+.doc-amountDue {
+  margin-top: 10px;
+  padding-top: 10px;
+  border-top: 1px solid #e6eaf0;
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.doc-amountDueLabel {
+  font-family: var(--font-heading);
+  font-weight: 800;
+  color: #111827;
+}
+
+.doc-amountDueValue {
+  font-family: var(--font-heading);
+  font-weight: 950;
+  font-size: 20px;
+}
+
+.doc-statusPill {
+  display: inline-flex;
+  align-items: center;
+  border-radius: 999px;
+  padding: 2px 8px;
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  border: 1px solid #e6eaf0;
+  background: #f8fafc;
+  color: #334155;
+}
+
+.doc-statusPill--paid {
+  background: #f8fafc;
+  border-color: #e2e8f0;
+  color: #334155;
+}
+
+.doc-statusPill--sent {
+  background: #f8fafc;
+  border-color: #e2e8f0;
+  color: #334155;
+}
+
+.doc-statusPill--draft {
+  background: #f8fafc;
+  border-color: #e2e8f0;
+  color: #334155;
+}
+
+.doc-footerGrid {
+  display: grid;
+  grid-template-columns: 1.35fr 1fr;
+  gap: 18px;
+}
+
+.doc-signature {
+  margin-top: 18px;
+}
+
+.doc-signLine {
+  height: 1px;
+  background: #cbd5e1;
+  width: 100%;
+}
+
+/* Receipt-specific polish */
+.doc-receiptHeader {
+  border-left: 6px solid var(--doc-accent);
+}
+
+.doc-receiptPill {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid rgba(15, 23, 42, 0.12);
+  border-radius: 9999px;
+  padding: 6px 10px;
+  font-family: var(--font-heading);
+  font-size: 11px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  font-weight: 800;
+}
+
+@media (max-width: 800px) {
+  .doc-header__titleRow {
+    grid-template-columns: 1fr;
+  }
+
+  .doc-twoCol {
+    grid-template-columns: 1fr;
+  }
+
+  .doc-footerGrid {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* Missing Receipt styles */
+.doc-brand {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.doc-brand__mark {
+  width: 42px;
+  height: 42px;
+  border-radius: 10px;
+}
+
+.doc-brand__meta {
+  display: flex;
+  flex-direction: column;
+}
+
+.doc-brand__name {
+  font-family: var(--font-heading);
+  font-weight: 800;
+  font-size: 14px;
+  color: #111827;
+}
+
+.doc-brand__sub {
+  font-family: var(--font-body);
+  font-size: 12px;
+  color: #64748b;
+}
+
+.doc-logo {
+  width: 80px;
+  height: auto;
+  object-fit: contain;
+}

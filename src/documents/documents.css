@@ -1,0 +1,151 @@
+/* src/documents/documents.css */
+
+@media print {
+    @page {
+        size: A4;
+        margin: 0;
+    }
+
+    body {
+        -webkit-print-color-adjust: exact;
+        print-color-adjust: exact;
+        margin: 0;
+        padding: 0;
+        height: auto !important;
+        overflow: visible !important;
+    }
+}
+
+.document-container {
+    width: 210mm;
+    /* min-height: 297mm; */
+    background: white;
+    margin: 0 auto;
+    box-sizing: border-box;
+    padding: 24mm 20mm;
+    /* Mandatory margins */
+    position: relative;
+    font-family: 'Inter', system-ui, -apple-system, sans-serif;
+    color: #000;
+    font-size: 12px;
+    line-height: 1.5;
+}
+
+/* Page Break Utilities */
+.page-break {
+    page-break-before: always;
+}
+
+/* .no-break {
+    page-break-inside: avoid;
+} */
+
+.no-break {
+    break-inside: auto;
+    page-break-inside: auto;
+}
+
+/* Typography Overrides for Print */
+.doc-title {
+    font-size: 24px;
+    font-weight: 800;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+}
+
+.doc-label {
+    font-size: 10px;
+    text-transform: uppercase;
+    font-weight: 700;
+    color: #6b7280;
+    /* gray-500 */
+}
+
+.doc-value {
+    font-size: 14px;
+    font-weight: 600;
+    color: #111827;
+    /* gray-900 */
+}
+
+/* Table Styles - Finance Grade */
+.doc-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-bottom: 24px;
+}
+
+
+/* Full bleed header attempt within padded container */
+.doc-header-bg {
+    background-color: #f9fafb;
+    /* gray-50 */
+    margin: -24mm -20mm 32px -20mm;
+    padding: 24mm 20mm 24px 20mm;
+    border-bottom: 1px solid #e5e7eb;
+}
+
+.doc-table th {
+    text-align: left;
+    padding: 12px 16px;
+    border-bottom: 1px solid #e5e7eb;
+    font-size: 10px;
+    text-transform: uppercase;
+    font-weight: 700;
+    letter-spacing: 0.05em;
+    color: #4b5563;
+    background-color: #f9fafb;
+}
+
+.doc-table td {
+    padding: 16px;
+    border-bottom: 1px solid #f3f4f6;
+    vertical-align: top;
+    font-size: 13px;
+    color: #111827;
+}
+
+.doc-table td.amount {
+    text-align: right;
+    font-variant-numeric: tabular-nums;
+    font-weight: 600;
+}
+
+.doc-totals {
+    width: 100%;
+    display: flex;
+    justify-content: flex-end;
+    margin-top: 32px;
+}
+
+.doc-summary-box {
+    width: 340px;
+    background-color: #f8fafc;
+    /* slate-50 */
+    padding: 24px;
+    border-radius: 12px;
+    border: 1px solid #e2e8f0;
+}
+
+.doc-totals-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 6px 0;
+    font-size: 13px;
+    color: #4b5563;
+}
+
+.doc-footer {
+    margin-top: auto;
+    padding-top: 32px;
+    border-top: 1px solid #e5e7eb;
+}
+
+.doc-totals-box {
+    width: 340px;
+    background-color: #f8fafc;
+    padding: 24px;
+    border-radius: 12px;
+    border: 1px solid #e2e8f0;
+}

@@ -1,0 +1,110 @@
+<?php
+
+global $pdo, $path, $method;
+
+// --- Contracts ---
+if ($path === '/contracts' && $method === 'GET') {
+    $stmt = $pdo->query("SELECT * FROM contracts ORDER BY created_at DESC");
+    jsonResponse($stmt->fetchAll());
+}
+
+if ($path === '/contracts' && $method === 'POST') {
+    $input = getJsonInput();
+    $columns = array_keys($input);
+    $values = array_values($input);
+    $placeholders = array_fill(0, count($values), '?');
+    
+    $sql = "INSERT INTO contracts (" . implode(', ', $columns) . ") VALUES (" . implode(', ', $placeholders) . ")";
+    $pdo->prepare($sql)->execute($values);
+    
+    if (empty($input['id'])) $input['id'] = $pdo->lastInsertId();
+    jsonResponse($input);
+}
+
+if (preg_match('#^/contracts/([\w\-]+)$#', $path, $matches) && $method === 'PUT') {
+    $id = $matches[1];
+    $input = getJsonInput();
+    
+    $sets = [];
+    $values = [];
+    foreach ($input as $key => $value) {
+        $sets[] = "$key = ?";
+        $values[] = $value;
+    }
+    $values[] = $id;
+    
+    $sql = "UPDATE contracts SET " . implode(', ', $sets) . " WHERE id = ?";
+    $pdo->prepare($sql)->execute($values);
+    
+    $input['id'] = $id;
+    jsonResponse($input);
+}
+
+// --- Workflow Invoices ---
+if ($path === '/workflow-invoices' && $method === 'GET') {
+    $stmt = $pdo->query("SELECT * FROM workflow_invoices ORDER BY created_at DESC");
+    $rows = $stmt->fetchAll();
+    $rows = array_map(function($r){
+        $r['amount'] = (float)$r['amount'];
+        return $r;
+    }, $rows);
+    jsonResponse($rows);
+}
+
+if ($path === '/workflow-invoices' && $method === 'POST') {
+    $input = getJsonInput();
+    $columns = array_keys($input);
+    $values = array_values($input);
+    $placeholders = array_fill(0, count($values), '?');
+    
+    $sql = "INSERT INTO workflow_invoices (" . implode(', ', $columns) . ") VALUES (" . implode(', ', $placeholders) . ")";
+    $pdo->prepare($sql)->execute($values);
+    
+    if (empty($input['id'])) $input['id'] = $pdo->lastInsertId();
+    jsonResponse($input);
+}
+
+if (preg_match('#^/workflow-invoices/([\w\-]+)$#', $path, $matches) && $method === 'PUT') {
+    $id = $matches[1];
+    $input = getJsonInput();
+    
+    $sets = [];
+    $values = [];
+    foreach ($input as $key => $value) {
+        $sets[] = "$key = ?";
+        $values[] = $value;
+    }
+    $values[] = $id;
+    
+    $sql = "UPDATE workflow_invoices SET " . implode(', ', $sets) . " WHERE id = ?";
+    $pdo->prepare($sql)->execute($values);
+    
+    $input['id'] = $id;
+    jsonResponse($input);
+}
+
+// --- Payment Receipts ---
+if ($path === '/payment-receipts' && $method === 'GET') {
+    $stmt = $pdo->query("SELECT * FROM payment_receipts ORDER BY created_at DESC");
+    $rows = $stmt->fetchAll();
+    $rows = array_map(function($r){
+        $r['amount'] = (float)$r['amount'];
+        return $r;
+    }, $rows);
+    jsonResponse($rows);
+}
+
+if ($path === '/payment-receipts' && $method === 'POST') {
+    $input = getJsonInput();
+    $columns = array_keys($input);
+    $values = array_values($input);
+    $placeholders = array_fill(0, count($values), '?');
+    
+    $sql = "INSERT INTO payment_receipts (" . implode(', ', $columns) . ") VALUES (" . implode(', ', $placeholders) . ")";
+    $pdo->prepare($sql)->execute($values);
+    
+    if (empty($input['id'])) $input['id'] = $pdo->lastInsertId();
+    jsonResponse($input);
+}
+
+jsonResponse(['error' => 'Not Found (Workflow)'], 404);
