@@ -1368,7 +1368,6 @@ export default function QuotationBuilder() {
 
                         </Select>
                       </div>
-
                       <div className="space-y-5">
 
                         {/* Total Project Price */}
@@ -1386,185 +1385,168 @@ export default function QuotationBuilder() {
                           />
                         </div>
 
-                        {/* Number of Milestones */}
+                        {/* Show only for milestone billing */}
+                        {b.billing_type === "milestone" && (
+                          <>
+                            {/* Number of Milestones */}
 
-                        <div className="space-y-2">
+                            <div className="space-y-2">
 
-                          <Label>Number of Milestones</Label>
-
-                          <Input
-                            type="number"
-                            min={1}
-                            max={10}
-                            value={b.milestone_count ?? 1}
-                            onChange={(e) => {
-
-                              const count = Math.max(
-                                1,
-                                Number(e.target.value)
-                              );
-
-                              updateBlock(idx, {
-
-                                milestone_count: count,
-
-                                milestone_template: generateMilestones(count),
-
-                              });
-
-                            }}
-                          />
-
-                        </div>
-
-                        {/* Milestone Rows */}
-
-                        <div className="space-y-3">
-
-                          {(b.milestone_template ?? []).map((m) => (
-
-                            <div
-                              key={m.id}
-                              className="grid grid-cols-[2fr_110px_150px] gap-3 items-center"
-                            >
-
-                              {/* Milestone Name */}
+                              <Label>Number of Milestones</Label>
 
                               <Input
-                                value={m.label}
-                                placeholder="Milestone Name"
+                                type="number"
+                                min={1}
+                                max={10}
+                                value={b.milestone_count ?? 1}
                                 onChange={(e) => {
 
+                                  const count = Math.max(
+                                    1,
+                                    Number(e.target.value)
+                                  );
+
                                   updateBlock(idx, {
-
-                                    milestone_template:
-                                      updateMilestoneLabel(
-                                        b.milestone_template ?? [],
-                                        m.id,
-                                        e.target.value
-                                      )
-
+                                    milestone_count: count,
+                                    milestone_template: generateMilestones(count),
                                   });
 
                                 }}
                               />
 
-                              {/* Percentage */}
+                            </div>
 
-                              <div className="relative">
+                            {/* Milestone Rows */}
 
-                                <Input
-                                  type="number"
-                                  min={0}
-                                  max={100}
-                                  value={m.percentage}
-                                  placeholder="%"
-                                  className="pr-8"
-                                  onChange={(e) => {
+                            <div className="space-y-3">
 
-                                    const updated =
-                                      updateMilestonePercentage(
+                              {(b.milestone_template ?? []).map((m) => (
 
-                                        b.milestone_template ?? [],
+                                <div
+                                  key={m.id}
+                                  className="grid grid-cols-[2fr_110px_150px] gap-3 items-center"
+                                >
 
-                                        m.id,
+                                  <Input
+                                    value={m.label}
+                                    placeholder="Milestone Name"
+                                    onChange={(e) => {
 
-                                        Number(e.target.value),
+                                      updateBlock(idx, {
+                                        milestone_template: updateMilestoneLabel(
+                                          b.milestone_template ?? [],
+                                          m.id,
+                                          e.target.value
+                                        ),
+                                      });
 
-                                        b.price
+                                    }}
+                                  />
 
-                                      );
+                                  <div className="relative">
 
-                                    updateBlock(idx, {
+                                    <Input
+                                      type="number"
+                                      min={0}
+                                      max={100}
+                                      value={m.percentage}
+                                      className="pr-8"
+                                      onChange={(e) => {
 
-                                      milestone_template: updated,
+                                        const updated =
+                                          updateMilestonePercentage(
+                                            b.milestone_template ?? [],
+                                            m.id,
+                                            Number(e.target.value),
+                                            b.price
+                                          );
 
-                                    });
+                                        updateBlock(idx, {
+                                          milestone_template: updated,
+                                        });
 
-                                  }}
-                                />
+                                      }}
+                                    />
 
-                                <span className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground text-sm">
+                                    <span className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground text-sm">
+                                      %
+                                    </span>
 
+                                  </div>
+
+                                  <div className="h-10 rounded-xl border bg-muted/40 flex items-center justify-center font-semibold">
+
+                                    {currency === "INR" ? "₹" : "$"}
+
+                                    {m.amount.toLocaleString()}
+
+                                  </div>
+
+                                </div>
+
+                              ))}
+
+                            </div>
+
+                            {/* Summary */}
+
+                            <div className="rounded-xl border border-dashed border-primary/30 bg-primary/5 p-4 space-y-3">
+
+                              <div className="flex justify-between">
+
+                                <span>Total Percentage</span>
+
+                                <span
+                                  className={
+                                    calculateTotalPercentage(
+                                      b.milestone_template ?? []
+                                    ) === 100
+                                      ? "font-semibold text-green-600"
+                                      : "font-semibold text-red-600"
+                                  }
+                                >
+                                  {calculateTotalPercentage(
+                                    b.milestone_template ?? []
+                                  )}
+                                  %
+                                </span>
+
+                              </div>
+
+                              <div className="flex justify-between">
+
+                                <span>Remaining</span>
+
+                                <span className="font-semibold">
+
+                                  {calculateRemainingPercentage(
+                                    b.milestone_template ?? []
+                                  )}
                                   %
 
                                 </span>
 
                               </div>
 
-                              {/* Calculated Amount */}
+                              <div className="border-t pt-3 flex justify-between text-lg font-bold">
 
-                              <div className="h-10 rounded-xl border bg-muted/40 flex items-center justify-center font-semibold">
+                                <span>Total Amount</span>
 
-                                {currency === "INR" ? "₹" : "$"}
+                                <span>
 
-                                {m.amount.toLocaleString()}
+                                  {currency === "INR" ? "₹" : "$"}
+
+                                  {calculateMilestoneTotal(
+                                    b.milestone_template ?? []
+                                  ).toLocaleString()}
+
+                                </span>
 
                               </div>
 
                             </div>
-
-                          ))}
-
-                        </div>
-
-                        {/* Summary */}
-
-                        <div className="rounded-xl border border-dashed border-primary/30 bg-primary/5 p-4 space-y-3">
-
-                          <div className="flex justify-between">
-
-                            <span>Total Percentage</span>
-
-                            <span
-                              className={
-                                calculateTotalPercentage(
-                                  b.milestone_template ?? []
-                                ) === 100
-                                  ? "font-semibold text-green-600"
-                                  : "font-semibold text-red-600"
-                              }
-                            >
-                              {calculateTotalPercentage(
-                                b.milestone_template ?? []
-                              )}
-                              %
-                            </span>
-
-                          </div>
-
-                          <div className="flex justify-between">
-
-                            <span>Remaining</span>
-
-                            <span className="font-semibold">
-
-                              {calculateRemainingPercentage(
-                                b.milestone_template ?? []
-                              )}
-                              %
-
-                            </span>
-
-                          </div>
-
-                          <div className="border-t pt-3 flex justify-between text-lg font-bold">
-
-                            <span>Total Amount</span>
-
-                            <span>
-
-                              {currency === "INR" ? "₹" : "$"}
-
-                              {calculateMilestoneTotal(
-                                b.milestone_template ?? []
-                              ).toLocaleString()}
-
-                            </span>
-
-                          </div>
-
-                        </div>
+                          </>
+                        )}
 
                       </div>
 

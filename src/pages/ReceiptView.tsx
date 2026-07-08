@@ -1,3 +1,5 @@
+//ReceiptView.tsx
+
 import { useEffect, useMemo, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import { ArrowLeft, Download, Lock } from 'lucide-react';
@@ -10,7 +12,15 @@ import { ReceiptLayout } from '@/components/documents/ReceiptLayout';
 export default function ReceiptView() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
-  const { brandKit, clients, invoices, receipts, refreshReceipts, refreshInvoices } = useApp();
+  const {
+    brandKit,
+    clients,
+    invoices,
+    receipts,
+    refreshReceipts,
+    refreshInvoices,
+    listInvoiceItemsByInvoice,
+  } = useApp();
 
   const [loading, setLoading] = useState(true);
 
@@ -44,6 +54,13 @@ export default function ReceiptView() {
     if (!invoice?.quotation) return null;
     return invoice.quotation;
   }, [invoice]);
+
+  const invoiceItems = useMemo(() => {
+    if (!invoice) return [];
+
+    return listInvoiceItemsByInvoice(invoice.id);
+
+  }, [invoice, listInvoiceItemsByInvoice]);
 
   // const handleDownloadPdf = async () => {
   //   if (!receipt || !invoice) return;
@@ -132,8 +149,9 @@ export default function ReceiptView() {
           invoice={invoice}
           client={invoice?.client || receipt.client || client}
           brandKit={brandKit}
-          mode="screen"
           quotation={quotation}
+          invoiceItems={invoiceItems}
+          mode="screen"
         />
       </div>
     </div>

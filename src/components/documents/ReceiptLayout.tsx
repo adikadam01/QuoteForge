@@ -1,7 +1,16 @@
+//ReceiptLayout.tsx
+
 import { useMemo } from 'react';
 
 import { formatCurrency } from '@/lib/types';
-import type { BrandKit, Client, Invoice, Receipt, Quotation } from '@/lib/types';
+import type {
+  BrandKit,
+  Client,
+  Invoice,
+  Receipt,
+  Quotation,
+  InvoiceItem,
+} from "@/lib/types";
 
 export type ReceiptLayoutMode = 'screen' | 'print';
 
@@ -12,6 +21,7 @@ type Props = {
   brandKit?: BrandKit | null;
   mode?: ReceiptLayoutMode;
   quotation?: Quotation | null;
+  invoiceItems?: InvoiceItem[];
 };
 
 const normalizeHex = (hex: string) => {
@@ -20,7 +30,14 @@ const normalizeHex = (hex: string) => {
   return h.length === 6 ? `#${h}` : '';
 };
 
-export function ReceiptLayout({ receipt, invoice, client, brandKit, quotation }: Props) {
+export function ReceiptLayout({
+  receipt,
+  invoice,
+  client,
+  brandKit,
+  quotation,
+  invoiceItems = [],
+}: Props) {
   const brandColor = useMemo(() => normalizeHex(brandKit?.primary_color || '#111827') || '#111827', [brandKit?.primary_color]);
   const companyName = brandKit?.company_name || 'Triple S Production';
 
@@ -50,24 +67,39 @@ export function ReceiptLayout({ receipt, invoice, client, brandKit, quotation }:
       }
     }
 
-    if (quotation?.service_blocks) {
-      quotation.service_blocks.forEach(block => {
+    // if (quotation?.service_blocks) {
+    //   quotation.service_blocks.forEach(block => {
+    //     items.push({
+    //       name: block.service_name,
+    //       desc: block.description || block.scope_of_work || '',
+    //       amount: block.price,
+    //       type: block.billing_type === 'monthly' ? 'Monthly' : 'Service'
+    //     });
+    //   });
+    // } else if (quotation?.services) {
+    //   quotation.services.forEach(s => {
+    //     items.push({
+    //       name: s.service_name,
+    //       desc: s.description || '',
+    //       amount: s.total,
+    //       type: 'Service'
+    //     });
+    //   });
+    // }
+
+    if (invoiceItems.length > 0) {
+
+      invoiceItems.forEach((item) => {
+
         items.push({
-          name: block.service_name,
-          desc: block.description || block.scope_of_work || '',
-          amount: block.price,
-          type: block.billing_type === 'monthly' ? 'Monthly' : 'Service'
+          name: item.name,
+          desc: item.description || "",
+          amount: Number(item.total),
+          type: "Service",
         });
+
       });
-    } else if (quotation?.services) {
-      quotation.services.forEach(s => {
-        items.push({
-          name: s.service_name,
-          desc: s.description || '',
-          amount: s.total,
-          type: 'Service'
-        });
-      });
+
     }
 
     if (items.length === 0) {

@@ -298,7 +298,7 @@ export interface Invoice {
   share_token: string | null;
   created_at: string;
   updated_at: string;
-
+  service_id?: string | null;
   client?: Client;
   quotation?: Quotation;
   items?: InvoiceItem[];

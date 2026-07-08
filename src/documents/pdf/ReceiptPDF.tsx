@@ -1,3 +1,5 @@
+//ReceiptPDF.tsx
+
 import { Document, Page, Text, View, StyleSheet, Font, Image } from '@react-pdf/renderer';
 import { format } from 'date-fns';
 import type { Receipt, BrandKit, Invoice } from '@/lib/types';

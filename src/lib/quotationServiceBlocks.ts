@@ -4,6 +4,7 @@ import {
   createMilestone
 } from "@/components/quotation/milestoneCal";
 
+
 /**
  * Phase 1: Multi-service quotation preparation (internal-only).
  *
@@ -80,6 +81,12 @@ export type QuotationServiceBlock = {
   milestone_count?: number;
   milestone_template?: MilestoneItem[];
 
+  invoice_progress?: {
+    generated: number;
+    total: number;
+    completed: boolean;
+  };
+
 };
 
 function normalizeText(v: unknown): string {
@@ -145,16 +152,35 @@ export function getQuotationServiceBlocks(q: Quotation): QuotationServiceBlock[]
       .filter(Boolean)
       .map((raw) => {
         const r = raw as Record<string, unknown>;
+
         return {
           service_id: normalizeText(r.service_id) || "default",
-          service_name: normalizeText(r.service_name) || q.title || "Service",
+
+          service_name:
+            normalizeText(r.service_name) ||
+            q.title ||
+            "Service",
+
           description: normalizeText(r.description),
-          category: normalizeText(r.category) || undefined,
-          subcategory: normalizeText(r.subcategory) || undefined,
-          scope_of_work: normalizeText(r.scope_of_work),
-          deliverables: normalizeText(r.deliverables) || undefined,
-          timeline: normalizeText(r.timeline) || undefined,
-          price: normalizeNumber(r.price),
+
+          category:
+            normalizeText(r.category) || undefined,
+
+          subcategory:
+            normalizeText(r.subcategory) || undefined,
+
+          scope_of_work:
+            normalizeText(r.scope_of_work),
+
+          deliverables:
+            normalizeText(r.deliverables) || undefined,
+
+          timeline:
+            normalizeText(r.timeline) || undefined,
+
+          price:
+            normalizeNumber(r.price),
+
           billing_type: (
             r.billing_type === "one_time" ||
               r.billing_type === "monthly" ||
@@ -163,16 +189,23 @@ export function getQuotationServiceBlocks(q: Quotation): QuotationServiceBlock[]
               ? r.billing_type
               : "one_time"
           ) as QuotationServiceBlockBillingType,
-          duration_months: normalizeNumber(r.duration_months) || undefined,
+
+          duration_months:
+            normalizeNumber(r.duration_months) || undefined,
+
           monthly_amount:
             r.monthly_amount != null
               ? normalizeNumber(r.monthly_amount)
               : undefined,
-          payment_terms: normalizeText(r.payment_terms) || undefined,
-          service_terms: normalizeText(r.service_terms) || undefined,
+
+          payment_terms:
+            normalizeText(r.payment_terms) || undefined,
+
+          service_terms:
+            normalizeText(r.service_terms) || undefined,
+
           milestone_template: Array.isArray(r.milestone_template)
             ? (r.milestone_template as any[]).map((m, index) => ({
-
               id: m.id ?? createMilestone(index).id,
 
               label: String(m.label ?? ""),
@@ -180,9 +213,31 @@ export function getQuotationServiceBlocks(q: Quotation): QuotationServiceBlock[]
               percentage: Number(m.percentage ?? 0),
 
               amount: Number(m.amount ?? 0),
-
             }))
             : [],
+
+          invoice_progress:
+            r.invoice_progress != null
+              ? (r.invoice_progress as {
+                generated: number;
+                total: number;
+                completed: boolean;
+              })
+              : {
+                generated: 0,
+
+                total:
+                  r.billing_type === "milestone"
+                    ? Array.isArray(r.milestone_template)
+                      ? r.milestone_template.length
+                      : 1
+                    : r.billing_type === "monthly"
+                      ? Number(r.duration_months ?? 1)
+                      : 1,
+
+                completed: false,
+              },
+
         } satisfies QuotationServiceBlock;
       });
   }

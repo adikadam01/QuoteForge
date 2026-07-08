@@ -7,9 +7,16 @@ import { useApp } from "@/contexts/AppContext";
 import { useToast } from "@/hooks/use-toast";
 import type { Quotation } from "@/lib/types";
 import { QuotationLayout } from "@/components/quotation/QuotationLayout";
-// import { createInvoiceFromQuotation } from "@/lib/invoicing";
+
 import { GenerateInvoiceModal } from "@/components/invoices/GenerateInvoiceModal";
-import { getQuotationTotalsForDisplay } from "@/lib/quotationServiceBlocks";
+import {
+  getQuotationServiceBlocks, getQuotationTotalsForDisplay,
+  type QuotationServiceBlock,
+} from "@/lib/quotationServiceBlocks";
+
+import {
+  getServiceProgress,
+} from "@/lib/phase4Invoicing";
 
 export default function QuotationPreview() {
   const { id } = useParams<{ id: string }>();
@@ -21,6 +28,23 @@ export default function QuotationPreview() {
   const [quotation, setQuotation] = useState<Quotation | null>(null);
   // const [creatingInvoice, setCreatingInvoice] = useState(false);
   const [invoiceModalOpen, setInvoiceModalOpen] = useState(false);
+
+  const [selectedServiceId, setSelectedServiceId] =
+    useState<string | null>(null);
+
+  const [serviceProgress, setServiceProgress] =
+    useState<
+      Record<
+        string,
+        {
+          generated: number;
+          total: number;
+          completed: boolean;
+          next: number;
+        }
+      >
+    >({});
+
   const [updatingStatus, setUpdatingStatus] = useState<null | 'sent'>(null);
 
   useEffect(() => {
@@ -45,8 +69,46 @@ export default function QuotationPreview() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [id]);
 
+  useEffect(() => {
 
+    if (!quotation) return;
 
+    const currentQuotation = quotation;
+
+    async function loadProgress() {
+
+      const services =
+        getQuotationServiceBlocks(currentQuotation);
+
+      const map: Record<
+        string,
+        {
+          generated: number;
+          total: number;
+          completed: boolean;
+          next: number;
+        }
+      > = {};
+
+      for (const service of services) {
+
+        map[service.service_id] =
+          await getServiceProgress(
+            currentQuotation,
+            service
+          );
+
+      }
+
+      setServiceProgress(map);
+
+    }
+
+    loadProgress();
+
+  }, [quotation]);
+
+  
   if (!id) {
     return (
       <div className="space-y-4">
@@ -76,6 +138,7 @@ export default function QuotationPreview() {
   }
 
   const safeTotals = getQuotationTotalsForDisplay(quotation);
+  const serviceBlocks = getQuotationServiceBlocks(quotation);
 
   // Phase 4 (contracts) removed for now.
   // const linkedContract = undefined;
@@ -116,15 +179,51 @@ export default function QuotationPreview() {
 
       <GenerateInvoiceModal
         open={invoiceModalOpen}
-        onOpenChange={setInvoiceModalOpen}
+        onOpenChange={(open) => {
+          setInvoiceModalOpen(open);
+
+          if (!open) {
+            // Clear selected service when modal closes
+            setSelectedServiceId(null);
+          }
+        }}
         quotation={quotation}
+        selectedServiceId={selectedServiceId}
         onGenerated={async (invoiceId) => {
-          // Wait for persistence then navigate (race-condition safe)
+
           await refreshQuotations();
           await refreshInvoices();
-          const updated = getQuotationById(quotation.id);
-          if (updated) setQuotation(updated);
+
+          const updated =
+            getQuotationById(quotation.id);
+
+          if (updated) {
+
+            setQuotation(updated);
+
+            const services =
+              getQuotationServiceBlocks(updated);
+
+            const map: Record<string, any> = {};
+
+            for (const service of services) {
+
+              map[service.service_id] =
+                await getServiceProgress(
+                  updated,
+                  service
+                );
+
+            }
+
+            setServiceProgress(map);
+
+          }
+
+          setSelectedServiceId(null);
+
           navigate(`/invoices/${invoiceId}`);
+
         }}
       />
 
@@ -333,17 +432,110 @@ export default function QuotationPreview() {
                 </div>
               ) : null}
 
-              {quotation.status === 'accepted' ? (
+              {quotation.status === "accepted" && (
+
                 <div className="rounded-xl border border-border/50 p-3 bg-secondary/30">
-                  <p className="text-xs uppercase tracking-wider text-muted-foreground">Status</p>
-                  <p className="text-sm text-foreground mt-2">Accepted</p>
-                  <div className="mt-3 space-y-2">
-                    <Button className="w-full gap-2 rounded-xl" onClick={() => setInvoiceModalOpen(true)}>
-                      <CreditCard className="w-4 h-4" /> Generate Invoice
-                    </Button>
+
+                  <p className="text-xs uppercase tracking-wider text-muted-foreground">
+                    Invoice Generation
+                  </p>
+
+                  <div className="space-y-3 mt-3">
+
+                    {serviceBlocks.map((service) => {
+
+                      const progress =
+                        serviceProgress[service.service_id] ?? {
+                          generated: 0,
+                          total:
+                            service.billing_type === "monthly"
+                              ? Number(service.duration_months ?? 1)
+                              : service.billing_type === "milestone"
+                                ? service.milestone_template?.length ?? 1
+                                : 1,
+                          completed: false,
+                          next: 1,
+                        };
+                      let buttonLabel = "Generate Invoice";
+
+                      if (service.billing_type === "monthly") {
+
+                        buttonLabel =
+                          progress.completed
+                            ? "Completed"
+                            : `Generate Month ${progress.generated + 1}`;
+
+                      }
+
+                      if (service.billing_type === "milestone") {
+
+                        buttonLabel =
+                          progress.completed
+                            ? "Completed"
+                            : `Generate Milestone ${progress.generated + 1}`;
+
+                      }
+
+                      return (
+
+                        <div
+                          key={service.service_id}
+                          className="rounded-lg border p-3"
+                        >
+
+                          <div className="flex justify-between">
+
+                            <div>
+
+                              <p className="font-semibold">
+                                {service.service_name}
+                              </p>
+
+                              <p className="text-xs text-muted-foreground capitalize">
+                                {service.billing_type}
+                              </p>
+
+                            </div>
+
+                            <div className="text-right">
+
+                              <p className="text-sm font-medium">
+
+                                {progress.generated} / {progress.total}
+
+                              </p>
+
+                            </div>
+
+                          </div>
+
+                          <Button
+                            className="w-full mt-3"
+                            disabled={progress.completed}
+                            onClick={() => {
+
+                              setSelectedServiceId(service.service_id);
+
+                              setInvoiceModalOpen(true);
+
+                            }}
+                          >
+
+                            {buttonLabel}
+
+                          </Button>
+
+                        </div>
+
+                      );
+
+                    })}
+
                   </div>
+
                 </div>
-              ) : null}
+
+              )}
 
               {quotation.status === 'invoiced' ? (
                 <div className="rounded-xl border border-border/50 p-3 bg-secondary/30">
@@ -381,3 +573,47 @@ export default function QuotationPreview() {
     </div>
   );
 }
+
+// export async function updateQuotationStatusIfCompleted(
+
+//   quotation: Quotation
+
+// ) {
+
+//   const services =
+
+//     getQuotationServiceBlocks(quotation);
+
+//   for (const service of services) {
+
+//     const progress =
+
+//       await getServiceProgress(
+
+//         quotation,
+
+//         service
+
+//       );
+
+//     if (!progress.completed) {
+
+//       return;
+
+//     }
+
+//   }
+
+//   const repo = getRepo();
+
+//   await repo.updateQuotation({
+
+//     ...quotation,
+
+//     status: "invoiced",
+
+//     invoiced_at: nowIso(),
+
+//   });
+
+// }

@@ -1,14 +1,151 @@
-import { getRepo } from '@/repo';
+import { getRepo } from "@/repo";
 import { newId } from '@/lib/id';
 import { nowIso } from '@/lib/dates';
 import type { Invoice, InvoiceItem, InvoiceMilestone, InvoicePaymentType, PricingModel, Quotation } from '@/lib/types';
-import { getQuotationTotalsForDisplay } from '@/lib/quotationServiceBlocks';
+import {
+  getQuotationTotalsForDisplay,
+  getQuotationServiceBlocks,
+  type QuotationServiceBlock,
+} from "@/lib/quotationServiceBlocks";
+
+//helper
+function updateServiceProgress(
+  quotation: Quotation,
+  selectedServiceIds: string[]
+): Quotation {
+
+  const updatedBlocks = (quotation.service_blocks || []).map(service => {
+
+    if (!selectedServiceIds.includes(service.service_id))
+      return service;
+
+    const progress = service.invoice_progress ?? {
+      generated: 0,
+      total:
+        service.billing_type === "milestone"
+          ? service.milestone_template?.length ?? 1
+          : service.billing_type === "monthly"
+            ? Number(service.duration_months ?? 1)
+            : 1,
+      completed: false,
+    };
+
+    const generated = progress.generated + 1;
+
+    return {
+      ...service,
+
+      invoice_progress: {
+        generated,
+        total: progress.total,
+        completed: generated >= progress.total,
+      },
+    };
+
+  });
+
+  return {
+    ...quotation,
+    service_blocks: updatedBlocks,
+  };
+}
+
+
+export async function getInvoicesForService(
+  quotationId: string,
+  serviceId: string
+) {
+  const repo = getRepo();
+
+  const invoices = await repo.listInvoices();
+  const items = await repo.listInvoiceItems();
+
+  return invoices.filter((invoice) => {
+    if (invoice.quotation_id !== quotationId) return false;
+
+    return items.some(
+      (item) =>
+        item.invoice_id === invoice.id &&
+        item.service_id === serviceId
+    );
+  });
+}
+
+export async function getServiceProgress(
+
+  quotation: Quotation,
+
+  service: QuotationServiceBlock
+
+) {
+
+  const invoices = await getInvoicesForService(
+
+    quotation.id,
+
+    service.service_id
+
+  );
+
+  const generated = invoices.length;
+
+  let total = 1;
+
+  switch (service.billing_type) {
+
+    case "monthly":
+
+      total = Number(service.duration_months ?? 1);
+
+      break;
+
+    case "milestone":
+
+      total = service.milestone_template?.length ?? 1;
+
+      break;
+
+    default:
+
+      total = 1;
+
+  }
+
+  return {
+
+    generated,
+
+    total,
+
+    completed: generated >= total,
+
+    next: generated + 1,
+
+  };
+
+}
 
 export type GenerateInvoicePlan =
-  | { type: 'full' }
-  | { type: 'partial'; amount: number }
-  | { type: 'milestone'; milestones: { label: string; amount: number }[] }
-  | { type: 'monthly'; monthlyAmount: number; totalMonths: number };
+  | {
+    type: "full";
+    selectedServiceIds?: string[];
+  }
+  | {
+    type: "partial";
+    amount: number;
+    selectedServiceIds?: string[];
+  }
+  | {
+    type: "monthly";
+    monthlyAmount: number;
+    totalMonths: number;
+    selectedServiceIds?: string[];
+  }
+  | {
+    type: "milestone";
+    milestones: InvoiceMilestone[];
+    selectedServiceIds?: string[];
+  };
 
 function buildInvoiceBase(quotation: Quotation, invoiceId: string, now: string): Invoice {
   const safeTotals = getQuotationTotalsForDisplay(quotation);
@@ -41,10 +178,12 @@ function buildInvoiceBase(quotation: Quotation, invoiceId: string, now: string):
   return inv;
 }
 
+
 async function snapshotInvoiceItems(
   invoiceId: string,
   quotation: Quotation,
-  now: string
+  now: string,
+  plan: GenerateInvoicePlan
 ): Promise<void> {
 
 
@@ -55,32 +194,117 @@ async function snapshotInvoiceItems(
 
   console.log("service_blocks =", quotation.service_blocks);
 
-  const quoteServices = quotation.service_blocks || [];
+  const quoteServices = (quotation.service_blocks || []).filter(service => {
 
-  console.log("quoteServices =", quoteServices);
+    if (!plan.selectedServiceIds?.length) return true;
 
-  const items: InvoiceItem[] = quoteServices.map((s, idx) => ({
-    id: newId(),
-    invoice_id: invoiceId,
-    quotation_id: quotation.id,
+    return plan.selectedServiceIds.includes(service.service_id);
 
-    service_id: s.service_id ?? null,
+  });
 
-    name: s.service_name ?? "",
-    description: s.description ?? "",
+  console.log(
+    "Selected Services:",
+    quoteServices.map(s => s.service_name)
+  );
 
-    pricing_model: "fixed",
+  // console.log("quoteServices =", quoteServices);
 
-    quantity: 1,
+  // console.log("PLAN TYPE =", plan.type);
 
-    unit_price: Number(s.price ?? 0),
+  console.log("QUOTE SERVICES =", quoteServices);
+  const items: InvoiceItem[] = await Promise.all(
+    quoteServices.map(async (s, idx) => {
 
-    total: Number(s.price ?? 0),
+      console.log(
+        s.service_name,
+        s.billing_type,
+        s.milestone_template
+      );
+      let description = s.description ?? "";
+      let unitPrice = Number(s.price ?? 0);
+      let total = unitPrice;
 
-    sort_order: idx,
+      // --------------------------
+      // Milestone Invoice
+      // --------------------------
 
-    created_at: now,
-  }));
+      if (
+        plan.type === "milestone" &&
+        s.billing_type === "milestone"
+      ) {
+
+        const previousInvoices = await getInvoicesForService(
+          quotation.id,
+          s.service_id
+        );
+
+        const milestoneIndex =
+          plan.type === "milestone"
+            ? previousInvoices.length
+            : 0;
+
+        const currentMilestone =
+          s.milestone_template?.[milestoneIndex];
+
+        if (currentMilestone) {
+
+          description =
+            `${currentMilestone.label} (${currentMilestone.percentage}%)`;
+
+          unitPrice = Number(currentMilestone.amount);
+
+          total = unitPrice;
+
+        }
+      }
+
+      // --------------------------
+      // Monthly Invoice
+      // --------------------------
+
+      if (
+        plan.type === "monthly" &&
+        s.billing_type === "monthly"
+      ) {
+
+        description =
+          `Month 1 of ${s.duration_months}`;
+
+        unitPrice =
+          Number(s.monthly_amount ?? 0);
+
+        total = unitPrice;
+      }
+
+      return {
+
+        id: newId(),
+
+        invoice_id: invoiceId,
+
+        quotation_id: quotation.id,
+
+        service_id: s.service_id ?? null,
+
+        name: s.service_name ?? "",
+
+        description,
+
+        pricing_model: "fixed",
+
+        quantity: 1,
+
+        unit_price: unitPrice,
+
+        total,
+
+        sort_order: idx,
+
+        created_at: now,
+
+      };
+    })
+  );
 
   console.log("Invoice Items =", items);
 
@@ -98,60 +322,6 @@ async function snapshotInvoiceItems(
 
   }
 }
-
-// export async function generateInvoiceForQuotationPlan(quotation: Quotation, plan: GenerateInvoicePlan): Promise<string> {
-//   // Backward compatibility: some older accepted quotations may not have accepted_at populated.
-//   if (quotation.status !== 'accepted') {
-//     throw new Error('Only accepted quotations can generate invoices.');
-//   }
-
-//   const repo = getRepo();
-//   const now = nowIso();
-//   const invoiceId = newId();
-
-//   const base = buildInvoiceBase(quotation, invoiceId, now);
-
-//   if (plan.type === 'full') {
-//     base.type = 'full' satisfies InvoicePaymentType;
-//     base.amount_due = Number(base.total || 0);
-//     base.balance_amount = 0;
-//   }
-
-//   if (plan.type === 'partial') {
-//     const total = Number(base.total || 0);
-//     const amount = Math.max(0, Math.min(total, Number(plan.amount || 0)));
-//     base.type = 'partial' satisfies InvoicePaymentType;
-//     base.amount_due = amount;
-//     base.balance_amount = Math.max(0, total - amount);
-//   }
-
-//   if (plan.type === 'milestone') {
-//     const ms: InvoiceMilestone[] = plan.milestones.map((m) => ({
-//       label: (m.label || '').trim() || 'Milestone',
-//       amount: Number(m.amount || 0),
-//       status: 'pending',
-//     }));
-
-//     if (ms.length === 0) throw new Error('Milestones required');
-
-//     // First milestone invoice
-//     ms[0].status = 'invoiced';
-
-//     base.type = 'milestone' satisfies InvoicePaymentType;
-//     base.milestones = ms;
-//     base.milestone_index = 0;
-//     base.amount_due = Math.max(0, Number(ms[0].amount || 0));
-//     base.balance_amount = Math.max(0, Number(base.total || 0) - base.amount_due);
-//   }
-
-//   await repo.createInvoice(base);
-//   await snapshotInvoiceItems(invoiceId, quotation, now);
-
-//   // Lock quotation after generating any invoice.
-//   await repo.updateQuotation({ ...quotation, status: 'invoiced', invoiced_at: quotation.invoiced_at || now });
-
-//   return invoiceId;
-// }
 
 
 export async function generateInvoiceForQuotationPlan(
@@ -182,18 +352,49 @@ export async function generateInvoiceForQuotationPlan(
 
   const base = buildInvoiceBase(quotation, invoiceId, now);
 
+  const selectedServices = (quotation.service_blocks || []).filter(service => {
+
+    if (!plan.selectedServiceIds?.length) return true;
+
+    return plan.selectedServiceIds.includes(service.service_id);
+
+  });
+  base.service_id =
+    selectedServices.length === 1
+      ? selectedServices[0].service_id
+      : null;
+
+  const selectedTotal = selectedServices.reduce(
+    (sum, service) => sum + Number(service.price || 0),
+    0
+  );
+
   if (plan.type === "full") {
     base.type = "full";
-    base.amount_due = Number(base.total || 0);
+    // base.amount_due = Number(base.total || 0);
+    base.total = selectedTotal;
+    base.subtotal = selectedTotal;
+
+    base.amount_due = selectedTotal;
     base.balance_amount = 0;
   }
 
   if (plan.type === "partial") {
-    const total = Number(base.total || 0);
+    // const total = Number(base.total || 0);
+    const total = selectedTotal;
+
+    base.total = total;
+    base.subtotal = total;
     const amount = Math.max(0, Math.min(total, Number(plan.amount || 0)));
 
     base.type = "partial";
     base.amount_due = amount;
+
+    // base.total = selectedTotal;
+    // base.subtotal = selectedTotal;
+
+    // base.amount_due = selectedTotal;
+
     base.balance_amount = Math.max(0, total - amount);
   }
 
@@ -214,7 +415,13 @@ export async function generateInvoiceForQuotationPlan(
     base.type = "milestone";
     base.milestones = ms;
     base.milestone_index = 0;
+    // base.amount_due = Number(ms[0].amount);
+
+    base.total = selectedTotal;
+    base.subtotal = selectedTotal;
+
     base.amount_due = Number(ms[0].amount);
+
     base.balance_amount =
       Number(base.total || 0) - Number(ms[0].amount);
   }
@@ -231,22 +438,37 @@ export async function generateInvoiceForQuotationPlan(
     base.monthly_amount = monthlyAmount;
     base.total_months = totalMonths;
     base.month_index = 0;
+    // base.amount_due = monthlyAmount;
+
+    base.total = selectedTotal;
+    base.subtotal = selectedTotal;
+
     base.amount_due = monthlyAmount;
+
     base.balance_amount = Math.max(0, monthlyAmount * totalMonths - monthlyAmount);
   }
+
 
   console.log("Creating invoice...");
   await repo.createInvoice(base);
 
   console.log("Creating invoice items...");
-  await snapshotInvoiceItems(invoiceId, quotation, now);
+  await snapshotInvoiceItems(
+    invoiceId,
+    quotation,
+    now,
+    plan
+  );
 
   console.log("Updating quotation...");
-  await repo.updateQuotation({
-    ...quotation,
-    status: "invoiced",
-    invoiced_at: quotation.invoiced_at || now,
-  });
+  const updatedQuotation = updateServiceProgress(
+    quotation,
+    plan.selectedServiceIds ?? []
+  );
+
+  // await repo.updateQuotation(updatedQuotation);
+  // await updateQuotationStatusIfCompleted(quotation);
+  await repo.updateQuotation(updatedQuotation);
 
   console.log("Invoice generation completed.");
 
@@ -264,13 +486,13 @@ export async function generateNextMilestoneInvoice(currentInvoice: Invoice): Pro
 
   // Find the "template" milestone plan: use the most recent milestone invoice for the quotation.
   const siblings = all
-    .filter((i) => i.quotation_id === currentInvoice.quotation_id && i.type === 'milestone')
-    .sort((a, b) => String(b.created_at).localeCompare(String(a.created_at)));
+    .filter((i: Invoice) => i.quotation_id === currentInvoice.quotation_id && i.type === 'milestone')
+    .sort((a: Invoice, b: Invoice) => String(b.created_at).localeCompare(String(a.created_at)));
   const base = siblings[0] || currentInvoice;
 
-  const milestones = (base.milestones || []).map((m) => ({ ...m }));
+  const milestones = (base.milestones || []).map((m: InvoiceMilestone) => ({ ...m }));
   const currentIndex = typeof base.milestone_index === 'number' ? base.milestone_index : 0;
-  const nextIndex = milestones.findIndex((m, idx) => idx > currentIndex && m.status === 'pending');
+  const nextIndex = milestones.findIndex((m: InvoiceMilestone, idx: number) => idx > currentIndex && m.status === 'pending');
   if (nextIndex === -1) return null;
 
   milestones[nextIndex].status = 'invoiced';
@@ -301,10 +523,27 @@ export async function generateNextMilestoneInvoice(currentInvoice: Invoice): Pro
   await repo.createInvoice(nextInv);
 
   // No new items; reuse the same quotation snapshot items when present.
-  const items = await repo.listInvoiceItemsByInvoice(base.id);
-  if (items.length) {
-    const cloned = items.map((it) => ({ ...it, id: newId(), invoice_id: invoiceId, created_at: now }));
-    await repo.upsertInvoiceItemsForInvoice(invoiceId, cloned);
+  // const items = await repo.listInvoiceItemsByInvoice(base.id);
+  // if (items.length) {
+  //   const cloned = items.map((it) => ({ ...it, id: newId(), invoice_id: invoiceId, created_at: now }));
+  //   await repo.upsertInvoiceItemsForInvoice(invoiceId, cloned);
+  // }
+
+  const quotation = await repo.getQuotation(base.quotation_id!);
+
+  if (quotation) {
+
+    await snapshotInvoiceItems(
+      invoiceId,
+      quotation,
+      now,
+      {
+        type: "milestone",
+        milestones: base.milestones ?? [],
+        selectedServiceIds: [base.service_id!],
+      }
+    );
+
   }
 
   return invoiceId;
@@ -318,8 +557,8 @@ export async function generateNextMonthlyInvoice(currentInvoice: Invoice): Promi
   const all = await repo.listInvoices();
 
   const siblings = all
-    .filter((i) => i.quotation_id === currentInvoice.quotation_id && i.type === 'monthly')
-    .sort((a, b) => String(b.created_at).localeCompare(String(a.created_at)));
+    .filter((i: Invoice) => i.quotation_id === currentInvoice.quotation_id && i.type === 'monthly')
+    .sort((a: Invoice, b: Invoice) => String(b.created_at).localeCompare(String(a.created_at)));
   const base = siblings[0] || currentInvoice;
 
   const totalMonths = Number(base.total_months || 1);
@@ -354,10 +593,28 @@ export async function generateNextMonthlyInvoice(currentInvoice: Invoice): Promi
 
   await repo.createInvoice(nextInv);
 
-  const items = await repo.listInvoiceItemsByInvoice(base.id);
-  if (items.length) {
-    const cloned = items.map((it) => ({ ...it, id: newId(), invoice_id: invoiceId, created_at: now }));
-    await repo.upsertInvoiceItemsForInvoice(invoiceId, cloned);
+  // const items = await repo.listInvoiceItemsByInvoice(base.id);
+  // if (items.length) {
+  //   const cloned = items.map((it) => ({ ...it, id: newId(), invoice_id: invoiceId, created_at: now }));
+  //   await repo.upsertInvoiceItemsForInvoice(invoiceId, cloned);
+  // }
+
+  const quotation = await repo.getQuotation(base.quotation_id!);
+
+  if (quotation) {
+
+    await snapshotInvoiceItems(
+      invoiceId,
+      quotation,
+      now,
+      {
+        type: "monthly",
+        monthlyAmount: Number(base.monthly_amount ?? 0),
+        totalMonths: Number(base.total_months ?? 1),
+        selectedServiceIds: [base.service_id!],
+      }
+    );
+
   }
 
   return invoiceId;
@@ -371,8 +628,8 @@ export async function generateBalanceInvoice(currentInvoice: Invoice): Promise<s
   const all = await repo.listInvoices();
 
   // Check if a balance invoice already exists
-  const siblings = all.filter(i => i.quotation_id === currentInvoice.quotation_id);
-  const alreadyHasBalance = siblings.some(i => (i.type === 'full' && i.created_at > currentInvoice.created_at));
+  const siblings = all.filter((i: Invoice) => i.quotation_id === currentInvoice.quotation_id);
+  const alreadyHasBalance = siblings.some((i: Invoice) => (i.type === 'full' && i.created_at > currentInvoice.created_at));
   if (alreadyHasBalance) return null;
 
   const now = nowIso();

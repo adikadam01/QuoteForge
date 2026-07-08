@@ -589,11 +589,39 @@ export function AppProvider({ children }: { children: ReactNode }) {
 
   const getQuotationById = (id: string) => quotations.find((q) => q.id === id);
 
-  const refreshInvoices = async () => {
-    const list = await repo.listInvoices();
-    setInvoices(list);
-  };
+  // const refreshInvoices = async () => {
+  //   const list = await repo.listInvoices();
+  //   setInvoices(list);
+  // };
 
+  const refreshInvoices = async () => {
+    const [invoiceList, quotationList, clientList] = await Promise.all([
+      repo.listInvoices(),
+      repo.listQuotations(),
+      repo.listClients(),
+    ]);
+
+    const quotationMap = new Map(
+      quotationList.map((q) => [q.id, q])
+    );
+
+    const clientMap = new Map(
+      clientList.map((c) => [c.id, c])
+    );
+
+    setInvoices(
+      invoiceList.map((invoice) => ({
+        ...invoice,
+        quotation: invoice.quotation_id
+          ? quotationMap.get(invoice.quotation_id)
+          : undefined,
+        client: invoice.client_id
+          ? clientMap.get(invoice.client_id)
+          : undefined,
+      }))
+    );
+  };
+  
   const refreshInvoiceItems = async () => {
     const list = await repo.listInvoiceItems();
     setInvoiceItems(list);

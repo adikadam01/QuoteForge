@@ -1,3 +1,5 @@
+//ReceiptDocument.tsx
+
 import React, { useMemo } from 'react';
 import { formatCurrency } from '@/lib/types';
 import type { BrandKit, Client, Invoice, Receipt, Quotation } from '@/lib/types';
