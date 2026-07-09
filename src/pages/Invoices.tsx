@@ -127,7 +127,7 @@ export default function Invoices() {
                         <div className="min-w-0">
                           <div className="flex items-center gap-3 mb-1">
                             <h3 className="font-heading font-semibold text-foreground truncate">
-                              {invoice.quotation?.title || invoice.invoice_number}
+                              {invoice.quotation?.title || invoice.invoice_number} Invoice
                             </h3>
                             <Badge className={cfg.color}>{invoice.invoice_status?.toUpperCase?.() || cfg.label}</Badge>
                           </div>

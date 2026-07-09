@@ -9,9 +9,11 @@ import {
   Settings,
   ChevronRight,
   Receipt,
+  ReceiptText,   // <-- add
   BarChart3,
   LogOut
-} from 'lucide-react';
+} from "lucide-react";
+
 import { cn } from '@/lib/utils';
 import { useApp } from '@/contexts/AppContext';
 import { Button } from '@/components/ui/button';
@@ -29,6 +31,7 @@ const navItems: NavItem[] = [
   { label: 'Services', href: '/services', icon: <Package className="w-5 h-5" /> },
   { label: 'Quotations', href: '/quotations', icon: <FileText className="w-5 h-5" /> },
   { label: 'Invoices', href: '/invoices', icon: <Receipt className="w-5 h-5" /> },
+  { label: 'Receipts', href: '/receipts', icon: <ReceiptText className="w-5 h-5" /> },
 ];
 
 export function AppLayout({ children }: { children: ReactNode }) {

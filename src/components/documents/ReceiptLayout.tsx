@@ -53,38 +53,34 @@ export function ReceiptLayout({
   const rows = useMemo(() => {
     const items: Array<{ name: string; desc?: string; amount: number; type: string }> = [];
 
-    if (invoice?.type === 'milestone' && invoice.milestones) {
-      const mIndex = invoice.milestone_index ?? -1;
-      const milestone = invoice.milestones[mIndex];
-      if (milestone) {
-        items.push({
-          name: milestone.label,
-          desc: `Milestone ${mIndex + 1} of ${invoice.milestones.length}`,
-          amount: Number(receipt.amount),
-          type: 'Milestone'
-        });
-        return items;
-      }
-    }
+    // if (invoice?.type === 'milestone' && invoice.milestones) {
+    //   const mIndex = invoice.milestone_index ?? -1;
+    //   const milestone = invoice.milestones[mIndex];
+    //   if (milestone) {
+    //     items.push({
+    //       name: milestone.label,
+    //       desc: `Milestone ${mIndex + 1} of ${invoice.milestones.length}`,
+    //       amount: Number(receipt.amount),
+    //       type: 'Milestone'
+    //     });
+    //     return items;
+    //   }
+    // }
 
-    // if (quotation?.service_blocks) {
-    //   quotation.service_blocks.forEach(block => {
+
+    // if (invoiceItems.length > 0) {
+
+    //   invoiceItems.forEach((item) => {
+
     //     items.push({
-    //       name: block.service_name,
-    //       desc: block.description || block.scope_of_work || '',
-    //       amount: block.price,
-    //       type: block.billing_type === 'monthly' ? 'Monthly' : 'Service'
+    //       name: item.name,
+    //       desc: item.description || "",
+    //       amount: Number(item.total),
+    //       type: "Service",
     //     });
+
     //   });
-    // } else if (quotation?.services) {
-    //   quotation.services.forEach(s => {
-    //     items.push({
-    //       name: s.service_name,
-    //       desc: s.description || '',
-    //       amount: s.total,
-    //       type: 'Service'
-    //     });
-    //   });
+
     // }
 
     if (invoiceItems.length > 0) {
@@ -92,15 +88,28 @@ export function ReceiptLayout({
       invoiceItems.forEach((item) => {
 
         items.push({
+
           name: item.name,
+
           desc: item.description || "",
+
           amount: Number(item.total),
-          type: "Service",
+
+          type:
+            item.description?.toLowerCase().includes("milestone")
+              ? "Milestone"
+              : item.description?.toLowerCase().includes("month")
+                ? "Monthly"
+                : "Service",
+
         });
 
       });
 
+      return items;
+
     }
+    
 
     if (items.length === 0) {
       items.push({

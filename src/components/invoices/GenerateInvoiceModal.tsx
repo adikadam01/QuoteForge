@@ -1,5 +1,6 @@
 //GenerateInvoiceModal
-import type { Quotation } from '@/lib/types';
+import type { Quotation } from "@/lib/types";
+import type { GenerateInvoicePlan } from "@/lib/phase4Invoicing";
 import { getRepo } from '@/repo';
 import { getQuotationServiceBlocks } from "@/lib/quotationServiceBlocks";
 
@@ -90,19 +91,32 @@ export function GenerateInvoiceModal({
     return currentService.milestone_template ?? [];
   }, [currentService]);
 
-  const total = Number(currentService?.price ?? quotation.total ?? 0);
+  const total = useMemo(() => {
+
+    return filteredServiceBlocks.reduce(
+
+      (sum, service) =>
+
+        sum + Number(service.price || 0),
+
+      0
+
+    );
+
+  }, [filteredServiceBlocks]);
+
   // ===== PASTE BELOW THIS =====
 
-  const milestonePlans = useMemo(() => {
-    return (quotation.service_blocks ?? [])
-      .filter((block) => block.billing_type === "milestone")
-      .flatMap((block) => block.milestone_template ?? []);
-  }, [quotation]);
+  // const milestonePlans = useMemo(() => {
+  //   return (quotation.service_blocks ?? [])
+  //     .filter((block) => block.billing_type === "milestone")
+  //     .flatMap((block) => block.milestone_template ?? []);
+  // }, [quotation]);
 
-  const monthlyPlans = useMemo(() => {
-    return (quotation.service_blocks ?? [])
-      .filter((block) => block.billing_type === "monthly");
-  }, [quotation]);
+  // const monthlyPlans = useMemo(() => {
+  //   return (quotation.service_blocks ?? [])
+  //     .filter((block) => block.billing_type === "monthly");
+  // }, [quotation]);
 
   // ===== END PASTE =====
 
@@ -224,145 +238,177 @@ export function GenerateInvoiceModal({
               </Card>
             )}
 
-            {mode === 'full' ? (
+            <div className="space-y-4">
+
               <Card className="p-4 rounded-xl">
+
                 <div className="flex items-center justify-between">
+
                   <div>
-                    <p className="font-medium">Amount</p>
-                    <p className="text-sm text-muted-foreground">Full quotation total</p>
+
+                    <h3 className="font-semibold text-lg">
+                      Selected Services
+                    </h3>
+
+                    <p className="text-sm text-muted-foreground">
+                      {filteredServiceBlocks.length} service(s) selected
+                    </p>
+
                   </div>
-                  <div className="font-heading font-bold text-lg">{total.toLocaleString()}</div>
+
+                  <div className="text-right">
+
+                    <p className="text-sm text-muted-foreground">
+                      Total Project Value
+                    </p>
+
+                    <p className="font-bold text-xl">
+                      ₹{total.toLocaleString()}
+                    </p>
+
+                  </div>
+
                 </div>
+
               </Card>
-            ) : null}
 
-            {mode === 'partial' ? (
-              <Card className="p-4 rounded-xl space-y-3">
-                <div className="space-y-2">
-                  <Label>Advance amount or %</Label>
-                  <Input className="rounded-xl" value={partialRaw} onChange={(e) => setPartialRaw(e.target.value)} placeholder="e.g. 5000 or 30%" />
-                </div>
-                <div className="text-sm text-muted-foreground flex items-center justify-between">
-                  <span>Advance</span>
-                  <span className="text-foreground font-medium">{partialAmount.toLocaleString()}</span>
-                </div>
-                <div className="text-sm text-muted-foreground flex items-center justify-between">
-                  <span>Balance</span>
-                  <span className="text-foreground font-medium">{balance.toLocaleString()}</span>
-                </div>
-              </Card>
-            ) : null}
+              {filteredServiceBlocks.map((service) => (
 
-            {mode === "milestone" && currentService?.billing_type === "milestone" && (
-              <Card className="p-5 rounded-xl space-y-4">
+                <Card
+                  key={service.service_id}
+                  className="p-5 rounded-xl space-y-4"
+                >
 
-                <div className="text-sm text-muted-foreground">
-                  Milestone payment plan from the quotation.
-                </div>
+                  <div className="flex items-center justify-between">
 
-                <div className="space-y-3">
+                    <div>
 
-                  {currentMilestones.map((milestone, index) => (
+                      <h3 className="font-semibold text-lg">
+                        {service.service_name}
+                      </h3>
 
-                    <div
-                      key={milestone.id ?? index}
-                      className="grid grid-cols-[1fr_100px_140px] gap-3 items-center border rounded-xl px-4 py-3"
-                    >
+                      <p className="text-sm text-muted-foreground capitalize">
+                        {service.billing_type?.replace("_", " ")}
+                      </p>
 
-                      <div>
-                        <p className="font-medium">
-                          {milestone.label}
-                        </p>
+                    </div>
+
+                    <div className="font-bold text-lg">
+                      ₹{Number(service.price).toLocaleString()}
+                    </div>
+
+                  </div>
+
+                  {/* ---------------- ONE TIME ---------------- */}
+
+                  {service.billing_type === "one_time" && (
+
+                    <div className="border rounded-xl p-4 flex justify-between">
+
+                      <span>Amount</span>
+
+                      <span className="font-semibold">
+                        ₹{Number(service.price).toLocaleString()}
+                      </span>
+
+                    </div>
+
+                  )}
+
+                  {/* ---------------- MILESTONE ---------------- */}
+
+                  {service.billing_type === "milestone" && (
+
+                    <>
+
+                      <p className="text-sm text-muted-foreground">
+                        Milestone Payment Plan
+                      </p>
+
+                      <div className="space-y-3">
+
+                        {(service.milestone_template ?? []).map((milestone, index) => (
+
+                          <div
+                            key={milestone.id ?? index}
+                            className="grid grid-cols-[1fr_90px_130px] gap-3 border rounded-xl px-4 py-3"
+                          >
+
+                            <div>
+
+                              <p className="font-medium">
+                                {milestone.label}
+                              </p>
+
+                            </div>
+
+                            <div className="text-center">
+
+                              {milestone.percentage}%
+
+                            </div>
+
+                            <div className="text-right font-semibold">
+
+                              ₹{Number(milestone.amount).toLocaleString()}
+
+                            </div>
+
+                          </div>
+
+                        ))}
+
                       </div>
 
-                      <div className="text-center">
-                        <span className="font-medium">
-                          {milestone.percentage}%
+                    </>
+
+                  )}
+
+                  {/* ---------------- MONTHLY ---------------- */}
+
+                  {service.billing_type === "monthly" && (
+
+                    <div className="space-y-3">
+
+                      <div className="border rounded-xl p-4 flex justify-between">
+
+                        <span>Monthly Amount</span>
+
+                        <span className="font-semibold">
+                          ₹{Number(service.monthly_amount ?? 0).toLocaleString()}
                         </span>
+
                       </div>
 
-                      <div className="text-right font-semibold">
-                        ₹{Number(milestone.amount).toLocaleString()}
+                      <div className="border rounded-xl p-4 flex justify-between">
+
+                        <span>Duration</span>
+
+                        <span>
+                          {service.duration_months} Months
+                        </span>
+
+                      </div>
+
+                      <div className="border rounded-xl p-4 flex justify-between">
+
+                        <span>Total Contract</span>
+
+                        <span className="font-semibold">
+                          ₹{Number(service.price).toLocaleString()}
+                        </span>
+
                       </div>
 
                     </div>
 
-                  ))}
-
-                </div>
-
-                <div className="border-t pt-4 flex justify-between">
-
-                  <span className="font-medium">
-                    Total
-                  </span>
-
-                  <span className="font-bold">
-                    ₹{Number(currentService.price).toLocaleString()}
-                  </span>
-
-                </div>
-
-              </Card>
-            )}
-            {mode === "monthly" &&
-              currentService?.billing_type === "monthly" && (
-                <Card className="p-5 rounded-xl space-y-4 max-h-[360px]  ">
-
-                  <div className="text-sm text-muted-foreground">
-                    Monthly payment plan from the quotation.
-                  </div>
-
-                  <div className="border rounded-xl p-4 flex items-center justify-between">
-                    <div>
-                      <p className="text-sm text-muted-foreground">
-                        Monthly Amount
-                      </p>
-
-                      <p className="text-xl font-semibold">
-                        ₹{Number(currentService.monthly_amount ?? 0).toLocaleString()}
-                      </p>
-                    </div>
-                  </div>
-
-                  <div className="border rounded-xl p-4 flex items-center justify-between">
-                    <div>
-                      <p className="text-sm text-muted-foreground">
-                        Duration
-                      </p>
-
-                      <p className="text-xl font-semibold">
-                        {currentService.duration_months} Months
-                      </p>
-                    </div>
-                  </div>
-
-                  <div className="border rounded-xl p-4 flex items-center justify-between">
-                    <div>
-                      <p className="text-sm text-muted-foreground">
-                        Invoices Generated
-                      </p>
-
-                      <p className="text-xl font-semibold">
-                        0 / {currentService.duration_months}
-                      </p>
-                    </div>
-                  </div>
-
-                  <div className="border-t pt-4 flex items-center justify-between">
-
-                    <span className="font-medium">
-                      Total Contract Value
-                    </span>
-
-                    <span className="font-bold text-lg">
-                      ₹{Number(currentService.price).toLocaleString()}
-                    </span>
-
-                  </div>
+                  )}
 
                 </Card>
-              )}
+
+              ))}
+
+            </div>
           </div>
         )}
 
@@ -408,44 +454,108 @@ export function GenerateInvoiceModal({
                   setBusy(true);
 
                   try {
-                    const { generateInvoiceForQuotationPlan } = await import(
-                      "@/lib/phase4Invoicing"
-                    );
+                    const { generateInvoiceForQuotationPlan } =
+                      await import("@/lib/phase4Invoicing");
 
                     const repo = getRepo();
-                    const freshQuotation = await repo.getQuotation(quotation.id);
-                    const quotationToUse = freshQuotation ?? quotation;
 
-                    const invoiceId = await generateInvoiceForQuotationPlan(
-                      quotationToUse,
-                      mode === "full"
-                        ? {
-                          type: "full",
-                          selectedServiceIds,
-                        }
-                        : mode === "partial"
-                          ? {
-                            type: "partial",
-                            amount: partialAmount,
-                            selectedServiceIds,
-                          }
-                          : mode === "monthly"
-                            ? {
-                              type: "monthly",
-                              monthlyAmount: Number(currentService?.monthly_amount ?? 0),
-                              totalMonths: Number(currentService?.duration_months ?? 1),
-                              selectedServiceIds,
-                            }
-                            : {
-                              type: "milestone",
-                              milestones: currentMilestones.map((m) => ({
-                                label: m.label,
-                                amount: m.amount,
-                                status: "pending" as const,
-                              })),
-                              selectedServiceIds,
-                            }
-                    );
+                    const freshQuotation =
+                      await repo.getQuotation(quotation.id);
+
+                    const quotationToUse =
+                      freshQuotation ?? quotation;
+
+                    const selectedBlocks =
+                      filteredServiceBlocks;
+
+                    const hasMilestone =
+                      selectedBlocks.some(
+                        s => s.billing_type === "milestone"
+                      );
+
+                    const hasMonthly =
+                      selectedBlocks.some(
+                        s => s.billing_type === "monthly"
+                      );
+
+                    let plan : any;
+
+                    if (mode === "partial") {
+
+                      plan = {
+                        type: "partial",
+                        amount: partialAmount,
+                        selectedServiceIds,
+                      };
+
+                    }
+
+                    else if (hasMilestone) {
+
+                      plan = {
+
+                        type: "milestone",
+
+                        milestones:
+                          currentMilestones.map((m) => ({
+
+                            label: m.label,
+
+                            amount: m.amount,
+
+                            status: "pending" as const,
+
+                          })),
+
+                        selectedServiceIds,
+
+                      };
+
+                    }
+
+                    else if (hasMonthly) {
+
+                      const firstMonthly =
+                        selectedBlocks.find(
+                          s => s.billing_type === "monthly"
+                        );
+
+                      plan = {
+
+                        type: "monthly",
+
+                        monthlyAmount:
+                          Number(firstMonthly?.monthly_amount ?? 0),
+
+                        totalMonths:
+                          Number(firstMonthly?.duration_months ?? 1),
+
+                        selectedServiceIds,
+
+                      };
+
+                    }
+
+                    else {
+
+                      plan = {
+
+                        type: "full",
+
+                        selectedServiceIds,
+
+                      };
+
+                    }
+
+                    const invoiceId =
+                      await generateInvoiceForQuotationPlan(
+
+                        quotationToUse,
+
+                        plan
+
+                      );
 
                     onGenerated(invoiceId);
                     onOpenChange(false);

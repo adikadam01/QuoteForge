@@ -85,6 +85,7 @@ export default function ReceiptView() {
           client={client}
           brandKit={brandKit}
           quotation={quotation}
+          invoiceItems={invoiceItems}
         />,
         { title: `Receipt_${safe}_${clientName}_${dateStr}` }
       );

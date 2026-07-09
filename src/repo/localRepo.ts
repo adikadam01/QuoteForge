@@ -1,3 +1,5 @@
+//localRepo.ts
+
 import localforage from "localforage";
 import type { Repository } from "@/repo/repository";
 import type { RepoSnapshot, QuotationPointTemplateRow } from "@/repo/types";

@@ -376,20 +376,52 @@ export default function QuotationBuilder() {
     // Source of truth: service_blocks. If missing, fall back to legacy line-items.
     const blocksUnknown = (q as unknown as { service_blocks?: unknown }).service_blocks;
     if (Array.isArray(blocksUnknown) && blocksUnknown.length > 0) {
-      setServiceBlocks(getQuotationServiceBlocks(q).map((b) => {
-        const lib = serviceLibraryById.get(b.service_id);
-        console.log("Selected Service:", lib);
-        return {
-          ...b,
-          // If saved block has empty fields, try to repair them from library defaults
-          description: b.description || lib?.description || "",
-          scope_of_work: b.scope_of_work || lib?.scope_of_work || "",
-          deliverables: b.deliverables || lib?.deliverables || "",
-          timeline: b.timeline || lib?.timeline || "",
-          payment_terms: b.payment_terms || lib?.payment_terms || "",
-          service_terms: b.service_terms || lib?.service_terms || "",
-        };
-      }));
+      setServiceBlocks(
+        getQuotationServiceBlocks(q).map((b) => {
+
+          const lib = serviceLibraryById.get(b.service_id);
+
+          console.log("Selected Service:", lib);
+
+          return {
+
+            ...b,
+
+            // ---------- Repair Monthly Amount ----------
+            monthly_amount:
+              b.billing_type === "monthly"
+                ? (
+                  b.monthly_amount ??
+                  calculateMonthly(
+                    Number(b.price || 0),
+                    Number(b.duration_months || 1)
+                  ).monthlyAmount
+                )
+                : b.monthly_amount,
+
+            // ---------- Repair Missing Fields ----------
+            description:
+              b.description || lib?.description || "",
+
+            scope_of_work:
+              b.scope_of_work || lib?.scope_of_work || "",
+
+            deliverables:
+              b.deliverables || lib?.deliverables || "",
+
+            timeline:
+              b.timeline || lib?.timeline || "",
+
+            payment_terms:
+              b.payment_terms || lib?.payment_terms || "",
+
+            service_terms:
+              b.service_terms || lib?.service_terms || "",
+
+          };
+
+        })
+      );
     } else if ((q.services || []).length > 0) {
       setServiceBlocks(
         (q.services || []).map((it) => {
@@ -771,10 +803,25 @@ export default function QuotationBuilder() {
             ) as QuotationServiceBlockBillingType,
 
             duration_months: (() => {
-              const months = ("duration_months" in lib ? (lib as { duration_months?: number | null }).duration_months : null) ?? 1;
-              return Number(months) || 1;
+              const months =
+                ("duration_months" in lib
+                  ? (lib as { duration_months?: number | null }).duration_months
+                  : null) ?? 1;
 
+              return Number(months) || 1;
             })(),
+
+            monthly_amount:
+              lib.billing_type === "monthly"
+                ? calculateMonthly(
+                  Number(lib.base_price),
+                  Number(
+                    ("duration_months" in lib
+                      ? (lib as { duration_months?: number | null }).duration_months
+                      : 1) || 1
+                  )
+                ).monthlyAmount
+                : undefined,
             payment_terms: String(("payment_terms" in lib ? (lib as { payment_terms?: string | null }).payment_terms : "") || ""),
             service_terms: String(lib.service_terms || ""),
             milestone_template:
@@ -1377,11 +1424,31 @@ export default function QuotationBuilder() {
                           <Input
                             type="number"
                             value={b.price}
-                            onChange={(e) =>
-                              updateBlock(idx, {
-                                price: Number(e.target.value),
-                              })
-                            }
+                            onChange={(e) => {
+
+                              const price = Number(e.target.value);
+
+                              if (b.billing_type === "monthly") {
+
+                                const plan = calculateMonthly(
+                                  price,
+                                  b.duration_months || 1
+                                );
+
+                                updateBlock(idx, {
+                                  price,
+                                  monthly_amount: plan.monthlyAmount,
+                                });
+
+                              } else {
+
+                                updateBlock(idx, {
+                                  price,
+                                });
+
+                              }
+
+                            }}
                           />
                         </div>
 

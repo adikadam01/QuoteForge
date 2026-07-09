@@ -44,8 +44,15 @@ function updateServiceProgress(
 
   });
 
+  const allCompleted =
+    updatedBlocks.length > 0 &&
+    updatedBlocks.every(
+      service => service.invoice_progress?.completed
+    );
+
   return {
     ...quotation,
+    status: allCompleted ? "invoiced" : quotation.status,
     service_blocks: updatedBlocks,
   };
 }
@@ -72,12 +79,16 @@ export async function getInvoicesForService(
 }
 
 export async function getServiceProgress(
-
   quotation: Quotation,
-
   service: QuotationServiceBlock
-
-) {
+): Promise<{
+  generated: number;
+  total: number;
+  completed: boolean;
+  next: number;
+  canGenerate: boolean;
+  reason: string | null;
+}> {
 
   const invoices = await getInvoicesForService(
 
@@ -105,12 +116,17 @@ export async function getServiceProgress(
 
       break;
 
+    case "one_time":
+
+    case "retainer":
+
     default:
 
       total = 1;
 
-  }
+      break;
 
+  }
   return {
 
     generated,
@@ -120,6 +136,14 @@ export async function getServiceProgress(
     completed: generated >= total,
 
     next: generated + 1,
+
+    canGenerate:
+      generated < total,
+
+    reason:
+      generated >= total
+        ? "Completed"
+        : null,
 
   };
 
@@ -179,6 +203,40 @@ function buildInvoiceBase(quotation: Quotation, invoiceId: string, now: string):
 }
 
 
+async function getServiceAmountDue(
+  quotation: Quotation,
+  service: QuotationServiceBlock
+): Promise<number> {
+
+  switch (service.billing_type) {
+
+    case "milestone": {
+
+      const previousInvoices =
+        await getInvoicesForService(
+          quotation.id,
+          service.service_id
+        );
+
+      const milestoneIndex =
+        previousInvoices.length;
+
+      const milestone =
+        service.milestone_template?.[milestoneIndex];
+
+      return Number(milestone?.amount ?? 0);
+    }
+
+    case "monthly":
+
+      return Number(service.monthly_amount ?? 0);
+
+    default:
+
+      return Number(service.price ?? 0);
+  }
+}
+
 async function snapshotInvoiceItems(
   invoiceId: string,
   quotation: Quotation,
@@ -221,27 +279,31 @@ async function snapshotInvoiceItems(
         s.milestone_template
       );
       let description = s.description ?? "";
-      let unitPrice = Number(s.price ?? 0);
-      let total = unitPrice;
+      const monthlyValue =
+        Number(
+          s.monthly_amount ??
+          (
+            Number(s.price || 0) /
+            Math.max(1, Number(s.duration_months || 1))
+          )
+        );
+
+      let unitPrice = monthlyValue;
+      let total = monthlyValue;
 
       // --------------------------
       // Milestone Invoice
       // --------------------------
 
-      if (
-        plan.type === "milestone" &&
-        s.billing_type === "milestone"
-      ) {
+      if (s.billing_type === "milestone") {
 
-        const previousInvoices = await getInvoicesForService(
-          quotation.id,
-          s.service_id
-        );
+        const previousInvoices =
+          await getInvoicesForService(
+            quotation.id,
+            s.service_id
+          );
 
-        const milestoneIndex =
-          plan.type === "milestone"
-            ? previousInvoices.length
-            : 0;
+        const milestoneIndex = previousInvoices.length;
 
         const currentMilestone =
           s.milestone_template?.[milestoneIndex];
@@ -254,7 +316,6 @@ async function snapshotInvoiceItems(
           unitPrice = Number(currentMilestone.amount);
 
           total = unitPrice;
-
         }
       }
 
@@ -262,20 +323,34 @@ async function snapshotInvoiceItems(
       // Monthly Invoice
       // --------------------------
 
-      if (
-        plan.type === "monthly" &&
-        s.billing_type === "monthly"
-      ) {
+
+      console.log("MONTHLY SERVICE", {
+        service: s.service_name,
+        price: s.price,
+        monthly_amount: s.monthly_amount,
+        duration: s.duration_months,
+      });
+
+      if (s.billing_type === "monthly") {
+
+        const previousInvoices =
+          await getInvoicesForService(
+            quotation.id,
+            s.service_id
+          );
+
+        const monthNumber =
+          previousInvoices.length + 1;
 
         description =
-          `Month 1 of ${s.duration_months}`;
+          `Month ${monthNumber} of ${s.duration_months}`;
 
         unitPrice =
           Number(s.monthly_amount ?? 0);
 
-        total = unitPrice;
+        total =
+          unitPrice;
       }
-
       return {
 
         id: newId(),
@@ -364,88 +439,162 @@ export async function generateInvoiceForQuotationPlan(
       ? selectedServices[0].service_id
       : null;
 
-  const selectedTotal = selectedServices.reduce(
-    (sum, service) => sum + Number(service.price || 0),
-    0
-  );
+  base.selected_service_ids =
+    plan.selectedServiceIds ?? [];
+
+  // const selectedTotal = selectedServices.reduce(
+  //   (sum, service) => sum + Number(service.price || 0),
+  //   0
+  // );
+
+  const invoiceServices = selectedServices;
+  let calculatedSubtotal = 0;
+  let calculatedAmountDue = 0;
+
+  for (const service of invoiceServices) {
+    calculatedSubtotal += Number(service.price || 0);
+  }
+
+  for (const service of invoiceServices) {
+    calculatedAmountDue += await getServiceAmountDue(
+      quotation,
+      service
+    );
+  }
+
+  // -------------------------------------
+  // Full Payment
+  // -------------------------------------
 
   if (plan.type === "full") {
-    base.type = "full";
-    // base.amount_due = Number(base.total || 0);
-    base.total = selectedTotal;
-    base.subtotal = selectedTotal;
 
-    base.amount_due = selectedTotal;
+    base.type = "full";
+
+    base.subtotal = calculatedSubtotal;
+    base.total = calculatedSubtotal;
+
+    base.amount_due = calculatedAmountDue;
     base.balance_amount = 0;
   }
 
-  if (plan.type === "partial") {
-    // const total = Number(base.total || 0);
-    const total = selectedTotal;
+  // -------------------------------------
+  // Partial Payment
+  // -------------------------------------
 
-    base.total = total;
-    base.subtotal = total;
-    const amount = Math.max(0, Math.min(total, Number(plan.amount || 0)));
+  if (plan.type === "partial") {
 
     base.type = "partial";
+
+    const amount = Math.max(
+      0,
+      Math.min(
+        calculatedSubtotal,
+        Number(plan.amount || 0)
+      )
+    );
+
+    base.subtotal = calculatedSubtotal;
+    base.total = calculatedSubtotal;
+
     base.amount_due = amount;
-
-    // base.total = selectedTotal;
-    // base.subtotal = selectedTotal;
-
-    // base.amount_due = selectedTotal;
-
-    base.balance_amount = Math.max(0, total - amount);
+    base.balance_amount =
+      calculatedSubtotal - amount;
   }
+
+  // -------------------------------------
+  // Milestone Invoice
+  // -------------------------------------
 
   if (plan.type === "milestone") {
 
-    const ms: InvoiceMilestone[] = plan.milestones.map((m) => ({
-      label: (m.label || "").trim() || "Milestone",
-      amount: Number(m.amount || 0),
-      status: "pending",
-    }));
+    const ms: InvoiceMilestone[] =
+      plan.milestones.map((m) => ({
+        label: (m.label || "").trim() || "Milestone",
+        amount: Number(m.amount || 0),
+        status: "pending",
+      }));
 
-    if (ms.length === 0) {
-      throw new Error("Milestones required");
+    // Find which milestone this invoice represents
+    const milestoneService =
+      invoiceServices.find(
+        s => s.billing_type === "milestone"
+      );
+
+    if (milestoneService) {
+
+      const previousInvoices =
+        await getInvoicesForService(
+          quotation.id,
+          milestoneService.service_id
+        );
+
+      base.milestone_index =
+        previousInvoices.length;
+
+      if (ms[base.milestone_index]) {
+        ms[base.milestone_index].status = "invoiced";
+      }
     }
-
-    ms[0].status = "invoiced";
 
     base.type = "milestone";
     base.milestones = ms;
-    base.milestone_index = 0;
-    // base.amount_due = Number(ms[0].amount);
 
-    base.total = selectedTotal;
-    base.subtotal = selectedTotal;
+    base.subtotal = calculatedSubtotal;
+    base.total = calculatedSubtotal;
 
-    base.amount_due = Number(ms[0].amount);
+    base.amount_due = calculatedAmountDue;
 
     base.balance_amount =
-      Number(base.total || 0) - Number(ms[0].amount);
+      calculatedSubtotal - calculatedAmountDue;
   }
 
+  // -------------------------------------
+  // Monthly Invoice
+  // -------------------------------------
+
   if (plan.type === "monthly") {
-    const monthlyAmount = Number(plan.monthlyAmount || 0);
-    const totalMonths = Math.max(1, Number(plan.totalMonths || 1));
+
+    const monthlyAmount =
+      Number(plan.monthlyAmount || 0);
+
+    const totalMonths =
+      Math.max(
+        1,
+        Number(plan.totalMonths || 1)
+      );
 
     if (monthlyAmount <= 0) {
       throw new Error("Monthly amount required");
     }
 
+    const monthlyService =
+      invoiceServices.find(
+        s => s.billing_type === "monthly"
+      );
+
+    if (monthlyService) {
+
+      const previousInvoices =
+        await getInvoicesForService(
+          quotation.id,
+          monthlyService.service_id
+        );
+
+      base.month_index =
+        previousInvoices.length;
+    }
+
     base.type = "monthly";
     base.monthly_amount = monthlyAmount;
     base.total_months = totalMonths;
-    base.month_index = 0;
-    // base.amount_due = monthlyAmount;
 
-    base.total = selectedTotal;
-    base.subtotal = selectedTotal;
+    base.subtotal = calculatedSubtotal;
+    base.total = calculatedSubtotal;
 
-    base.amount_due = monthlyAmount;
+    base.amount_due = calculatedAmountDue;
 
-    base.balance_amount = Math.max(0, monthlyAmount * totalMonths - monthlyAmount);
+    base.balance_amount =
+      calculatedSubtotal - calculatedAmountDue;
   }
 
 
@@ -540,7 +689,11 @@ export async function generateNextMilestoneInvoice(currentInvoice: Invoice): Pro
       {
         type: "milestone",
         milestones: base.milestones ?? [],
-        selectedServiceIds: [base.service_id!],
+        selectedServiceIds:
+          base.selected_service_ids ??
+          (base.service_id
+            ? [base.service_id]
+            : []),
       }
     );
 
@@ -611,7 +764,11 @@ export async function generateNextMonthlyInvoice(currentInvoice: Invoice): Promi
         type: "monthly",
         monthlyAmount: Number(base.monthly_amount ?? 0),
         totalMonths: Number(base.total_months ?? 1),
-        selectedServiceIds: [base.service_id!],
+        selectedServiceIds:
+          base.selected_service_ids ??
+          (base.service_id
+            ? [base.service_id]
+            : []),
       }
     );
 

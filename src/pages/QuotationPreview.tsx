@@ -32,18 +32,19 @@ export default function QuotationPreview() {
   const [selectedServiceId, setSelectedServiceId] =
     useState<string | null>(null);
 
-  const [serviceProgress, setServiceProgress] =
-    useState<
-      Record<
-        string,
-        {
-          generated: number;
-          total: number;
-          completed: boolean;
-          next: number;
-        }
-      >
-    >({});
+  const [serviceProgress, setServiceProgress] = useState<
+    Record<
+      string,
+      {
+        generated: number;
+        total: number;
+        completed: boolean;
+        next: number;
+        canGenerate: boolean;
+        reason: string | null;
+      }
+    >
+  >({});
 
   const [updatingStatus, setUpdatingStatus] = useState<null | 'sent'>(null);
 
@@ -87,9 +88,10 @@ export default function QuotationPreview() {
           total: number;
           completed: boolean;
           next: number;
+          canGenerate: boolean;
+          reason: string | null;
         }
       > = {};
-
       for (const service of services) {
 
         map[service.service_id] =
@@ -108,7 +110,7 @@ export default function QuotationPreview() {
 
   }, [quotation]);
 
-  
+
   if (!id) {
     return (
       <div className="space-y-4">
@@ -455,24 +457,63 @@ export default function QuotationPreview() {
                                 : 1,
                           completed: false,
                           next: 1,
+                          canGenerate: true,
+                          reason: null,
                         };
+
+                      // let buttonLabel = "Generate Invoice";
+
+                      // if (service.billing_type === "monthly") {
+
+                      //   buttonLabel =
+                      //     progress.completed
+                      //       ? "Completed"
+                      //       : `Generate Month ${progress.generated + 1}`;
+
+                      // }
+
+                      // if (service.billing_type === "milestone") {
+
+                      //   buttonLabel =
+                      //     progress.completed
+                      //       ? "Completed"
+                      //       : `Generate Milestone ${progress.generated + 1}`;
+
+                      // }
+
                       let buttonLabel = "Generate Invoice";
 
-                      if (service.billing_type === "monthly") {
+                      switch (service.billing_type) {
 
-                        buttonLabel =
-                          progress.completed
+                        case "monthly":
+
+                          buttonLabel = progress.completed
                             ? "Completed"
-                            : `Generate Month ${progress.generated + 1}`;
+                            : `Generate Month ${progress.next}`;
 
-                      }
+                          break;
 
-                      if (service.billing_type === "milestone") {
+                        case "milestone":
 
-                        buttonLabel =
-                          progress.completed
+                          buttonLabel = progress.completed
                             ? "Completed"
-                            : `Generate Milestone ${progress.generated + 1}`;
+                            : `Generate Milestone ${progress.next}`;
+
+                          break;
+
+                        case "one_time":
+
+                          buttonLabel = progress.completed
+                            ? "Completed"
+                            : "Generate Invoice";
+
+                          break;
+
+                        default:
+
+                          buttonLabel = progress.completed
+                            ? "Completed"
+                            : "Generate Invoice";
 
                       }
 
@@ -501,7 +542,9 @@ export default function QuotationPreview() {
 
                               <p className="text-sm font-medium">
 
-                                {progress.generated} / {progress.total}
+                                {Math.min(progress.generated, progress.total)}
+                                {" / "}
+                                {progress.total}
 
                               </p>
 
@@ -511,8 +554,10 @@ export default function QuotationPreview() {
 
                           <Button
                             className="w-full mt-3"
-                            disabled={progress.completed}
+                            disabled={!progress.canGenerate}
                             onClick={() => {
+
+                              if (!progress.canGenerate) return;
 
                               setSelectedServiceId(service.service_id);
 
@@ -521,7 +566,9 @@ export default function QuotationPreview() {
                             }}
                           >
 
-                            {buttonLabel}
+                            {progress.completed
+                              ? "Completed"
+                              : buttonLabel}
 
                           </Button>
 

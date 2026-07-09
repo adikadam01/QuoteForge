@@ -297,9 +297,15 @@ export interface Invoice {
   notes: string | null;
   share_token: string | null;
   created_at: string;
-  updated_at: string;
-  service_id?: string | null;
   client?: Client;
+  updated_at: string;
+
+  service_id?: string | null;
+
+  /**
+   * Used when one invoice contains multiple services.
+   */
+  selected_service_ids?: string[];
   quotation?: Quotation;
   items?: InvoiceItem[];
 }

@@ -2,7 +2,14 @@
 
 import React, { useMemo } from 'react';
 import { formatCurrency } from '@/lib/types';
-import type { BrandKit, Client, Invoice, Receipt, Quotation } from '@/lib/types';
+import type {
+    BrandKit,
+    Client,
+    Invoice,
+    Receipt,
+    Quotation,
+    InvoiceItem,
+} from '@/lib/types';
 import './documents.css';
 
 type Props = {
@@ -11,6 +18,8 @@ type Props = {
     client?: Client | null;
     brandKit?: BrandKit | null;
     quotation?: Quotation | null;
+
+    invoiceItems?: InvoiceItem[];
 };
 
 const normalizeHex = (hex: string) => {
@@ -19,7 +28,14 @@ const normalizeHex = (hex: string) => {
     return h.length === 6 ? `#${h}` : '';
 };
 
-export function ReceiptDocument({ receipt, invoice, client, brandKit, quotation }: Props) {
+export function ReceiptDocument({
+    receipt,
+    invoice,
+    client,
+    brandKit,
+    quotation,
+    invoiceItems = [],
+}: Props) {
     const brandColor = useMemo(() => normalizeHex(brandKit?.primary_color || '#111827') || '#111827', [brandKit?.primary_color]);
     const companyName = brandKit?.company_name || 'Triple S Production';
 
@@ -33,54 +49,90 @@ export function ReceiptDocument({ receipt, invoice, client, brandKit, quotation 
     const balanceDue = invoice ? Number(invoice.amount_due || 0) : 0;
 
     const rows = useMemo(() => {
-        const items: Array<{ name: string; desc?: string; amount: number; type: string }> = [];
 
-        if (invoice?.type === 'milestone' && invoice.milestones) {
-            const mIndex = invoice.milestone_index ?? -1;
-            const milestone = invoice.milestones[mIndex];
-            if (milestone) {
-                items.push({
-                    name: milestone.label,
-                    desc: `Milestone ${mIndex + 1} of ${invoice.milestones.length}`,
-                    amount: Number(receipt.amount),
-                    type: 'Milestone'
-                });
-                return items;
-            }
+        if (invoiceItems.length > 0) {
+
+            return invoiceItems.map((item) => ({
+
+                name: item.name,
+
+                desc: item.description || "",
+
+                amount: Number(item.total || 0),
+
+                type:
+                    item.description?.toLowerCase().includes("milestone")
+                        ? "Milestone"
+                        : item.description?.toLowerCase().includes("month")
+                            ? "Monthly"
+                            : "Service",
+
+            }));
+
         }
 
+        // -------- Fallback for very old invoices --------
+
+        const items: Array<{
+            name: string;
+            desc?: string;
+            amount: number;
+            type: string;
+        }> = [];
+
         if (quotation?.service_blocks) {
-            quotation.service_blocks.forEach(block => {
+
+            quotation.service_blocks.forEach((block) => {
+
                 items.push({
+
                     name: block.service_name,
-                    desc: block.description || block.scope_of_work || '',
-                    amount: block.price,
-                    type: block.billing_type === 'monthly' ? 'Monthly' : 'Service'
+
+                    desc:
+                        block.description ||
+                        block.scope_of_work ||
+                        "",
+
+                    amount: Number(block.price || 0),
+
+                    type:
+                        block.billing_type === "monthly"
+                            ? "Monthly"
+                            : block.billing_type === "milestone"
+                                ? "Milestone"
+                                : "Service",
+
                 });
+
             });
-        } else if (quotation?.services) {
-            quotation.services.forEach(s => {
-                items.push({
-                    name: s.service_name,
-                    desc: s.description || '',
-                    amount: s.total,
-                    type: 'Service'
-                });
-            });
+
         }
 
         if (items.length === 0) {
+
             items.push({
+
                 name: `Payment for Invoice #${invoiceNumber}`,
-                desc: receipt.payment_reference || '',
+
+                desc: receipt.payment_reference || "",
+
                 amount: Number(receipt.amount),
-                type: 'Payment'
+
+                type: "Payment",
+
             });
+
         }
 
         return items;
-    }, [invoice, quotation, receipt, invoiceNumber]);
 
+    }, [
+        invoiceItems,
+        quotation,
+        receipt,
+        invoiceNumber,
+    ]);
+    
     return (
         <div className="document-container flex flex-col">
             {/* Header */}

@@ -23,6 +23,7 @@ import ReceiptView from "@/pages/ReceiptView";
 import QuotationTemplates from "./pages/QuotationTemplates";
 import NotFound from "./pages/NotFound";
 import DevTools from "./pages/DevTools";
+import Receipts from "./pages/Receipts";
 
 const queryClient = new QueryClient();
 
@@ -51,7 +52,9 @@ const App = () => (
             <Route path="/invoices" element={<AppLayout><Invoices /></AppLayout>} />
             <Route path="/invoices/:id" element={<AppLayout><InvoiceView /></AppLayout>} />
             <Route path="/public/quotation/:id" element={<PublicQuotation />} />
+            <Route path="/receipts" element={<AppLayout><Receipts /></AppLayout>} />
             <Route path="/receipts/:id" element={<AppLayout><ReceiptView /></AppLayout>} />
+            
             {import.meta.env.DEV ? <Route path="/dev" element={<AppLayout><DevTools /></AppLayout>} /> : null}
             <Route path="*" element={<NotFound />} />
           </Routes>

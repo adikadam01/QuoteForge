@@ -298,18 +298,18 @@ export default function InvoiceView() {
               <div className="doc-pad">
                 <div className="doc-header__top">
                   <div className="doc-header__brand">
-                    {brandKit?.logo_url ? (
+                    {/* {brandKit?.logo_url ? (
                       <img src={"/Logo.jpg.jpeg"} alt="Logo" className="doc-logo" />
                     ) : (
                       <div className="doc-logoFallback" aria-hidden>
 
-                        {/* <img
+                        <img
                           src="/src/assets/images/Logo.jpg.jpeg"
                           alt="Triple S Production"
                           className="doc-logo"
-                        /> */}
+                        />
                       </div>
-                    )}
+                    )} */}
                     <div className="min-w-0">
                       <div className="doc-company truncate"><img src="/triplesimage.png"
                         alt="Triple S Production"
@@ -462,12 +462,16 @@ export default function InvoiceView() {
                     </div>
                     <div>
                       <h2 className="doc-sectionTitle">Details</h2>
-                      <div className="doc-paragraph">{invoice.due_date ? `Payable by ${invoice.due_date}` : "—"}</div>
+
                       <div className="doc-signature">
-                        <div className="doc-signLine" />
+                        {/* Changed marginBottom to marginTop to push the line away from "Details" */}
+                        <div className="doc-signLine" style={{ marginTop: "50px" }} />
                         <div className="doc-meta">Authorized signature</div>
                       </div>
+                      {invoice.notes && <div className="doc-paragraph whitespace-pre-wrap">{invoice.notes}</div>}
+                  <div className="doc-paragraph">{invoice.due_date ? `Payable by ${invoice.due_date}` : "—"}</div>
                     </div>
+
                   </div>
                 </div>
               </div>
@@ -611,32 +615,32 @@ export default function InvoiceView() {
               ) : null}
 
 
-                {
-                  invoice.type === 'monthly' && invoice.invoice_status === 'paid' ? (
-                    <Button
-                      variant="outline"
-                      className="w-full gap-2 rounded-xl"
-                      disabled={generatingNext}
-                      onClick={async () => {
-                        if (!invoice) return;
-                        setGeneratingNext(true);
-                        try {
-                          const { generateNextMonthlyInvoice } = await import('@/lib/phase4Invoicing');
-                          const nextId = await generateNextMonthlyInvoice(invoice);
-                          if (nextId) navigate(`/invoices/${nextId}`);
-                          else toast({ title: "All months invoiced", description: "Every month for this plan has been invoiced." });
-                        } catch (err) {
-                          if (import.meta.env.DEV) console.error('Failed to generate next monthly invoice', err);
-                          toast({ title: "Error", description: "Could not generate next month's invoice." });
-                        } finally {
-                          setGeneratingNext(false);
-                        }
-                      }}
-                    >
-                      <ListChecks className="w-4 h-4" /> Generate Next Month's Invoice
-                    </Button>
-                  ) : null
-                }
+              {
+                invoice.type === 'monthly' && invoice.invoice_status === 'paid' ? (
+                  <Button
+                    variant="outline"
+                    className="w-full gap-2 rounded-xl"
+                    disabled={generatingNext}
+                    onClick={async () => {
+                      if (!invoice) return;
+                      setGeneratingNext(true);
+                      try {
+                        const { generateNextMonthlyInvoice } = await import('@/lib/phase4Invoicing');
+                        const nextId = await generateNextMonthlyInvoice(invoice);
+                        if (nextId) navigate(`/invoices/${nextId}`);
+                        else toast({ title: "All months invoiced", description: "Every month for this plan has been invoiced." });
+                      } catch (err) {
+                        if (import.meta.env.DEV) console.error('Failed to generate next monthly invoice', err);
+                        toast({ title: "Error", description: "Could not generate next month's invoice." });
+                      } finally {
+                        setGeneratingNext(false);
+                      }
+                    }}
+                  >
+                    <ListChecks className="w-4 h-4" /> Generate Next Month's Invoice
+                  </Button>
+                ) : null
+              }
 
               {invoice.type === 'partial' && invoice.invoice_status === 'paid' && Number(invoice.balance_amount) > 0 ? (
                 <Button
