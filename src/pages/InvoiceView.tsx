@@ -23,7 +23,7 @@ export default function InvoiceView() {
 
   const [loading, setLoading] = useState(true);
   const [invoice, setInvoice] = useState<Invoice | null>(null);
-  const [items, setItems] = useState<InvoiceItem[]>([]);
+  // const [items, setItems] = useState<InvoiceItem[]>([]);
   const [editDueDate, setEditDueDate] = useState("");
   const [editNotes, setEditNotes] = useState("");
   const [saving, setSaving] = useState(false);
@@ -42,7 +42,7 @@ export default function InvoiceView() {
       const inv = getInvoiceById(id);
       if (!inv) {
         setInvoice(null);
-        setItems([]);
+        // setItems([]);
         setLoading(false);
         return;
       }
@@ -62,11 +62,19 @@ export default function InvoiceView() {
       setEditDueDate(inv.due_date || "");
       setEditNotes(inv.notes || "");
 
-      setItems(listInvoiceItemsByInvoice(id));
+      // setItems(listInvoiceItemsByInvoice(id));
       setLoading(false);
     })();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [id]);
+
+  const items = useMemo(() => {
+    if (!invoice) return [];
+
+    return listInvoiceItemsByInvoice(invoice.id);
+
+  }, [invoice, listInvoiceItemsByInvoice]);
+
   useEffect(() => {
     if (invoice) {
       const clientName = invoice.client?.business_name || invoice.client?.name || 'Invoice';
@@ -469,7 +477,7 @@ export default function InvoiceView() {
                         <div className="doc-meta">Authorized signature</div>
                       </div>
                       {invoice.notes && <div className="doc-paragraph whitespace-pre-wrap">{invoice.notes}</div>}
-                  <div className="doc-paragraph">{invoice.due_date ? `Payable by ${invoice.due_date}` : "—"}</div>
+                      <div className="doc-paragraph">{invoice.due_date ? `Payable by ${invoice.due_date}` : "—"}</div>
                     </div>
 
                   </div>
@@ -593,27 +601,23 @@ export default function InvoiceView() {
                 <Button
                   variant="outline"
                   className="w-full gap-2 rounded-xl"
-                  disabled={generatingNext}
-                  onClick={async () => {
-                    if (!invoice) return;
-                    setGeneratingNext(true);
-                    try {
-                      const { generateNextMilestoneInvoice } = await import('@/lib/phase4Invoicing');
-                      const nextId = await generateNextMilestoneInvoice(invoice);
-                      if (nextId) navigate(`/invoices/${nextId}`);
-                      else toast({ title: "No more milestones", description: "All milestones have been invoiced." });
-                    } catch (err) {
-                      if (import.meta.env.DEV) console.error('Failed to generate next milestone invoice', err);
-                      toast({ title: "Error", description: "Could not generate next milestone invoice." });
-                    } finally {
-                      setGeneratingNext(false);
+                  onClick={() => {
+                    if (!invoice?.quotation_id) {
+                      toast({
+                        title: "Quotation not found",
+                        description: "Unable to locate the original quotation.",
+                        variant: "destructive",
+                      });
+                      return;
                     }
+
+                    navigate(`/quotations/${invoice.quotation_id}/preview`);
                   }}
                 >
-                  <ListChecks className="w-4 h-4" /> Generate Next Invoice
+                  <ListChecks className="w-4 h-4" />
+                  Back to Quotation
                 </Button>
               ) : null}
-
 
               {
                 invoice.type === 'monthly' && invoice.invoice_status === 'paid' ? (

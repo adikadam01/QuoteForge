@@ -127,26 +127,36 @@ export async function getServiceProgress(
       break;
 
   }
+  const latestInvoice =
+    invoices.length > 0
+      ? invoices.sort(
+        (a, b) =>
+          new Date(b.created_at).getTime() -
+          new Date(a.created_at).getTime()
+      )[0]
+      : null;
+
+  const previousInvoicePaid =
+    !latestInvoice ||
+    latestInvoice.invoice_status === "paid";
+
   return {
-
     generated,
-
     total,
-
     completed: generated >= total,
-
     next: generated + 1,
 
     canGenerate:
-      generated < total,
+      generated < total &&
+      previousInvoicePaid,
 
     reason:
       generated >= total
         ? "Completed"
-        : null,
-
+        : !previousInvoicePaid
+          ? "Previous invoice must be paid first"
+          : null,
   };
-
 }
 
 export type GenerateInvoicePlan =
