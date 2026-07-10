@@ -211,6 +211,7 @@ export interface Quotation {
 
   // Section-level toggles (Step 3)
   section_toggles?: QuotationSectionToggles;
+  current_step?: number;
 
   // Draft acceptance block (Step 5)
   acceptance_draft?: QuotationAcceptanceDraft;

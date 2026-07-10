@@ -171,7 +171,7 @@ export default function QuotationPreview() {
         </div>
 
         <div className="flex gap-2">
-          <Link to={`/quotations/${quotation.id}/edit`}>
+          <Link to={`/quotation-builder?draftId=${quotation.id}`}>
             <Button variant="outline" className="rounded-xl" disabled={quotation.status !== 'draft'}>
               Edit
             </Button>
@@ -306,6 +306,83 @@ export default function QuotationPreview() {
                 <div className="rounded-xl border border-border/50 p-3 bg-secondary/30">
                   <p className="text-xs uppercase tracking-wider text-muted-foreground">Actions</p>
                   <div className="mt-2 space-y-2">
+                    {/* Approve / Decline */}
+
+                    <div className="grid grid-cols-2 gap-2">
+
+                      <Button
+                        className="bg-green-600 hover:bg-green-700 text-white rounded-xl"
+                        onClick={async () => {
+                          try {
+
+                            const updated = {
+                              ...quotation,
+                              status: "accepted" as const,
+                              accepted_at: new Date().toISOString(),
+                            };
+
+                            await updateQuotation(updated);
+
+                            setQuotation(updated);
+
+                            toast({
+                              title: "Quotation Approved",
+                              description: "Quotation moved to Accepted.",
+                            });
+
+                          } catch (err) {
+
+                            console.error(err);
+
+                            toast({
+                              title: "Error",
+                              description: "Failed to approve quotation.",
+                              variant: "destructive",
+                            });
+
+                          }
+                        }}
+                      >
+                        Approve
+                      </Button>
+
+                      <Button
+                        variant="destructive"
+                        className="rounded-xl"
+                        onClick={async () => {
+                          try {
+
+                            const updated = {
+                              ...quotation,
+                              status: "declined" as const,
+                            };
+
+                            await updateQuotation(updated);
+
+                            setQuotation(updated);
+
+                            toast({
+                              title: "Quotation Declined",
+                              description: "Quotation moved to Declined.",
+                            });
+
+                          } catch (err) {
+
+                            console.error(err);
+
+                            toast({
+                              title: "Error",
+                              description: "Failed to decline quotation.",
+                              variant: "destructive",
+                            });
+
+                          }
+                        }}
+                      >
+                        Decline
+                      </Button>
+
+                    </div>
                     <Button
                       className="w-full gap-2 rounded-xl"
                       disabled={updatingStatus !== null}
@@ -370,7 +447,7 @@ export default function QuotationPreview() {
                     >
                       <Send className="w-4 h-4" /> Share Quotation Link
                     </Button>
-                    <Link to={`/quotations/${quotation.id}/edit`}>
+                    <Link to={`/quotation-builder?draftId=${quotation.id}`}>
                       <Button variant="outline" className="w-full rounded-xl">Edit</Button>
                     </Link>
                   </div>

@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState, type CSSProperties } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import { ArrowLeft, Download, Send, CreditCard, ListChecks, ReceiptText } from "lucide-react";
+import { DatePicker } from "@/pages/DatePicker";
 
 import { Button } from "@/components/ui/button";
 // Phase 3A: Invoice document redesign (in this view only). Keep logic untouched.
@@ -146,27 +147,53 @@ export default function InvoiceView() {
     }
   };
 
+
   // const handleDownloadPdf = async () => {
   //   if (!invoice) return;
-  //   const qStatus = (invoice.quotation?.status || 'draft');
-  //   if (qStatus === 'draft') return;
 
   //   try {
-  //     const { printDocument } = await import('@/lib/printer');
-  //     const InvoiceDocument = (await import('@/documents/InvoiceDocument')).default;
-  //     const clientName = invoice.client?.business_name || invoice.client?.name || 'Client';
-  //     // Sanitize but keep spaces for readability in filename
-  //     const safeClientName = clientName.replace(/[^a-zA-Z0-9-_ ]/g, "").trim();
-  //     const safeInvoiceNumber = invoice.invoice_number.replace(/[^a-zA-Z0-9-_]/g, "_");
+  //     const { pdf } = await import("@react-pdf/renderer");
+  //     const InvoiceDocument = (await import("@/documents/InvoiceDocument")).default;
 
-  //     const title = `${safeClientName} - ${safeInvoiceNumber}`;
+  //     const clientName =
+  //       invoice.client?.business_name ||
+  //       invoice.client?.name ||
+  //       "Client";
 
-  //     await printDocument(
-  //       <InvoiceDocument invoice={invoice} brandKit={brandKit} />,
-  //       { title }
-  //     );
+  //     const safeClientName = clientName
+  //       .replace(/[^a-zA-Z0-9-_ ]/g, "")
+  //       .trim();
+
+  //     const safeInvoiceNumber = invoice.invoice_number
+  //       .replace(/[^a-zA-Z0-9-_]/g, "_");
+
+  //     const fileName = `${safeClientName}_${safeInvoiceNumber}.pdf`;
+
+  //     const blob = await pdf(
+  //       <InvoiceDocument
+  //         invoice={invoice}
+  //         brandKit={brandKit}
+  //         items={items}
+  //       />
+  //     ).toBlob();
+
+  //     const url = URL.createObjectURL(blob);
+
+  //     const link = document.createElement("a");
+
+  //     link.href = url;
+  //     link.download = fileName;
+
+  //     document.body.appendChild(link);
+
+  //     link.click();
+
+  //     document.body.removeChild(link);
+
+  //     URL.revokeObjectURL(url);
+
   //   } catch (err) {
-  //     if (import.meta.env.DEV) console.error('Print failed', err);
+  //     console.error("PDF generation failed", err);
   //   }
   // };
 
@@ -175,27 +202,76 @@ export default function InvoiceView() {
     if (!invoice) return;
 
     try {
-      const { pdf } = await import('@react-pdf/renderer');
-      const InvoiceDocument = (await import('@/documents/InvoiceDocument')).default;
-      const clientName = invoice.client?.business_name || invoice.client?.name || 'Client';
-      const safeClientName = clientName.replace(/[^a-zA-Z0-9-_ ]/g, "").trim();
-      const safeInvoiceNumber = invoice.invoice_number.replace(/[^a-zA-Z0-9-_]/g, "_");
+      const { pdf } = await import("@react-pdf/renderer");
+      const InvoiceDocument =
+        (await import("@/documents/InvoiceDocument")).default;
+
+      const clientName =
+        invoice.client?.business_name ||
+        invoice.client?.name ||
+        "Client";
+
+      const safeClientName = clientName
+        .replace(/[^a-zA-Z0-9-_ ]/g, "")
+        .trim();
+
+      const safeInvoiceNumber = invoice.invoice_number
+        .replace(/[^a-zA-Z0-9-_]/g, "_");
+
       const fileName = `${safeClientName}_${safeInvoiceNumber}.pdf`;
 
       const blob = await pdf(
-        <InvoiceDocument invoice={invoice} items={items} brandKit={brandKit} />
+        <InvoiceDocument
+          invoice={invoice}
+          items={items}
+          brandKit={brandKit}
+        />
       ).toBlob();
 
+      // -----------------------------
+      // Modern browsers (Save As dialog)
+      // -----------------------------
+
+      console.log("Secure Context:", window.isSecureContext);
+      console.log("showSaveFilePicker:", "showSaveFilePicker" in window);
+      
+      if ("showSaveFilePicker" in window) {
+        const handle = await (window as any).showSaveFilePicker({
+          suggestedName: fileName,
+          types: [
+            {
+              description: "PDF Document",
+              accept: {
+                "application/pdf": [".pdf"],
+              },
+            },
+          ],
+        });
+
+        const writable = await handle.createWritable();
+        await writable.write(blob);
+        await writable.close();
+
+        return;
+      }
+
+      // -----------------------------
+      // Fallback for unsupported browsers
+      // -----------------------------
       const url = URL.createObjectURL(blob);
-      const a = document.createElement('a');
+
+      const a = document.createElement("a");
       a.href = url;
       a.download = fileName;
+
       document.body.appendChild(a);
       a.click();
       document.body.removeChild(a);
+
       URL.revokeObjectURL(url);
+
     } catch (err) {
-      if (import.meta.env.DEV) console.error('PDF generation failed', err);
+      console.error("PDF generation failed", err);
     }
   };
 
@@ -348,7 +424,7 @@ export default function InvoiceView() {
                   <div className="doc-header__metaBox">
                     <div className="doc-kv">
                       <span className="doc-k">Invoice #</span>
-                      <span className="doc-v">{invoice.invoice_number}</span>
+                      <span className="doc-v">INV-{invoice.invoice_number?.slice(-4)}</span>
                     </div>
                     <div className="doc-kv">
                       <span className="doc-k">Issue date</span>
@@ -384,8 +460,8 @@ export default function InvoiceView() {
                       </div>
                     </div>
 
-                    <div>
-                      <div className="doc-sectionTitle">Bill To</div>
+                    {/* <div>
+                      <div className="doc-sectionTitle ">Bill To</div>
                       <div className="doc-block">
                         <div className="doc-strong">{invoice.client?.business_name || invoice.client?.name || "—"}</div>
                         {invoice.client?.name && invoice.client?.business_name ? (
@@ -394,6 +470,34 @@ export default function InvoiceView() {
                         {invoice.client?.email ? <div className="doc-meta">{invoice.client.email}</div> : null}
                         {invoice.client?.phone ? <div className="doc-meta">{invoice.client.phone}</div> : null}
                         {invoice.client?.location ? <div className="doc-meta">{invoice.client.location}</div> : null}
+                      </div>
+                    </div> */}
+
+                    <div className="w-full pl-9">
+                      <div className="doc-sectionTitle">Bill To</div>
+
+                      <div className="doc-block">
+                        <div className="doc-strong">
+                          {invoice.client?.business_name || invoice.client?.name || "—"}
+                        </div>
+
+                        {invoice.client?.name && invoice.client?.business_name ? (
+                          <div className="doc-meta">
+                            Attn: {invoice.client.name}
+                          </div>
+                        ) : null}
+
+                        {invoice.client?.email ? (
+                          <div className="doc-meta">{invoice.client.email}</div>
+                        ) : null}
+
+                        {invoice.client?.phone ? (
+                          <div className="doc-meta">{invoice.client.phone}</div>
+                        ) : null}
+
+                        {invoice.client?.location ? (
+                          <div className="doc-meta">{invoice.client.location}</div>
+                        ) : null}
                       </div>
                     </div>
                   </div>
@@ -747,12 +851,11 @@ export default function InvoiceView() {
 
               <div className="space-y-3">
                 <div className="space-y-2">
-                  <Label>Due date</Label>
-                  <Input
-                    type="date"
+                  <Label>Due Date</Label>
+
+                  <DatePicker
                     value={editDueDate}
-                    onChange={(e) => setEditDueDate(e.target.value)}
-                    disabled={!isEditable}
+                    onChange={(value) => setEditDueDate(value)}
                   />
                 </div>
                 <div className="space-y-2">

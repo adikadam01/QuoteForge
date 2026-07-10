@@ -352,8 +352,12 @@ export default function Quotations() {
                           </Link>
                         </DropdownMenuItem>
                         <DropdownMenuItem asChild disabled={Boolean(quotation.invoiced_at)}>
-                          <Link to={`/quotations/${quotation.id}/edit`} className="flex items-center gap-2">
-                            <Edit2 className="w-4 h-4" /> Edit
+                          <Link
+                            to={`/quotations/new?draftId=${quotation.id}`}
+                            className="flex items-center gap-2"
+                          >
+                            <Edit2 className="w-4 h-4" />
+                            Edit
                           </Link>
                         </DropdownMenuItem>
 

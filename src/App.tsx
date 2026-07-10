@@ -36,7 +36,7 @@ const App = () => (
         <BrowserRouter>
           <Routes>
             <Route path="/auth" element={<Auth />} />
-            
+
             {/* <Route path="/public/quotation/:quotationId" element={<PublicQuotation />} /> */}
             <Route path="/public/invoice/:invoiceId" element={<PublicInvoice />} />
             <Route path="/" element={<AppLayout><Dashboard /></AppLayout>} />
@@ -53,8 +53,16 @@ const App = () => (
             <Route path="/invoices/:id" element={<AppLayout><InvoiceView /></AppLayout>} />
             <Route path="/public/quotation/:id" element={<PublicQuotation />} />
             <Route path="/receipts" element={<AppLayout><Receipts /></AppLayout>} />
+            <Route
+              path="/quotations/new/:id"
+              element={
+                <AppLayout>
+                  <QuotationBuilder />
+                </AppLayout>
+              }
+            />
             <Route path="/receipts/:id" element={<AppLayout><ReceiptView /></AppLayout>} />
-            
+
             {import.meta.env.DEV ? <Route path="/dev" element={<AppLayout><DevTools /></AppLayout>} /> : null}
             <Route path="*" element={<NotFound />} />
           </Routes>

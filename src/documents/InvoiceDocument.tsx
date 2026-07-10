@@ -14,10 +14,6 @@ import type {
   InvoiceMilestone,
 } from "@/lib/types";
 
-// type Props = {
-//   invoice: Invoice;
-//   brandKit?: BrandKit | null;
-// };
 
 type Props = {
   invoice: Invoice;
@@ -321,15 +317,12 @@ const InvoiceDocument: React.FC<Props> = ({ invoice, brandKit, items: passedItem
             ) : null}
           </View>
 
-          <View style={styles.logoContainer}>
-            {brandKit?.logo_url ? (
-              <Image src={brandKit.logo_url} style={styles.logoImage} />
-            ) : brandKit?.company_name ? (
-              <Text style={styles.logoFallback}>
-                {brandKit.company_name.charAt(0).toUpperCase()}
-              </Text>
-            ) : null}
-          </View>
+         
+            <Image
+              src="/triplesimage.png"
+              style={styles.logoImage}
+            />
+          
         </View>
 
         {/* Invoice Banner */}

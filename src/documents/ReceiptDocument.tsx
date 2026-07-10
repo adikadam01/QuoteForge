@@ -112,7 +112,7 @@ export function ReceiptDocument({
 
             items.push({
 
-                name: `Payment for Invoice #${invoiceNumber}`,
+                name: `Payment for Invoice #${invoiceNumber?.slice(-4)}`,
 
                 desc: receipt.payment_reference || "",
 

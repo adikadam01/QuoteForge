@@ -166,7 +166,7 @@ export function QuotationLayout({ quotation, brandKit, mode = "screen" }: Props)
         <div className="text-left sm:text-right text-sm space-y-1 sm:self-start bg-gray-50/50 p-4 rounded-xl border border-gray-100 min-w-[200px]">
           <div className="flex justify-between sm:justify-end gap-4">
             <span className="text-gray-500">Quote No:</span>
-            <span className="font-semibold text-gray-900">{quotation.quotation_number}</span>
+            <span className="font-semibold text-gray-900">QT-{quotation.quotation_number?.slice(-4)}</span>
           </div>
           <div className="flex justify-between sm:justify-end gap-4">
             <span className="text-gray-500">Date:</span>

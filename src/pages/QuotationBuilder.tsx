@@ -11,6 +11,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
+import { DatePicker } from "@/pages/DatePicker";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -285,6 +286,38 @@ export default function QuotationBuilder() {
     setDraftConflictOpen(true);
   }, [draftId, draftIdParam, quotations, refreshQuotations]);
 
+  // useEffect(() => {
+
+  //   if (!draftId) return;
+
+  //   const quotation = quotations.find(q => q.id === draftId);
+
+  //   if (!quotation) return;
+
+  //   setFormData({
+  //     title: quotation.title,
+  //     client_id: quotation.client_id,
+  //     quote_date: quotation.quote_date,
+  //     valid_until: quotation.valid_until,
+  //   });
+
+  //   setServiceBlocks(quotation.service_blocks || []);
+
+  //   setGlobalTerms({
+  //     introduction: quotation.introduction || "",
+  //     payment_terms_text: quotation.payment_terms_text || "",
+  //     terms_conditions_text: quotation.terms_conditions_text || "",
+  //   });
+
+  //   setSectionToggles(
+  //     quotation.section_toggles || DEFAULT_SECTION_TOGGLES
+  //   );
+
+  //   setStep(quotation.current_step || 1);
+
+  // }, [draftId, quotations]);
+
+
   const handleContinuePrevious = () => {
     if (!conflictDraftId) return;
     setDraftConflictOpen(false);
@@ -364,7 +397,9 @@ export default function QuotationBuilder() {
     resumeHydratedRef.current = draftId;
 
     // Always resume at Step 1 for predictable UX.
-    setStep(1);
+    // setStep(1);
+
+    setStep(((q as any).current_step || 1) as BuilderStep);
 
     setFormData({
       title: q.title || "",
@@ -468,64 +503,8 @@ export default function QuotationBuilder() {
   ]);
 
   // Create a draft immediately if we don't have one (required for Step 1 autosave)
-  const draftCreateAttemptedRef = useRef(false);
-  useEffect(() => {
-    if (draftId) return;
-    if (draftConflictOpen) return;
-    if (draftCreateAttemptedRef.current) return;
 
-    draftCreateAttemptedRef.current = true;
-
-    (async () => {
-      try {
-        const createdId = await addQuotation({
-          quotation_number: `QT-${Date.now()}`,
-          title: "",
-          client_id: null,
-          introduction: null,
-          scope_of_work: null,
-          currency,
-          subtotal: 0,
-          discount: 0,
-          discount_type: "percentage",
-          tax_rate: 0,
-          tax_amount: 0,
-          total: 0,
-          quote_date: today,
-          valid_until: defaultValidUntil,
-          status: "draft",
-          sent_at: null,
-          accepted_at: null,
-          invoiced_at: null,
-          is_template: false,
-          template_name: null,
-          notes: null,
-          payment_terms_text: null,
-          terms_conditions_text: null,
-          quotation_sections: null,
-          section_toggles: DEFAULT_SECTION_TOGGLES,
-          selected_points: null,
-          services: [],
-          service_blocks: [],
-          share_token: null,
-        });
-
-        if (!createdId) throw new Error("Draft id missing");
-
-        setDraftId(createdId);
-
-        console.log("SET DRAFT ID =", createdId);
-
-        localStorage.setItem(DRAFT_LS_KEY, createdId);
-        setSearchParams({ draftId: createdId });
-
-      } catch (err) {
-
-        console.error("FULL ERROR =", err);
-
-      }
-    })();
-  }, [DEFAULT_SECTION_TOGGLES, addQuotation, currency, defaultValidUntil, draftConflictOpen, draftId, setSearchParams, today]);
+  // Draft will only be created when the user clicks "Save to Draft".
 
   const validateStep1 = () => {
     if (!formData.title.trim()) {
@@ -691,6 +670,9 @@ export default function QuotationBuilder() {
         introduction: partial.introduction ?? q.introduction,
         payment_terms_text: partial.payment_terms_text ?? q.payment_terms_text,
         terms_conditions_text: partial.terms_conditions_text ?? q.terms_conditions_text,
+        current_step:
+          partial.current_step ??
+          q.current_step,
         // service_blocks: partial.service_blocks ?? (q as unknown as { service_blocks?: QuotationServiceBlock[] }).service_blocks,
         service_blocks: partial.service_blocks !== undefined ? partial.service_blocks : serviceBlocks,
         services: partial.services ?? legacyServices,
@@ -705,59 +687,67 @@ export default function QuotationBuilder() {
   );
 
   // STEP 1 — Auto-save draft immediately
-  useEffect(() => {
-    if (!draftId) return;
-    persistDraft({
-      title: formData.title,
-      client_id: formData.client_id || null,
-      quote_date: formData.quote_date,
-      valid_until: formData.valid_until,
-    }).catch(() => {
-      // swallow
-    });
-  }, [draftId, formData, persistDraft]);
+  // useEffect(() => {
+  //   if (!draftId) return;
+  //   persistDraft({
+  //     title: formData.title,
+  //     client_id: formData.client_id || null,
+  //     quote_date: formData.quote_date,
+  //     valid_until: formData.valid_until,
+  //   }).catch(() => {
+  //     // swallow
+  //   });
+  // }, [draftId, formData, persistDraft]);
+
+  // Step 1 is no longer auto-saved.
+  // Data stays in local state until Save Draft.
+
 
   // STEP 2-3 — Auto-save per change
-  const lastPersistedBlocksRef = useRef<{ draftId: string; signature: string } | null>(null);
-  useEffect(() => {
-    if (!draftId) return;
-    const signature = JSON.stringify(serviceBlocks);
+  // const lastPersistedBlocksRef = useRef<{ draftId: string; signature: string } | null>(null);
+  // useEffect(() => {
+  //   if (!draftId) return;
+  //   const signature = JSON.stringify(serviceBlocks);
 
-    if (lastPersistedBlocksRef.current?.draftId !== draftId) {
-      lastPersistedBlocksRef.current = { draftId, signature };
-      return;
-    }
-    if (lastPersistedBlocksRef.current.signature === signature) return;
-    lastPersistedBlocksRef.current = { draftId, signature };
+  //   if (lastPersistedBlocksRef.current?.draftId !== draftId) {
+  //     lastPersistedBlocksRef.current = { draftId, signature };
+  //     return;
+  //   }
+  //   if (lastPersistedBlocksRef.current.signature === signature) return;
+  //   lastPersistedBlocksRef.current = { draftId, signature };
 
-    persistDraft({ service_blocks: serviceBlocks, subtotal: derivedTotals.total, total: derivedTotals.total }).catch((err) => {
-      if (import.meta.env.DEV) console.error("Failed to autosave service blocks", err);
-    });
-  }, [derivedTotals.total, draftId, persistDraft, serviceBlocks]);
+  //   persistDraft({ service_blocks: serviceBlocks, subtotal: derivedTotals.total, total: derivedTotals.total }).catch((err) => {
+  //     if (import.meta.env.DEV) console.error("Failed to autosave service blocks", err);
+  //   });
+  // }, [derivedTotals.total, draftId, persistDraft, serviceBlocks]);
+
+  // Step 2 is saved only when Save Draft is clicked.
 
   // STEP 4 — Auto-save
-  const lastPersistedGlobalRef = useRef<{ draftId: string; signature: string } | null>(null);
-  useEffect(() => {
-    if (!draftId) return;
-    const signature = JSON.stringify({ sectionToggles, globalTerms });
+  // const lastPersistedGlobalRef = useRef<{ draftId: string; signature: string } | null>(null);
+  // useEffect(() => {
+  //   if (!draftId) return;
+  //   const signature = JSON.stringify({ sectionToggles, globalTerms });
 
-    if (lastPersistedGlobalRef.current?.draftId !== draftId) {
-      lastPersistedGlobalRef.current = { draftId, signature };
-      return;
-    }
+  //   if (lastPersistedGlobalRef.current?.draftId !== draftId) {
+  //     lastPersistedGlobalRef.current = { draftId, signature };
+  //     return;
+  //   }
 
-    if (lastPersistedGlobalRef.current.signature === signature) return;
-    lastPersistedGlobalRef.current = { draftId, signature };
+  //   if (lastPersistedGlobalRef.current.signature === signature) return;
+  //   lastPersistedGlobalRef.current = { draftId, signature };
 
-    persistDraft({
-      section_toggles: sectionToggles,
-      introduction: globalTerms.introduction || null,
-      payment_terms_text: globalTerms.payment_terms_text || null,
-      terms_conditions_text: globalTerms.terms_conditions_text || null,
-    }).catch((err) => {
-      if (import.meta.env.DEV) console.error("Failed to autosave global terms", err);
-    });
-  }, [draftId, globalTerms, persistDraft, sectionToggles]);
+  //   persistDraft({
+  //     section_toggles: sectionToggles,
+  //     introduction: globalTerms.introduction || null,
+  //     payment_terms_text: globalTerms.payment_terms_text || null,
+  //     terms_conditions_text: globalTerms.terms_conditions_text || null,
+  //   }).catch((err) => {
+  //     if (import.meta.env.DEV) console.error("Failed to autosave global terms", err);
+  //   });
+  // }, [draftId, globalTerms, persistDraft, sectionToggles]);
+
+  // Global terms are saved only when Save Draft is clicked.
 
   const addOrRemoveServiceAsBlock = (serviceId: string, checked: boolean) => {
     const lib = serviceLibraryById.get(serviceId);
@@ -878,17 +868,6 @@ export default function QuotationBuilder() {
       return;
     }
     if (step === 4) {
-      // Persist everything and refresh before showing preview
-      await persistDraft({
-        section_toggles: sectionToggles,
-        introduction: globalTerms.introduction || null,
-        payment_terms_text: globalTerms.payment_terms_text || null,
-        terms_conditions_text: globalTerms.terms_conditions_text || null,
-        service_blocks: serviceBlocks,
-        subtotal: derivedTotals.total,
-        total: derivedTotals.total,
-      });
-      await refreshQuotations();
       setStep(5);
       return;
     }
@@ -926,10 +905,62 @@ export default function QuotationBuilder() {
   const buildPreviewQuotation = (): Quotation | null => {
 
     // console.log("draftId =", draftId);
-
     if (!draftId) {
-      console.log("draftId is NULL");
-      return null;
+      return {
+        id: "preview",
+        quotation_number: "Preview",
+
+        title: formData.title,
+        client_id: formData.client_id || null,
+
+        quote_date: formData.quote_date,
+        valid_until: formData.valid_until,
+
+        introduction: globalTerms.introduction || null,
+        scope_of_work: null,
+
+        payment_terms_text: globalTerms.payment_terms_text || null,
+        terms_conditions_text: globalTerms.terms_conditions_text || null,
+
+        currency,
+
+        subtotal: derivedTotals.total,
+        total: derivedTotals.total,
+
+        discount: 0,
+        discount_type: "percentage",
+        tax_rate: 0,
+        tax_amount: 0,
+
+        status: "draft",
+
+        services: [],
+        service_blocks: serviceBlocks,
+
+        section_toggles: sectionToggles,
+
+        quotation_sections: null,
+        selected_points: null,
+
+        notes: null,
+
+        is_template: false,
+        template_name: null,
+
+        share_token: null,
+
+        sent_at: null,
+        accepted_at: null,
+        invoiced_at: null,
+
+        current_step: step,
+
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+
+        client: clients.find(c => c.id === formData.client_id),
+
+      } as unknown as Quotation;
     }
 
     // const q = getQuotationById(draftId);
@@ -1001,11 +1032,119 @@ export default function QuotationBuilder() {
     } as Quotation;
   };
 
+  // const handleSaveDraft = async () => {
+  //   if (!draftId) return;
+  //   await persistDraft({ status: "draft" });
+  //   toast({ title: "Saved", description: "Draft saved." });
+  // };
+
   const handleSaveDraft = async () => {
-    if (!draftId) return;
-    await persistDraft({ status: "draft" });
-    toast({ title: "Saved", description: "Draft saved." });
+    try {
+      if (draftId) {
+        await persistDraft({
+          status: "draft",
+          current_step: step,
+        });
+
+        toast({
+          title: "Draft Updated",
+          description: `Quotation saved at Step ${step}.`,
+        });
+
+        return;
+      }
+
+      const createdId = await addQuotation({
+
+        quotation_number: `QT-${Date.now()}`,
+        title: formData.title,
+        client_id: formData.client_id || null,
+
+        quote_date: formData.quote_date,
+        valid_until: formData.valid_until,
+
+        introduction: globalTerms.introduction || null,
+
+        scope_of_work: null,
+
+        payment_terms_text:
+          globalTerms.payment_terms_text || null,
+
+        terms_conditions_text:
+          globalTerms.terms_conditions_text || null,
+
+        currency,
+
+        subtotal: derivedTotals.total,
+
+        total: derivedTotals.total,
+
+        discount: 0,
+
+        discount_type: "percentage",
+
+        tax_rate: 0,
+
+        tax_amount: 0,
+
+        status: "draft",
+
+        services: [],
+
+        service_blocks: serviceBlocks,
+
+        // section_toggles: DEFAULT_SECTION_TOGGLES,
+        section_toggles: sectionToggles,
+
+        quotation_sections: null,
+
+        selected_points: null,
+
+        notes: null,
+
+        is_template: false,
+
+        template_name: null,
+
+        share_token: null,
+
+        sent_at: null,
+
+        accepted_at: null,
+
+        invoiced_at: null,
+
+        // created_at: nowIso(),
+        // updated_at: nowIso(),
+
+        current_step: step,
+      });
+      if (!createdId) {
+        throw new Error("Failed to create draft");
+      }
+
+      setDraftId(createdId);
+
+      localStorage.setItem(DRAFT_LS_KEY, createdId);
+
+      setSearchParams({ draftId: createdId });
+
+      toast({
+        title: "Draft Saved",
+        description: `Quotation saved at Step ${step}.`,
+      });
+
+    } catch (err) {
+      console.error(err);
+
+      toast({
+        title: "Error",
+        description: "Unable to save draft.",
+        variant: "destructive",
+      });
+    }
   };
+
 
   const handleMarkSent = async () => {
     if (!draftId) return;
@@ -1092,31 +1231,12 @@ export default function QuotationBuilder() {
   // console.log("PREVIEW:", previewQuotation);
 
   return (
-    <div className="space-y-6 animate-fade-in">
+    <div className="min-h-screen flex flex-col animate-fade-in">
       <AlertDialog open={draftConflictOpen} onOpenChange={setDraftConflictOpen}>
-        {/* <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Unfinished quotation found</AlertDialogTitle>
-            <AlertDialogDescription>
-              You have an unfinished quotation draft. To avoid losing work, you can continue where you left off, or start a new quotation.
-              This will permanently delete your current draft (and any other unfinished drafts).
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel asChild>
-              <Button variant="destructive" onClick={handleStartNew}>
-                Start new quotation
-              </Button>
-            </AlertDialogCancel>
-            <AlertDialogAction asChild>
-              <Button onClick={handleContinuePrevious}>Continue previous quotation</Button>
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent> */}
       </AlertDialog>
 
       {/* Header */}
-      <div className="flex items-start justify-between gap-4">
+      <div className="flex flex-col lg:flex-row lg:items-start lg:justify-between gap-6">
         <div className="flex items-center gap-4">
           <Link to="/quotations">
             <Button variant="ghost" size="icon" className="rounded-xl">
@@ -1129,17 +1249,31 @@ export default function QuotationBuilder() {
           </div>
         </div>
 
-        <div className="flex items-center gap-3">
-          {step > 1 ? (
-            <Button variant="outline" className="rounded-xl" onClick={goBack} disabled={resuming}>
+        <div className="flex flex-wrap items-center gap-3 lg:justify-end">
+
+
+          {step > 1 && (
+            <Button
+              variant="outline"
+              className="rounded-xl"
+              onClick={goBack}
+              disabled={resuming}
+            >
               Back
             </Button>
-          ) : null}
-          {step < 5 ? (
-            <Button className="rounded-xl" onClick={goNext} disabled={resuming}>
+          )}
+
+          {step < 5 && (
+            <Button
+              className="rounded-xl"
+              onClick={goNext}
+              disabled={resuming}
+            >
               Next
+
             </Button>
-          ) : null}
+          )}
+
         </div>
       </div>
 
@@ -1184,7 +1318,7 @@ export default function QuotationBuilder() {
                       <div
                         role="button"
                         tabIndex={0}
-                        className="flex cursor-pointer select-none items-center gap-2 rounded-sm px-2 py-1.5 text-sm text-primary outline-none focus:bg-accent"
+                        className="flex cursor-pointer select-none items-center gap-2 rounded-sm px-2 py-1.5 text-sm text-primary outline-none focus:bg-accent  "
                         onMouseDown={(e) => {
                           e.preventDefault();
                           e.stopPropagation();
@@ -1202,7 +1336,7 @@ export default function QuotationBuilder() {
                           }
                         }}
                       >
-                        <UserPlus className="w-4 h-4" /> + Add New Client
+                        <UserPlus className="w-4 h-4 scrollbar-modern" /> + Add New Client
                       </div>
                       <div className="h-px bg-muted my-1" />
                       {clients.map((client) => (
@@ -1217,20 +1351,26 @@ export default function QuotationBuilder() {
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div className="space-y-2">
                     <Label>Quotation Date</Label>
-                    <Input
-                      type="date"
+                    <DatePicker
                       value={formData.quote_date}
-                      onChange={(e) => setFormData((p) => ({ ...p, quote_date: e.target.value }))}
-                      className="rounded-xl"
+                      onChange={(value) =>
+                        setFormData((p) => ({
+                          ...p,
+                          quote_date: value,
+                        }))
+                      }
                     />
                   </div>
                   <div className="space-y-2">
                     <Label>Valid Until</Label>
-                    <Input
-                      type="date"
+                    <DatePicker
                       value={formData.valid_until}
-                      onChange={(e) => setFormData((p) => ({ ...p, valid_until: e.target.value }))}
-                      className="rounded-xl"
+                      onChange={(value) =>
+                        setFormData((p) => ({
+                          ...p,
+                          valid_until: value,
+                        }))
+                      }
                     />
                   </div>
                 </div>
@@ -1238,7 +1378,7 @@ export default function QuotationBuilder() {
             </Card>
           </div>
 
-          <div>
+          {/* <div>
             <Card className="glass-card lg:sticky lg:top-6">
               <CardHeader>
                 <CardTitle className="font-heading">Saved</CardTitle>
@@ -1247,716 +1387,1045 @@ export default function QuotationBuilder() {
                 <p className="text-sm text-muted-foreground">Saved automatically as you type.</p>
               </CardContent>
             </Card>
-          </div>
-        </div>
-      ) : null}
 
-      {step === 2 ? (
-        <div className="grid grid-cols-1 lg:grid-cols-9 gap-6">
+          </div> */}
 
-          {/* Left */}
-          <div className="lg:col-span-5 space-y-6">
-            <Card className="glass-card">
-              <CardHeader>
-                <CardTitle className="font-heading">Services Selection</CardTitle>
-                <Input
-                  placeholder="Search services..."
-                  value={serviceSearch}
-                  onChange={(e) => setServiceSearch(e.target.value)}
-                  className="rounded-xl"
-                />
+          <div>
+            <Card className="glass-card lg:sticky lg:top-6 rounded-2xl border border-border/50 overflow-hidden transition-all duration-300 hover:shadow-lg hover:shadow-primary/5">
+              <CardHeader className="pb-3">
+                <CardTitle className="font-heading text-base">Client Summary</CardTitle>
+                <p className="text-xs text-muted-foreground">
+                  Information updates automatically when a client is selected.
+                </p>
               </CardHeader>
-              <CardContent className="lg:col-span-5 space-y-6">
-                {services.length > 0 ? (
-                  <div className="space-y-2">
-                    {filteredServices.map((service) => {
-                      const checked = serviceBlocks.some((b) => b.service_id === service.id);
-                      return (
-                        <label
-                          key={service.id}
-                          className="flex items-center gap-3 p-3 rounded-xl bg-secondary/50 hover:bg-secondary cursor-pointer transition-colors"
-                        >
-                          <input
-                            type="checkbox"
-                            checked={checked}
-                            onChange={(e) => addOrRemoveServiceAsBlock(service.id, e.target.checked)}
-                            className="rounded"
-                          />
-                          <div className="flex-1 min-w-0">
-                            <p className="font-medium text-foreground truncate">{service.name}</p>
-                            {service.description ? (
-                              <p className="text-sm text-muted-foreground line-clamp-2">{service.description}</p>
-                            ) : null}
-                          </div>
-                        </label>
-                      );
-                    })}
+
+              <CardContent className="p-0">
+                {!formData.client_id || !clients.find((c) => c.id === formData.client_id) ? (
+                  /* Empty State */
+                  <div className="flex flex-col items-center justify-center text-center py-12 px-6 animate-in fade-in-20 duration-200">
+                    <div className="w-24 h-24 mb-3 rounded-full bg-gray-100 flex items-center justify-center animate-in [animation-duration:5s] shadow-sm">
+                      <img
+                        src="/public/office-man.png"
+                        alt="Person"
+                        className="w-18 h-18 object-contain opacity-70 select-none pointer-events-none"
+                        draggable={false}
+                      />
+                    </div>
+                    <p className="text-sm font-semibold text-foreground">No Client Selected</p>
+                    <p className="text-xs text-muted-foreground mt-1 max-w-[220px]">
+                      Select a client from the form to view their information here.
+                    </p>
                   </div>
                 ) : (
-                  <p className="text-center text-muted-foreground py-8">
-                    {serviceSearch
-                      ? `No services found for "${serviceSearch}"`
-                      : "No services available."}
-                  </p>
+                  (() => {
+                    const selectedClient = clients.find(
+                      (c) => c.id === formData.client_id
+                    );
+
+                    if (!selectedClient) return null;
+
+                    return (
+                      <div className="animate-in fade-in-50 slide-in-from-bottom-2 duration-500">
+                        {/* Name / Business */}
+                        <div className="p-5 border-b border-border/50 bg-muted/30 relative overflow-hidden group">
+                          <div className="absolute inset-0 bg-gradient-to-br from-primary/5 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
+                          <div className="relative flex items-center gap-3">
+                            <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0 ring-2 ring-primary/10 transition-transform duration-300 hover:scale-105">
+                              <span className="text-sm font-bold text-primary">
+                                {(selectedClient.name || "?").charAt(0).toUpperCase()}
+                              </span>
+                            </div>
+                            <div className="min-w-0">
+                              <p className="text-sm font-bold font-heading truncate">
+                                {selectedClient.name || "—"}
+                              </p>
+                              <p className="text-xs text-muted-foreground mt-0.5 truncate">
+                                {selectedClient.business_name || "—"}
+                              </p>
+                            </div>
+                          </div>
+                        </div>
+
+                        {/* Business Details */}
+                        <div className="border-b border-border/50">
+                          <div className="flex items-center justify-between px-5 py-2.5 transition-colors duration-200 hover:bg-muted/40">
+                            <span className="text-xs text-muted-foreground">Business Type</span>
+                            <span className="text-sm font-bold text-right truncate max-w-[60%]">
+                              {selectedClient.business_type || "—"}
+                            </span>
+                          </div>
+                          <div className="flex items-center justify-between px-5 py-2.5 transition-colors duration-200 hover:bg-muted/40">
+                            <span className="text-xs text-muted-foreground">Industry</span>
+                            <span className="text-sm font-bold text-right truncate max-w-[60%]">
+                              {selectedClient.industry || "—"}
+                            </span>
+                          </div>
+                          <div className="flex items-center justify-between px-5 py-2.5 transition-colors duration-200 hover:bg-muted/40">
+                            <span className="text-xs text-muted-foreground">Location</span>
+                            <span className="text-sm font-bold text-right truncate max-w-[60%]">
+                              {selectedClient.city || selectedClient.location || "—"}
+                            </span>
+                          </div>
+                        </div>
+
+                        {/* Contact Details */}
+                        <div className="border-b border-border/50">
+                          <div className="flex items-center justify-between px-5 py-2.5 transition-colors duration-200 hover:bg-muted/40">
+                            <span className="text-xs text-muted-foreground">Email</span>
+                            <span className="text-sm font-bold text-right truncate max-w-[60%]">
+                              {selectedClient.email || "—"}
+                            </span>
+                          </div>
+                          <div className="flex items-center justify-between px-5 py-2.5 transition-colors duration-200 hover:bg-muted/40">
+                            <span className="text-xs text-muted-foreground">Phone</span>
+                            <span className="text-sm font-bold text-right truncate max-w-[60%]">
+                              {selectedClient.phone || "—"}
+                            </span>
+                          </div>
+                          {/* <div className="flex items-center justify-between px-5 py-2.5 transition-colors duration-200 hover:bg-muted/40">
+                            <span className="text-xs text-muted-foreground">GSTIN</span>
+                            <span className="text-sm font-bold text-right truncate max-w-[60%]">
+                              {selectedClient.gstin || "—"}
+                            </span>
+                          </div> */}
+                        </div>
+
+                        {/* Created */}
+                        <div className="flex items-center justify-between px-5 py-3.5 transition-colors duration-200 hover:bg-muted/40">
+                          <span className="text-xs text-muted-foreground">Created</span>
+                          <span className="text-sm font-bold">
+                            {selectedClient.created_at
+                              ? new Date(selectedClient.created_at).toLocaleDateString("en-IN", {
+                                day: "2-digit",
+                                month: "short",
+                                year: "numeric",
+                              })
+                              : "—"}
+                          </span>
+                        </div>
+                      </div>
+                    );
+                  })()
                 )}
               </CardContent>
             </Card>
+          </div>
+        </div>
+      ) : null
+      }
 
-            {/* {serviceBlocks.length > 0 ? (
+      {/* Step content */}
+      {/* Step 1 Footer */}
+      {step === 1 && (
+        <div className="flex justify-between items-center mt-8">
+          {/* Approve / Reject */}
+
+
+          <Button
+            variant="outline"
+            onClick={handleSaveDraft}
+            className="rounded-xl"
+          >
+            <Save className="w-4 h-4 mr-2" />
+            Save Draft
+          </Button>
+
+          {/* <Button
+            onClick={goNext}
+            className="rounded-xl"
+          >
+            Next
+          </Button> */}
+        </div>
+      )}
+
+
+      {
+        step === 2 ? (
+          <div className="grid grid-cols-1 lg:grid-cols-9 gap-6">
+
+            {/* Left */}
+            <div className="lg:col-span-5 space-y-6">
+              <Card className="glass-card">
+                <CardHeader>
+                  <CardTitle className="font-heading">Services Selection</CardTitle>
+                  <Input
+                    placeholder="Search services..."
+                    value={serviceSearch}
+                    onChange={(e) => setServiceSearch(e.target.value)}
+                    className="rounded-xl"
+                  />
+                </CardHeader>
+                <CardContent className="lg:col-span-5 space-y-6">
+                  {services.length > 0 ? (
+                    <div className="space-y-2">
+                      {filteredServices.map((service) => {
+                        const checked = serviceBlocks.some((b) => b.service_id === service.id);
+                        return (
+                          <label
+                            key={service.id}
+                            className="flex items-center gap-3 p-3 rounded-xl bg-secondary/50 hover:bg-secondary cursor-pointer transition-colors"
+                          >
+                            <input
+                              type="checkbox"
+                              checked={checked}
+                              onChange={(e) => addOrRemoveServiceAsBlock(service.id, e.target.checked)}
+                              className="rounded"
+                            />
+                            <div className="flex-1 min-w-0">
+                              <p className="font-medium text-foreground truncate">{service.name}</p>
+                              {service.description ? (
+                                <p className="text-sm text-muted-foreground line-clamp-2">{service.description}</p>
+                              ) : null}
+                            </div>
+                          </label>
+                        );
+                      })}
+                    </div>
+                  ) : (
+                    <p className="text-center text-muted-foreground py-8">
+                      {serviceSearch
+                        ? `No services found for "${serviceSearch}"`
+                        : "No services available."}
+                    </p>
+                  )}
+                </CardContent>
+              </Card>
+
+              {/* {serviceBlocks.length > 0 ? (
               
             ) : null} */}
-          </div>
+            </div>
 
-          <div className="w-[500px]">
-            <Card className="glass-card">
-              <CardHeader>
-                <CardTitle className="font-heading">Pricing</CardTitle>
-              </CardHeader>
-              <CardContent className="lg:col-span-4 space-y-6">
-                {serviceBlocks.map((b, idx) => {
+            <div className="w-[500px]">
+              <Card className="glass-card">
+                <CardHeader>
+                  <CardTitle className="font-heading">Pricing</CardTitle>
+                </CardHeader>
+                <CardContent className="lg:col-span-4 space-y-6">
+                  {serviceBlocks.map((b, idx) => {
 
-                  const monthlyPlan =
-                    b.billing_type === "monthly"
-                      ? calculateMonthly(
-                        b.price,
-                        b.duration_months || 1
-                      )
-                      : null;
+                    const monthlyPlan =
+                      b.billing_type === "monthly"
+                        ? calculateMonthly(
+                          b.price,
+                          b.duration_months || 1
+                        )
+                        : null;
 
-                  return (
-                    <div
-                      key={`${b.service_id}-${idx}`}
-                      className="p-4 rounded-xl border border-purple-500/40 bg-purple-600/10 space-y-4 transition-all duration-300 shadow-[0_0_20px_rgba(168,85,247,0.2)]">
+                    return (
+                      <div
+                        key={`${b.service_id}-${idx}`}
+                        className="p-4 rounded-xl border border-purple-500/40 bg-purple-600/10 space-y-4 transition-all duration-300 shadow-[0_0_20px_rgba(168,85,247,0.2)]">
 
 
-                      {/* Header */}
-                      <div className="flex items-start justify-between gap-4">
-                        <div className="min-w-0">
-                          <p className="font-medium text-foreground">
-                            {b.service_name || "Service"}
-                          </p>
+                        {/* Header */}
+                        <div className="flex items-start justify-between gap-4">
+                          <div className="min-w-0">
+                            <p className="font-medium text-foreground">
+                              {b.service_name || "Service"}
+                            </p>
 
-                          <p className="text-xs text-muted-foreground">
-                            Set price and billing type
-                          </p>
+                            <p className="text-xs text-muted-foreground">
+                              Set price and billing type
+                            </p>
+                          </div>
+
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="h-8 w-8 text-muted-foreground hover:text-destructive"
+                            onClick={() =>
+                              addOrRemoveServiceAsBlock(
+                                b.service_id,
+                                false
+                              )
+                            }
+                          >
+                            <X className="w-4 h-4" />
+                          </Button>
                         </div>
 
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          className="h-8 w-8 text-muted-foreground hover:text-destructive"
-                          onClick={() =>
-                            addOrRemoveServiceAsBlock(
-                              b.service_id,
-                              false
-                            )
-                          }
-                        >
-                          <X className="w-4 h-4" />
-                        </Button>
-                      </div>
 
-
-                      {/* Billing Type */}
-                      <div className="space-y-2">
-                        <Label>Billing Type</Label>
-
-                        <Select
-                          value={b.billing_type}
-                          onValueChange={(value) => {
-
-                            const billing =
-                              value as QuotationServiceBlockBillingType;
-
-                            updateBlock(idx, {
-
-                              billing_type: billing,
-
-                              milestone_template:
-
-                                billing === "milestone"
-
-                                  ? (
-                                    b.milestone_template?.length
-                                      ? b.milestone_template
-                                      : [
-                                        createMilestone(0),
-                                        createMilestone(1)
-                                      ]
-                                  )
-
-                                  : b.milestone_template
-
-                            });
-
-                          }}
-                        >
-                          <SelectTrigger className="rounded-xl w-full">
-                            <SelectValue />
-                          </SelectTrigger>
-
-                          <SelectContent>
-                            <SelectItem value="one_time">
-                              One-Time
-                            </SelectItem>
-
-                            <SelectItem value="monthly">
-                              Monthly
-                            </SelectItem>
-
-                            <SelectItem value="retainer">
-                              Retainer
-                            </SelectItem>
-
-                            <SelectItem value="milestone">
-                              Milestone
-                            </SelectItem>
-                          </SelectContent>
-
-                        </Select>
-                      </div>
-                      <div className="space-y-5">
-
-                        {/* Total Project Price */}
+                        {/* Billing Type */}
                         <div className="space-y-2">
-                          <Label>Total Project Price</Label>
+                          <Label>Billing Type</Label>
 
-                          <Input
-                            type="number"
-                            value={b.price}
-                            onChange={(e) => {
+                          <Select
+                            value={b.billing_type}
+                            onValueChange={(value) => {
 
-                              const price = Number(e.target.value);
+                              const billing =
+                                value as QuotationServiceBlockBillingType;
 
-                              if (b.billing_type === "monthly") {
+                              updateBlock(idx, {
 
-                                const plan = calculateMonthly(
-                                  price,
-                                  b.duration_months || 1
-                                );
+                                billing_type: billing,
 
-                                updateBlock(idx, {
-                                  price,
-                                  monthly_amount: plan.monthlyAmount,
-                                });
+                                milestone_template:
 
-                              } else {
+                                  billing === "milestone"
 
-                                updateBlock(idx, {
-                                  price,
-                                });
+                                    ? (
+                                      b.milestone_template?.length
+                                        ? b.milestone_template
+                                        : [
+                                          createMilestone(0),
+                                          createMilestone(1)
+                                        ]
+                                    )
 
-                              }
+                                    : b.milestone_template
+
+                              });
 
                             }}
-                          />
+                          >
+                            <SelectTrigger className="rounded-xl w-full">
+                              <SelectValue />
+                            </SelectTrigger>
+
+                            <SelectContent>
+                              <SelectItem value="one_time">
+                                One-Time
+                              </SelectItem>
+
+                              <SelectItem value="monthly">
+                                Monthly
+                              </SelectItem>
+
+                              <SelectItem value="retainer">
+                                Retainer
+                              </SelectItem>
+
+                              <SelectItem value="milestone">
+                                Milestone
+                              </SelectItem>
+                            </SelectContent>
+
+                          </Select>
                         </div>
+                        <div className="space-y-5">
 
-                        {/* Show only for milestone billing */}
-                        {b.billing_type === "milestone" && (
-                          <>
-                            {/* Number of Milestones */}
+                          {/* Total Project Price */}
+                          <div className="space-y-2">
+                            <Label>Total Project Price</Label>
 
-                            <div className="space-y-2">
+                            <Input
+                              type="number"
+                              value={b.price}
+                              onChange={(e) => {
 
-                              <Label>Number of Milestones</Label>
+                                const price = Number(e.target.value);
 
-                              <Input
-                                type="number"
-                                min={1}
-                                max={10}
-                                value={b.milestone_count ?? 1}
-                                onChange={(e) => {
+                                if (b.billing_type === "monthly") {
 
-                                  const count = Math.max(
-                                    1,
-                                    Number(e.target.value)
+                                  const plan = calculateMonthly(
+                                    price,
+                                    b.duration_months || 1
                                   );
 
                                   updateBlock(idx, {
-                                    milestone_count: count,
-                                    milestone_template: generateMilestones(count),
+                                    price,
+                                    monthly_amount: plan.monthlyAmount,
                                   });
 
-                                }}
-                              />
+                                } else {
 
-                            </div>
+                                  updateBlock(idx, {
+                                    price,
+                                  });
 
-                            {/* Milestone Rows */}
+                                }
 
-                            <div className="space-y-3">
+                              }}
+                            />
+                          </div>
 
-                              {(b.milestone_template ?? []).map((m) => (
+                          {/* Show only for milestone billing */}
+                          {b.billing_type === "milestone" && (
+                            <>
+                              {/* Number of Milestones */}
 
-                                <div
-                                  key={m.id}
-                                  className="grid grid-cols-[2fr_110px_150px] gap-3 items-center"
-                                >
+                              <div className="space-y-2">
 
-                                  <Input
-                                    value={m.label}
-                                    placeholder="Milestone Name"
-                                    onChange={(e) => {
+                                <Label>Number of Milestones</Label>
 
-                                      updateBlock(idx, {
-                                        milestone_template: updateMilestoneLabel(
-                                          b.milestone_template ?? [],
-                                          m.id,
-                                          e.target.value
-                                        ),
-                                      });
+                                <Input
+                                  type="number"
+                                  min={1}
+                                  max={10}
+                                  value={b.milestone_count ?? 1}
+                                  onChange={(e) => {
 
-                                    }}
-                                  />
+                                    const count = Math.max(
+                                      1,
+                                      Number(e.target.value)
+                                    );
 
-                                  <div className="relative">
+                                    updateBlock(idx, {
+                                      milestone_count: count,
+                                      milestone_template: generateMilestones(count),
+                                    });
+
+                                  }}
+                                />
+
+                              </div>
+
+                              {/* Milestone Rows */}
+
+                              <div className="space-y-3">
+
+                                {(b.milestone_template ?? []).map((m) => (
+
+                                  <div
+                                    key={m.id}
+                                    className="grid grid-cols-[2fr_110px_150px] gap-3 items-center"
+                                  >
 
                                     <Input
-                                      type="number"
-                                      min={0}
-                                      max={100}
-                                      value={m.percentage}
-                                      className="pr-8"
+                                      value={m.label}
+                                      placeholder="Milestone Name"
                                       onChange={(e) => {
 
-                                        const updated =
-                                          updateMilestonePercentage(
+                                        updateBlock(idx, {
+                                          milestone_template: updateMilestoneLabel(
                                             b.milestone_template ?? [],
                                             m.id,
-                                            Number(e.target.value),
-                                            b.price
-                                          );
-
-                                        updateBlock(idx, {
-                                          milestone_template: updated,
+                                            e.target.value
+                                          ),
                                         });
 
                                       }}
                                     />
 
-                                    <span className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground text-sm">
-                                      %
-                                    </span>
+                                    <div className="relative">
+
+                                      <Input
+                                        type="number"
+                                        min={0}
+                                        max={100}
+                                        value={m.percentage}
+                                        className="pr-8"
+                                        onChange={(e) => {
+
+                                          const updated =
+                                            updateMilestonePercentage(
+                                              b.milestone_template ?? [],
+                                              m.id,
+                                              Number(e.target.value),
+                                              b.price
+                                            );
+
+                                          updateBlock(idx, {
+                                            milestone_template: updated,
+                                          });
+
+                                        }}
+                                      />
+
+                                      <span className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground text-sm">
+                                        %
+                                      </span>
+
+                                    </div>
+
+                                    <div className="h-10 rounded-xl border bg-muted/40 flex items-center justify-center font-semibold">
+
+                                      {currency === "INR" ? "₹" : "$"}
+
+                                      {m.amount.toLocaleString()}
+
+                                    </div>
 
                                   </div>
 
-                                  <div className="h-10 rounded-xl border bg-muted/40 flex items-center justify-center font-semibold">
+                                ))}
 
-                                    {currency === "INR" ? "₹" : "$"}
+                              </div>
 
-                                    {m.amount.toLocaleString()}
+                              {/* Summary */}
 
-                                  </div>
+                              <div className="rounded-xl border border-dashed border-primary/30 bg-primary/5 p-4 space-y-3">
+
+                                <div className="flex justify-between">
+
+                                  <span>Total Percentage</span>
+
+                                  <span
+                                    className={
+                                      calculateTotalPercentage(
+                                        b.milestone_template ?? []
+                                      ) === 100
+                                        ? "font-semibold text-green-600"
+                                        : "font-semibold text-red-600"
+                                    }
+                                  >
+                                    {calculateTotalPercentage(
+                                      b.milestone_template ?? []
+                                    )}
+                                    %
+                                  </span>
 
                                 </div>
 
-                              ))}
+                                <div className="flex justify-between">
 
-                            </div>
+                                  <span>Remaining</span>
 
-                            {/* Summary */}
+                                  <span className="font-semibold">
 
-                            <div className="rounded-xl border border-dashed border-primary/30 bg-primary/5 p-4 space-y-3">
-
-                              <div className="flex justify-between">
-
-                                <span>Total Percentage</span>
-
-                                <span
-                                  className={
-                                    calculateTotalPercentage(
+                                    {calculateRemainingPercentage(
                                       b.milestone_template ?? []
-                                    ) === 100
-                                      ? "font-semibold text-green-600"
-                                      : "font-semibold text-red-600"
-                                  }
-                                >
-                                  {calculateTotalPercentage(
-                                    b.milestone_template ?? []
-                                  )}
-                                  %
-                                </span>
+                                    )}
+                                    %
+
+                                  </span>
+
+                                </div>
+
+                                <div className="border-t pt-3 flex justify-between text-lg font-bold">
+
+                                  <span>Total Amount</span>
+
+                                  <span>
+
+                                    {currency === "INR" ? "₹" : "$"}
+
+                                    {calculateMilestoneTotal(
+                                      b.milestone_template ?? []
+                                    ).toLocaleString()}
+
+                                  </span>
+
+                                </div>
 
                               </div>
+                            </>
+                          )}
 
-                              <div className="flex justify-between">
+                        </div>
 
-                                <span>Remaining</span>
+                        {/* Monthly Duration */}
 
-                                <span className="font-semibold">
+                        {b.billing_type === "monthly" && (
 
-                                  {calculateRemainingPercentage(
-                                    b.milestone_template ?? []
-                                  )}
-                                  %
+                          <div className="space-y-2">
 
-                                </span>
+                            <Label>Duration (Months)</Label>
 
-                              </div>
+                            <Input
+                              type="number"
+                              min={1}
+                              value={b.duration_months || 1}
+                              onChange={(e) => {
 
-                              <div className="border-t pt-3 flex justify-between text-lg font-bold">
+                                const months = Math.max(
+                                  1,
+                                  Number(e.target.value)
+                                );
 
-                                <span>Total Amount</span>
+                                const plan = calculateMonthly(
+                                  b.price,
+                                  months
+                                );
 
-                                <span>
+                                updateBlock(idx, {
 
-                                  {currency === "INR" ? "₹" : "$"}
+                                  duration_months: months,
 
-                                  {calculateMilestoneTotal(
-                                    b.milestone_template ?? []
-                                  ).toLocaleString()}
+                                  monthly_amount:
+                                    plan.monthlyAmount,
 
-                                </span>
+                                });
 
-                              </div>
+                              }}
+                              className="rounded-xl"
+                            />
+
+                          </div>
+
+                        )}
+
+                        {/* Monthly Summary */}
+
+                        {monthlyPlan && (
+
+                          <div className="rounded-xl border bg-primary/5 border-primary/20 p-4 space-y-3">
+
+                            <div className="flex justify-between text-sm">
+
+                              <span className="text-muted-foreground">
+                                Total Project Cost
+                              </span>
+
+                              <span className="font-semibold">
+                                {currency === "INR" ? "₹" : "$"}
+                                {monthlyPlan.totalAmount.toLocaleString()}
+                              </span>
 
                             </div>
-                          </>
+
+                            <div className="flex justify-between text-sm">
+
+                              <span className="text-muted-foreground">
+                                Monthly Payment
+                              </span>
+
+                              <span className="font-bold text-primary text-lg">
+                                {currency === "INR" ? "₹" : "$"}
+                                {(monthlyPlan.monthlyAmount ?? 0).toLocaleString()}
+                              </span>
+
+                            </div>
+
+                            <div className="text-xs text-center text-muted-foreground border-t pt-2">
+
+                              {monthlyPlan.durationMonths} Monthly Payments
+
+                            </div>
+
+                          </div>
+
                         )}
 
                       </div>
+                    );
 
-                      {/* Monthly Duration */}
-
-                      {b.billing_type === "monthly" && (
-
-                        <div className="space-y-2">
-
-                          <Label>Duration (Months)</Label>
-
-                          <Input
-                            type="number"
-                            min={1}
-                            value={b.duration_months || 1}
-                            onChange={(e) => {
-
-                              const months = Math.max(
-                                1,
-                                Number(e.target.value)
-                              );
-
-                              const plan = calculateMonthly(
-                                b.price,
-                                months
-                              );
-
-                              updateBlock(idx, {
-
-                                duration_months: months,
-
-                                monthly_amount:
-                                  plan.monthlyAmount,
-
-                              });
-
-                            }}
-                            className="rounded-xl"
-                          />
-
-                        </div>
-
-                      )}
-
-                      {/* Monthly Summary */}
-
-                      {monthlyPlan && (
-
-                        <div className="rounded-xl border bg-primary/5 border-primary/20 p-4 space-y-3">
-
-                          <div className="flex justify-between text-sm">
-
-                            <span className="text-muted-foreground">
-                              Total Project Cost
-                            </span>
-
-                            <span className="font-semibold">
-                              {currency === "INR" ? "₹" : "$"}
-                              {monthlyPlan.totalAmount.toLocaleString()}
-                            </span>
-
-                          </div>
-
-                          <div className="flex justify-between text-sm">
-
-                            <span className="text-muted-foreground">
-                              Monthly Payment
-                            </span>
-
-                            <span className="font-bold text-primary text-lg">
-                              {currency === "INR" ? "₹" : "$"}
-                              {(monthlyPlan.monthlyAmount ?? 0).toLocaleString()}
-                            </span>
-
-                          </div>
-
-                          <div className="text-xs text-center text-muted-foreground border-t pt-2">
-
-                            {monthlyPlan.durationMonths} Monthly Payments
-
-                          </div>
-
-                        </div>
-
-                      )}
-
-                    </div>
-                  );
-
-                })}
-              </CardContent>
-            </Card>
-            <Card className="glass-card lg:sticky lg:top-6">
-              <CardHeader>
-                <CardTitle className="font-heading">Summary</CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-2">
-                <div className="flex items-center justify-between text-sm">
-                  <span className="text-muted-foreground">Selected services</span>
-                  <span className="text-foreground font-medium">{serviceBlocks.length}</span>
-                </div>
-                {derivedTotals.monthly > 0 ? (
-                  <div className="flex items-center justify-between text-sm">
-                    <span className="text-muted-foreground">Monthly</span>
-                    <span className="text-foreground font-medium">{(currency === "INR" ? "₹" : "$")}{derivedTotals.monthly.toLocaleString()}</span>
-                  </div>
-                ) : null}
-                {derivedTotals.one_time > 0 ? (
-                  <div className="flex items-center justify-between text-sm">
-                    <span className="text-muted-foreground">One-time</span>
-                    <span className="text-foreground font-medium">{(currency === "INR" ? "₹" : "$")}{derivedTotals.one_time.toLocaleString()}</span>
-                  </div>
-                ) : null}
-                <div className="flex items-center justify-between pt-2">
-                  <span className="font-heading font-semibold text-foreground">Total</span>
-                  <span className="font-heading font-bold text-foreground">{(currency === "INR" ? "₹" : "$")}{derivedTotals.total.toLocaleString()}</span>
-                </div>
-              </CardContent>
-            </Card>
-          </div>
-        </div>
-      ) : null}
-
-      {step === 3 ? (
-        <div className="lg:col-span-1 space-y-6">
-          <div className="flex items-center justify-between">
-            <h2 className="text-xl font-heading font-semibold text-foreground">Service Details</h2>
-            <span className="text-sm text-muted-foreground">Add details for {serviceBlocks.length} services</span>
-          </div>
-
-          {serviceBlocks.length === 0 ? (
-            <Card className="glass-card">
-              <CardContent className="py-8 text-center">
-                <p className="text-muted-foreground">No services selected. Go back to Step 2.</p>
-                <Button variant="link" onClick={goBack}>Back to Services</Button>
-              </CardContent>
-            </Card>
-          ) : (
-            serviceBlocks.map((b, idx) => (
-
-              <Card key={`${b.service_id}-${idx}`} className="glass-card">
-                <CardHeader className="pb-3">
-                  <CardTitle className="text-lg font-medium text-primary flex items-center gap-2">
-                    <div className="flex h-6 w-6 items-center justify-center rounded-full bg-primary/10 text-xs text-primary">
-                      {idx + 1}
-                    </div>
-                    {b.service_name || "Service"}
-                  </CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-5">
-                  <div className="space-y-2">
-                    <Label>Description</Label>
-                    <RichEditor
-                      value={b.description || ""}
-                      onChange={(val) => updateBlock(idx, { description: val })}
-                      className="min-h-[100px]"
-                      placeholder="Service description..."
-                    />
-                  </div>
-
-                  <div className="space-y-2">
-                    <Label>Scope of Work</Label>
-                    <RichEditor
-                      value={b.scope_of_work || ""}
-                      onChange={(val) => updateBlock(idx, { scope_of_work: val })}
-                      className="min-h-[120px]"
-                      placeholder="Write scope of work for this service..."
-                    />
-                  </div>
-
-                  <div className="space-y-2">
-                    <Label>Deliverables (optional)</Label>
-                    <RichEditor
-                      value={b.deliverables || ""}
-                      onChange={(val) => updateBlock(idx, { deliverables: val })}
-                      className="min-h-[80px]"
-                      placeholder="Optional deliverables for this service..."
-                    />
-                  </div>
-
-                  <div className="space-y-2">
-                    <Label>Timeline (optional)</Label>
-                    <Input
-                      value={b.timeline || ""}
-                      onChange={(e) => updateBlock(idx, { timeline: e.target.value })}
-                      className="rounded-xl"
-                      placeholder="e.g., 2 weeks"
-                    />
-                  </div>
-
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div className="space-y-2">
-                      <Label>Service-specific payment terms (optional)</Label>
-                      <RichEditor
-                        value={b.payment_terms || ""}
-                        onChange={(val) => updateBlock(idx, { payment_terms: val })}
-                        className="min-h-[100px]"
-                        placeholder="Optional payment terms..."
-                      />
-                    </div>
-
-                    <div className="space-y-2">
-                      <Label>Service-specific terms (optional)</Label>
-                      <RichEditor
-                        value={b.service_terms || ""}
-                        onChange={(val) => updateBlock(idx, { service_terms: val })}
-                        className="min-h-[100px]"
-                        placeholder="Optional terms..."
-                      />
-                    </div>
-                  </div>
+                  })}
                 </CardContent>
               </Card>
-            ))
-          )}
-        </div>
-      ) : null}
-
-      {step === 4 ? (
-        <div className="space-y-6">
-          <Card className="glass-card">
-            <CardHeader>
-              <CardTitle className="font-heading">Global Terms</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-6">
-              <div className="space-y-3">
-                <div className="flex items-center justify-between gap-4">
-                  <Label className="text-sm text-foreground">Show Introduction</Label>
-                  <Switch checked={sectionToggles.introduction} onCheckedChange={(checked) => setSectionToggles((p) => ({ ...p, introduction: checked }))} />
-                </div>
-                <div className="flex items-center justify-between gap-4">
-                  <Label className="text-sm text-foreground">Show Payment Terms</Label>
-                  <Switch checked={sectionToggles.payment_terms} onCheckedChange={(checked) => setSectionToggles((p) => ({ ...p, payment_terms: checked }))} />
-                </div>
-                <div className="flex items-center justify-between gap-4">
-                  <Label className="text-sm text-foreground">Show Terms & Conditions</Label>
-                  <Switch checked={sectionToggles.terms_conditions} onCheckedChange={(checked) => setSectionToggles((p) => ({ ...p, terms_conditions: checked }))} />
-                </div>
-                <p className="text-xs text-muted-foreground">
-                  These global sections apply only when a service does not define its own terms.
-                </p>
-              </div>
-
-              {sectionToggles.introduction ? (
-                <div className="space-y-2">
-                  <Label>Introduction</Label>
-                  <Textarea
-                    value={globalTerms.introduction}
-                    onChange={(e) => setGlobalTerms((p) => ({ ...p, introduction: e.target.value }))}
-                    className="min-h-[100px] rounded-xl"
-                    placeholder="Optional introduction shown at the top of the quotation."
-                  />
-                </div>
-              ) : null}
-
-              {sectionToggles.payment_terms ? (
-                <div className="space-y-2">
-                  <Label>Overall payment terms (fallback)</Label>
-                  <Textarea
-                    value={globalTerms.payment_terms_text}
-                    onChange={(e) => setGlobalTerms((p) => ({ ...p, payment_terms_text: e.target.value }))}
-                    className="min-h-[100px] rounded-xl"
-                    placeholder="Used if a service doesn't specify its own payment terms."
-                  />
-                </div>
-              ) : null}
-
-              {sectionToggles.terms_conditions ? (
-                <div className="space-y-2">
-                  <Label>Overall terms & conditions (fallback)</Label>
-                  <Textarea
-                    value={
-                      globalTerms.terms_conditions_text}
-                    onChange={(e) => setGlobalTerms((p) => ({ ...p, terms_conditions_text: e.target.value }))}
-                    className="min-h-[120px] rounded-xl"
-                    placeholder="Used if a service doesn't specify its own terms."
-                  />
-                </div>
-              ) : null}
-            </CardContent>
-          </Card>
-        </div>
-      ) : null}
-
-
-      {step === 5 && (() => {
-        const pq = previewQuotation ?? buildPreviewQuotation();
-        if (!pq) return null;
-        return (
-          <div className="grid grid-cols-1 lg:grid-cols-[1fr_360px] gap-6 max-w-[1320px] mx-auto">
-            <div>
-              <QuotationLayout quotation={pq} brandKit={brandKit} mode="screen" />
-            </div>
-
-            <aside className="no-print lg:sticky lg:top-6 h-fit">
-              <div className="glass-card p-6 space-y-4">
-                <div>
-                  <p className="text-xs uppercase tracking-wider text-muted-foreground">Review</p>
-                  <p className="font-heading font-bold text-xl text-foreground mt-1">{pq.client?.business_name || pq.client?.name || "Client"}</p>
-                  <p className="text-sm text-muted-foreground mt-1">{pq.title || "Quotation"}</p>
-                </div>
-                <div className="border-t border-border/50 pt-4 space-y-2">
+              <Card className="glass-card lg:sticky lg:top-6">
+                <CardHeader>
+                  <CardTitle className="font-heading">Summary</CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-2">
+                  <div className="flex items-center justify-between text-sm">
+                    <span className="text-muted-foreground">Selected services</span>
+                    <span className="text-foreground font-medium">{serviceBlocks.length}</span>
+                  </div>
                   {derivedTotals.monthly > 0 ? (
                     <div className="flex items-center justify-between text-sm">
-                      <span className="text-muted-foreground">Monthly total</span>
+                      <span className="text-muted-foreground">Monthly</span>
                       <span className="text-foreground font-medium">{(currency === "INR" ? "₹" : "$")}{derivedTotals.monthly.toLocaleString()}</span>
                     </div>
                   ) : null}
                   {derivedTotals.one_time > 0 ? (
                     <div className="flex items-center justify-between text-sm">
-                      <span className="text-muted-foreground">One-time total</span>
+                      <span className="text-muted-foreground">One-time</span>
                       <span className="text-foreground font-medium">{(currency === "INR" ? "₹" : "$")}{derivedTotals.one_time.toLocaleString()}</span>
                     </div>
                   ) : null}
                   <div className="flex items-center justify-between pt-2">
                     <span className="font-heading font-semibold text-foreground">Total</span>
-                    <span className="font-heading font-bold text-2xl text-foreground">{(currency === "INR" ? "₹" : "$")}{derivedTotals.total.toLocaleString()}</span>
+                    <span className="font-heading font-bold text-foreground">{(currency === "INR" ? "₹" : "$")}{derivedTotals.total.toLocaleString()}</span>
                   </div>
-                </div>
-
-                <div className="space-y-2">
-                  <Button variant="outline" className="w-full gap-2 rounded-xl" onClick={goBack}>
-                    <Pencil className="w-4 h-4" /> Edit Quotation
-                  </Button>
-                  <Button variant="outline" className="w-full gap-2 rounded-xl" onClick={handleSaveDraft}>
-                    <Save className="w-4 h-4" /> Save Draft
-                  </Button>
-                  <Button className="w-full gap-2 rounded-xl" onClick={handleMarkSent}>
-                    <Send className="w-4 h-4" /> Share Quotation Link
-                  </Button>
-                  <Button variant="outline" className="w-full gap-2 rounded-xl" onClick={handleDownloadPdf}>
-                    <Download className="w-4 h-4" /> Generate PDF
-                  </Button>
-                </div>
-
-                <p className="text-xs text-muted-foreground">
-                  Draft is saved automatically. You can mark as sent from this review step.
-                </p>
-              </div>
-            </aside>
+                </CardContent>
+              </Card>
+            </div>
           </div>
-        );
-      })()}
+        ) : null
+      }
+
+      {step === 2 && (
+        <div className="flex justify-between items-center mt-8">
+
+          <Button
+            variant="outline"
+            onClick={handleSaveDraft}
+            className="rounded-xl"
+          >
+            <Save className="w-4 h-4 mr-2" />
+            Save Draft
+          </Button>
+
+          <div className="flex gap-3">
+
+            <Button
+              variant="outline"
+              onClick={goBack}
+              className="rounded-xl"
+            >
+              Back
+            </Button>
+
+            <Button
+              onClick={goNext}
+              className="rounded-xl"
+            >
+              Next
+            </Button>
+
+          </div>
+
+        </div>
+      )}
+      {
+        step === 3 ? (
+          <div className="lg:col-span-1 space-y-6">
+            <div className="flex items-center justify-between">
+              <h2 className="text-xl font-heading font-semibold text-foreground">Service Details</h2>
+              <span className="text-sm text-muted-foreground">Add details for {serviceBlocks.length} services</span>
+            </div>
+
+            {serviceBlocks.length === 0 ? (
+              <Card className="glass-card">
+                <CardContent className="py-8 text-center">
+                  <p className="text-muted-foreground">No services selected. Go back to Step 2.</p>
+                  <Button variant="link" onClick={goBack}>Back to Services</Button>
+                </CardContent>
+              </Card>
+            ) : (
+              serviceBlocks.map((b, idx) => (
+
+                <Card key={`${b.service_id}-${idx}`} className="glass-card">
+                  <CardHeader className="pb-3">
+                    <CardTitle className="text-lg font-medium text-primary flex items-center gap-2">
+                      <div className="flex h-6 w-6 items-center justify-center rounded-full bg-primary/10 text-xs text-primary">
+                        {idx + 1}
+                      </div>
+                      {b.service_name || "Service"}
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent className="space-y-5">
+                    <div className="space-y-2">
+                      <Label>Description</Label>
+                      <RichEditor
+                        value={b.description || ""}
+                        onChange={(val) => updateBlock(idx, { description: val })}
+                        className="min-h-[100px]"
+                        placeholder="Service description..."
+                      />
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label>Scope of Work</Label>
+                      <RichEditor
+                        value={b.scope_of_work || ""}
+                        onChange={(val) => updateBlock(idx, { scope_of_work: val })}
+                        className="min-h-[120px]"
+                        placeholder="Write scope of work for this service..."
+                      />
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label>Deliverables (optional)</Label>
+                      <RichEditor
+                        value={b.deliverables || ""}
+                        onChange={(val) => updateBlock(idx, { deliverables: val })}
+                        className="min-h-[80px]"
+                        placeholder="Optional deliverables for this service..."
+                      />
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label>Timeline (optional)</Label>
+                      <Input
+                        value={b.timeline || ""}
+                        onChange={(e) => updateBlock(idx, { timeline: e.target.value })}
+                        className="rounded-xl"
+                        placeholder="e.g., 2 weeks"
+                      />
+                    </div>
+
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div className="space-y-2">
+                        <Label>Service-specific payment terms (optional)</Label>
+                        <RichEditor
+                          value={b.payment_terms || ""}
+                          onChange={(val) => updateBlock(idx, { payment_terms: val })}
+                          className="min-h-[100px]"
+                          placeholder="Optional payment terms..."
+                        />
+                      </div>
+
+                      <div className="space-y-2">
+                        <Label>Service-specific terms (optional)</Label>
+                        <RichEditor
+                          value={b.service_terms || ""}
+                          onChange={(val) => updateBlock(idx, { service_terms: val })}
+                          className="min-h-[100px]"
+                          placeholder="Optional terms..."
+                        />
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              ))
+            )}
+          </div>
+        ) : null
+      }
+
+      {step === 3 && (
+        <div className="flex justify-between items-center mt-8">
+
+          <Button
+            variant="outline"
+            onClick={handleSaveDraft}
+          >
+            <Save className="w-4 h-4 mr-2" />
+            Save Draft
+          </Button>
+
+          <div className="flex gap-3">
+            <Button variant="outline" onClick={goBack}>
+              Back
+            </Button>
+
+            <Button onClick={goNext}>
+              Next
+            </Button>
+          </div>
+
+        </div>
+      )}
+
+      {
+        step === 4 ? (
+          <div className="space-y-6">
+            <Card className="glass-card">
+              <CardHeader>
+                <CardTitle className="font-heading">Global Terms</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-6">
+                <div className="space-y-3">
+                  <div className="flex items-center justify-between gap-4">
+                    <Label className="text-sm text-foreground">Show Introduction</Label>
+                    <Switch checked={sectionToggles.introduction} onCheckedChange={(checked) => setSectionToggles((p) => ({ ...p, introduction: checked }))} />
+                  </div>
+                  <div className="flex items-center justify-between gap-4">
+                    <Label className="text-sm text-foreground">Show Payment Terms</Label>
+                    <Switch checked={sectionToggles.payment_terms} onCheckedChange={(checked) => setSectionToggles((p) => ({ ...p, payment_terms: checked }))} />
+                  </div>
+                  <div className="flex items-center justify-between gap-4">
+                    <Label className="text-sm text-foreground">Show Terms & Conditions</Label>
+                    <Switch checked={sectionToggles.terms_conditions} onCheckedChange={(checked) => setSectionToggles((p) => ({ ...p, terms_conditions: checked }))} />
+                  </div>
+                  <p className="text-xs text-muted-foreground">
+                    These global sections apply only when a service does not define its own terms.
+                  </p>
+                </div>
+
+                {sectionToggles.introduction ? (
+                  <div className="space-y-2">
+                    <Label>Introduction</Label>
+                    <Textarea
+                      value={globalTerms.introduction}
+                      onChange={(e) => setGlobalTerms((p) => ({ ...p, introduction: e.target.value }))}
+                      className="min-h-[100px] rounded-xl"
+                      placeholder="Optional introduction shown at the top of the quotation."
+                    />
+                  </div>
+                ) : null}
+
+                {sectionToggles.payment_terms ? (
+                  <div className="space-y-2">
+                    <Label>Overall payment terms (fallback)</Label>
+                    <Textarea
+                      value={globalTerms.payment_terms_text}
+                      onChange={(e) => setGlobalTerms((p) => ({ ...p, payment_terms_text: e.target.value }))}
+                      className="min-h-[100px] rounded-xl"
+                      placeholder="Used if a service doesn't specify its own payment terms."
+                    />
+                  </div>
+                ) : null}
+
+                {sectionToggles.terms_conditions ? (
+                  <div className="space-y-2">
+                    <Label>Overall terms & conditions (fallback)</Label>
+                    <Textarea
+                      value={
+                        globalTerms.terms_conditions_text}
+                      onChange={(e) => setGlobalTerms((p) => ({ ...p, terms_conditions_text: e.target.value }))}
+                      className="min-h-[120px] rounded-xl"
+                      placeholder="Used if a service doesn't specify its own terms."
+                    />
+                  </div>
+                ) : null}
+              </CardContent>
+            </Card>
+          </div>
+        ) : null
+      }
+
+      {step === 4 && (
+        <div className="flex justify-between items-center mt-8">
+
+          <Button
+            variant="outline"
+            onClick={handleSaveDraft}
+          >
+            <Save className="w-4 h-4 mr-2" />
+            Save Draft
+          </Button>
+
+          <div className="flex gap-3">
+            <Button variant="outline" onClick={goBack}>
+              Back
+            </Button>
+
+            <Button onClick={goNext}>
+              Review
+            </Button>
+          </div>
+
+        </div>
+      )}
+
+      {
+        step === 5 && (() => {
+          const pq = previewQuotation ?? buildPreviewQuotation();
+          if (!pq) return null;
+          return (
+            <div className="grid grid-cols-1 lg:grid-cols-[1fr_360px] gap-6 max-w-[1320px] mx-auto">
+              <div>
+                <QuotationLayout quotation={pq} brandKit={brandKit} mode="screen" />
+              </div>
+
+              <aside className="no-print lg:sticky lg:top-6 h-fit">
+                <div className="glass-card p-6 space-y-4">
+                  <div>
+                    <p className="text-xs uppercase tracking-wider text-muted-foreground">Review</p>
+                    <p className="font-heading font-bold text-xl text-foreground mt-1">{pq.client?.business_name || pq.client?.name || "Client"}</p>
+                    <p className="text-sm text-muted-foreground mt-1">{pq.title || "Quotation"}</p>
+                  </div>
+                  <div className="border-t border-border/50 pt-4 space-y-2">
+                    {derivedTotals.monthly > 0 ? (
+                      <div className="flex items-center justify-between text-sm">
+                        <span className="text-muted-foreground">Monthly total</span>
+                        <span className="text-foreground font-medium">{(currency === "INR" ? "₹" : "$")}{derivedTotals.monthly.toLocaleString()}</span>
+                      </div>
+                    ) : null}
+                    {derivedTotals.one_time > 0 ? (
+                      <div className="flex items-center justify-between text-sm">
+                        <span className="text-muted-foreground">One-time total</span>
+                        <span className="text-foreground font-medium">{(currency === "INR" ? "₹" : "$")}{derivedTotals.one_time.toLocaleString()}</span>
+                      </div>
+                    ) : null}
+                    <div className="flex items-center justify-between pt-2">
+                      <span className="font-heading font-semibold text-foreground">Total</span>
+                      <span className="font-heading font-bold text-2xl text-foreground">{(currency === "INR" ? "₹" : "$")}{derivedTotals.total.toLocaleString()}</span>
+                    </div>
+                  </div>
+
+                  <div className="space-y-2">
+                    <Button variant="outline" className="w-full gap-2 rounded-xl" onClick={goBack}>
+                      <Pencil className="w-4 h-4" /> Edit Quotation
+                    </Button>
+
+                    <Button variant="outline" className="w-full gap-2 rounded-xl" onClick={handleSaveDraft}>
+                      <Save className="w-4 h-4" /> Save Draft
+                    </Button>
+                    <Button className="w-full gap-2 rounded-xl" onClick={handleMarkSent}>
+                      <Send className="w-4 h-4" /> Share Quotation Link
+                    </Button>
+                    <Button variant="outline" className="w-full gap-2 rounded-xl" onClick={handleDownloadPdf}>
+                      <Download className="w-4 h-4" /> Generate PDF
+                    </Button>
+                  </div>
+
+                  <p className="text-xs text-muted-foreground">
+                    Quotation is not saved automatically.
+
+                    Click "Save Draft" to save your progress.
+
+                    Your draft will reopen from the same step.
+                  </p>
+                </div>
+                <div className="grid grid-cols-2 gap-3 mb-3">
+
+                  <Button
+                    className="bg-green-600 hover:bg-green-700 text-white"
+                    onClick={async () => {
+
+                      let quotationId = draftId;
+
+                      // Create quotation first if it hasn't been saved
+                      if (!quotationId) {
+
+                        await handleSaveDraft();
+
+                        quotationId =
+                          localStorage.getItem("currentDraftId");
+
+                      }
+
+                      if (!quotationId) return;
+
+                      const quotation =
+                        getQuotationById(quotationId);
+
+                      if (!quotation) return;
+
+                      await updateQuotation({
+
+                        ...quotation,
+
+                        status: "accepted",
+
+                        accepted_at: new Date().toISOString(),
+
+                      });
+
+                      toast({
+                        title: "Quotation Approved",
+                        description: "Quotation moved to Accepted."
+                      });
+
+                    }}
+                  >
+                    Approve
+                  </Button>
+
+
+                  <Button
+                    variant="destructive"
+                    onClick={async () => {
+
+                      let quotationId = draftId;
+
+                      if (!quotationId) {
+
+                        await handleSaveDraft();
+
+                        quotationId =
+                          localStorage.getItem("currentDraftId");
+
+                      }
+
+                      if (!quotationId) return;
+
+                      const quotation =
+                        getQuotationById(quotationId);
+
+                      if (!quotation) return;
+
+                      await updateQuotation({
+
+                        ...quotation,
+
+                        status: "declined",
+
+                      });
+
+                      toast({
+                        title: "Quotation Declined",
+                        description: "Quotation moved to Declined."
+                      });
+
+                    }}
+                  >
+                    Reject
+                  </Button>
+
+                </div>
+              </aside>
+            </div>
+          );
+        })()
+      }
 
       <AddClientDialog
         open={isAddClientOpen}
@@ -1966,5 +2435,6 @@ export default function QuotationBuilder() {
         }}
       />
     </div>
-  );
+
+  )
 }

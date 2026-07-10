@@ -170,7 +170,7 @@ export const ReceiptPDF = ({ receipt, invoice, brandKit }: ReceiptPDFProps) => {
 
             <View style={styles.metaRow}>
               <Text style={styles.metaLabel}>Receipt No</Text>
-              <Text style={styles.metaValue}>{receipt.receipt_number}</Text>
+              <Text style={styles.metaValue}>{receipt.receipt_number?.slice(-4)}</Text>
             </View>
             <View style={styles.metaRow}>
               <Text style={styles.metaLabel}>Date</Text>
@@ -178,7 +178,7 @@ export const ReceiptPDF = ({ receipt, invoice, brandKit }: ReceiptPDFProps) => {
             </View>
             <View style={styles.metaRow}>
               <Text style={styles.metaLabel}>Invoice Ref</Text>
-              <Text style={styles.metaValue}>{invoice.invoice_number}</Text>
+              <Text style={styles.metaValue}>{invoice.invoice_number?.slice(-4)}</Text>
             </View>
           </View>
         </View>
@@ -202,7 +202,7 @@ export const ReceiptPDF = ({ receipt, invoice, brandKit }: ReceiptPDFProps) => {
           </View>
           <View style={{ ...styles.row, borderBottomWidth: 0 }}>
             <Text style={styles.label}>Invoice Ref</Text>
-            <Text style={styles.value}>#{invoice.invoice_number}</Text>
+            <Text style={styles.value}>#{invoice.invoice_number?.slice(-4)}</Text>
           </View>
         </View>
 

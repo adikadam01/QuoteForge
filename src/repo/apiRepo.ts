@@ -72,19 +72,26 @@ async function request<T>(path: string, options?: RequestInit): Promise<T> {
         return {} as T;
     }
 
+    // const text = await res.text();
+
+    // // console.log("API RESPONSE:", text);
+
+    // if (!text) {
+    //     return {} as T;
+    // }
+
+    // return JSON.parse(text);
+    // console.log("RAW API RESPONSE:");
+    // console.log(text);
+
+    // const data = JSON.parse(text);
+
     const text = await res.text();
 
-    // console.log("API RESPONSE:", text);
-
-    if (!text) {
-        return {} as T;
-    }
-
-    return JSON.parse(text);
-    console.log("RAW API RESPONSE:");
+    console.log("Response from server:");
     console.log(text);
 
-    const data = JSON.parse(text);
+    return JSON.parse(text);
 
 }
 

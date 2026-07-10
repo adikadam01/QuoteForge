@@ -149,7 +149,7 @@ export function QuotationDocument({ quotation, client, brandKit }: Props) {
                 <div style={{ background: '#f9fafb', padding: '16px', borderRadius: '12px', border: '1px solid #f3f4f6', minWidth: '200px' }}>
                     <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '13px', marginBottom: '4px' }}>
                         <span style={{ color: '#6b7280' }}>Quote No:</span>
-                        <span style={{ fontWeight: 'bold', color: '#111827' }}>{quotation.quotation_number}</span>
+                        <span style={{ fontWeight: 'bold', color: '#111827' }}>{quotation.quotation_number?.slice(-4)}</span>
                     </div>
                     <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '13px', marginBottom: '4px' }}>
                         <span style={{ color: '#6b7280' }}>Date:</span>

@@ -113,7 +113,7 @@ export function ReceiptLayout({
 
     if (items.length === 0) {
       items.push({
-        name: `Payment for Invoice #${invoiceNumber}`,
+        name: `Payment for Invoice #${invoiceNumber?.slice(-4)}`,
         desc: receipt.payment_reference || '',
         amount: Number(receipt.amount),
         type: 'Payment'
@@ -168,7 +168,7 @@ export function ReceiptLayout({
               <div className="mt-4 space-y-1 text-xs">
                 <div className="flex justify-end gap-4 items-center">
                   <span className="text-gray-400 font-medium uppercase tracking-wider">Receipt No</span>
-                  <span className="text-gray-900 font-mono font-bold">{receipt.receipt_number || receipt.id}</span>
+                  <span className="text-gray-900 font-mono font-bold">RCPT-{receipt.receipt_number?.slice(-4) || receipt.id?.slice(-4)}</span>
                 </div>
                 <div className="flex justify-end gap-4 items-center">
                   <span className="text-gray-400 font-medium uppercase tracking-wider">Date</span>
@@ -176,7 +176,7 @@ export function ReceiptLayout({
                 </div>
                 <div className="flex justify-end gap-4 items-center">
                   <span className="text-gray-400 font-medium uppercase tracking-wider">Invoice Ref</span>
-                  <span className="text-gray-900 font-semibold">{invoiceNumber}</span>
+                  <span className="text-gray-900 font-semibold">INV-{invoiceNumber?.slice(-4)}</span>
                 </div>
               </div>
             </div>
@@ -310,7 +310,7 @@ export function ReceiptLayout({
 
           <div className="pt-2 text-center border-t border-gray-50">
             <p className="text-[10px] text-gray-900 uppercase tracking-widest">
-              {companyName} • Receipt #{receipt.receipt_number || receipt.id}
+              {companyName} • Receipt-{receipt.receipt_number?.slice(-4) || receipt.id?.slice(-4)}
             </p>
           </div>
         </div>
