@@ -275,9 +275,10 @@ export default function PublicQuotation() {
                 const now = new Date().toISOString();
                 const next: Quotation = {
                   ...quotation,
-                  status: 'accepted',
+                  status: "accepted",
                   accepted_at: quotation.accepted_at || now,
-                  // accepted_by_name: acceptedBy.trim(),
+
+                  accepted_by: acceptedBy.trim(),
                 };
 
                 // Try to persist, but don't block UI if it fails (external user)

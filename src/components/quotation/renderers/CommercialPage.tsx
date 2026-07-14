@@ -153,7 +153,15 @@ export default function CommercialPage(props: Props) {
                 <View style={styles.footerCol}>
                     <Text style={styles.footerColLabel}>CLIENT SIGNATURE</Text>
                     <View style={styles.signatureLine} />
-                    <Text style={styles.signatureCaption}>Name &amp; Date</Text>
+                    <Text style={styles.signatureCaption}>
+                        {quotation.accepted_by || "Name"}
+
+                        {"\n"}
+
+                        {quotation.accepted_at
+                            ? new Date(quotation.accepted_at).toLocaleDateString()
+                            : "Date"}
+                    </Text>
                 </View>
             </View>
 

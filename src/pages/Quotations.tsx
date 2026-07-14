@@ -41,6 +41,7 @@ import {
 import { useApp } from '@/contexts/AppContext';
 import { useToast } from '@/hooks/use-toast';
 import { Quotation } from '@/lib/types';
+import { string } from 'zod';
 
 const statusConfig = {
   draft: { label: 'Draft', color: 'bg-muted text-muted-foreground' },
@@ -137,6 +138,7 @@ export default function Quotations() {
         status: 'draft',
         sent_at: null,
         accepted_at: null,
+        accepted_by: quotation.accepted_by ?? null,
         invoiced_at: null,
         is_template: false,
         template_name: null,
