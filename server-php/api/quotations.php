@@ -50,20 +50,72 @@ if ($path === '/quotations' && $method === 'GET') {
 
 // GET /quotations/:id
 if (preg_match('#^/quotations/([\w\-]+)$#', $path, $matches) && $method === 'GET') {
-    $id = $matches[1]; // UUID
-    $stmt = $pdo->prepare("SELECT * FROM quotations WHERE id = ?");
+
+    $id = $matches[1];
+
+    $stmt = $pdo->prepare("
+        SELECT *
+        FROM quotations
+        WHERE id = ?
+    ");
+
     $stmt->execute([$id]);
-    $row = $stmt->fetch();
-    if ($row) {
-        jsonResponse(formatQuotation($row));
-    } else {
-        jsonResponse(['error' => 'Not found'], 404);
+
+    $row = $stmt->fetch(PDO::FETCH_ASSOC);
+
+    if (!$row) {
+        jsonResponse(["error" => "Not found"], 404);
     }
+
+    $quotation = formatQuotation($row);
+
+    // --------------------------------------------------
+    // Attach client object
+    // --------------------------------------------------
+
+    if (!empty($quotation["client_id"])) {
+
+        $clientStmt = $pdo->prepare("
+            SELECT *
+            FROM clients
+            WHERE id = ?
+            LIMIT 1
+        ");
+
+        $clientStmt->execute([$quotation["client_id"]]);
+
+        $quotation["client"] = $clientStmt->fetch(PDO::FETCH_ASSOC);
+
+    } else {
+
+        $quotation["client"] = null;
+
+    }
+
+    jsonResponse($quotation);
 }
 
 // POST /quotations
 if ($path === '/quotations' && $method === 'POST') {
     $input = getJsonInput();
+
+    /*
+|--------------------------------------------------------------------------
+| Convert React ISO dates to MySQL DATETIME
+|--------------------------------------------------------------------------
+*/
+foreach ($input as $key => $value) {
+
+    if (
+        is_string($value) &&
+        preg_match('/^\d{4}-\d{2}-\d{2}T/', $value)
+    ) {
+
+        $input[$key] =
+            date('Y-m-d H:i:s', strtotime($value));
+    }
+}
+
     $input['is_template'] = !empty($input['is_template']) ? 1 : 0;
     
     // Extract JSON fields

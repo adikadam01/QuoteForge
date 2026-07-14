@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Link, useSearchParams } from "react-router-dom";
 import { ArrowLeft, Download, Pencil, Save, Send, UserPlus, X } from "lucide-react";
-
+import { pdf } from "@react-pdf/renderer";
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -29,7 +29,9 @@ import AddClientDialog from "@/components/clients/AddClientDialog";
 import { RichEditor } from "@/components/ui/RichText";
 import type { PricingModel, Quotation, QuotationSectionToggles } from "@/lib/types";
 import { nowIso } from "@/lib/dates";
-import { QuotationLayout } from "@/components/quotation/QuotationLayout";
+// import { QuotationLayout } from "@/components/quotation/QuotationLayout";
+import ProfessionalQuotationLayout from "@/components/quotation/ProfessionalQuotationLayout";
+import ProfessionalQuotationPDF from "@/components/quotation/ProfessionalQuotationPDF";
 import {
   getQuotationServiceBlocks,
   getServiceBlockTotals,
@@ -106,6 +108,7 @@ export default function QuotationBuilder() {
 
   const DRAFT_LS_KEY = "currentDraftId";
   const draftIdParam = searchParams.get("draftId");
+  const [titleError, setTitleError] = useState("");
 
 
 
@@ -511,6 +514,22 @@ export default function QuotationBuilder() {
       toast({ title: "Missing title", description: "Please enter a quotation title", variant: "destructive" });
       return false;
     }
+    const duplicate = quotations.find(
+      q =>
+        q.title.trim().toLowerCase() ===
+        formData.title.trim().toLowerCase() &&
+        q.id !== draftId
+    );
+
+    if (duplicate) {
+      toast({
+        title: "Duplicate quotation title",
+        description: "A quotation with this title already exists.",
+        variant: "destructive",
+      });
+
+      return false;
+    }
     if (!formData.client_id) {
       toast({ title: "Missing client", description: "Please select a client", variant: "destructive" });
       return false;
@@ -632,9 +651,16 @@ export default function QuotationBuilder() {
   }, [services, serviceSearch]);
 
   const persistDraft = useCallback(
-    async (partial: Partial<Quotation>) => {
-      if (!draftId) return;
-      const q = getQuotationById(draftId);
+    async (
+      partial: Partial<Quotation>,
+      quotationId?: string
+    ) => {
+
+      const id = quotationId ?? draftId;
+
+      if (!id) return;
+
+      const q = getQuotationById(id);
       if (!q) return;
 
       // Keep legacy quotation.services in sync for compatibility (DO NOT remove).
@@ -643,8 +669,8 @@ export default function QuotationBuilder() {
         const pricing_model = (lib?.pricing_model || "fixed") as PricingModel;
 
         return {
-          id: `${draftId}-${b.service_id}-${idx}`,
-          quotation_id: draftId,
+          id: `${id}-${b.service_id}-${idx}`,
+          quotation_id: id,
           service_id: b.service_id,
           service_name: b.service_name,
           description: b.description || null,
@@ -878,29 +904,6 @@ export default function QuotationBuilder() {
     setStep((s) => (s - 1) as BuilderStep);
   };
 
-  // const buildPreviewQuotation = (): Quotation | null => {
-  //   if (!draftId) return null;
-  //   const q = getQuotationById(draftId);
-  //   if (!q) return null;
-
-  //   const currentClient = clients.find(c => c.id === formData.client_id) || q.client;
-
-  //   return {
-  //     ...q,
-  //     title: formData.title,
-  //     client_id: formData.client_id || null,
-  //     quote_date: formData.quote_date,
-  //     valid_until: formData.valid_until,
-  //     introduction: sectionToggles.introduction ? (globalTerms.introduction || null) : null,
-  //     payment_terms_text: sectionToggles.payment_terms ? (globalTerms.payment_terms_text || null) : null,
-  //     terms_conditions_text: sectionToggles.terms_conditions ? (globalTerms.terms_conditions_text || null) : null,
-  //     section_toggles: sectionToggles,
-  //     service_blocks: serviceBlocks,
-  //     subtotal: derivedTotals.total,
-  //     total: derivedTotals.total,
-  //     client: currentClient,
-  //   } as Quotation;
-  // };
 
   const buildPreviewQuotation = (): Quotation | null => {
 
@@ -908,7 +911,7 @@ export default function QuotationBuilder() {
     if (!draftId) {
       return {
         id: "preview",
-        quotation_number: "Preview",
+        quotation_number: `QT-${Date.now()}`,
 
         title: formData.title,
         client_id: formData.client_id || null,
@@ -1038,11 +1041,26 @@ export default function QuotationBuilder() {
   //   toast({ title: "Saved", description: "Draft saved." });
   // };
 
-  const handleSaveDraft = async () => {
+  // const handleSaveDraft = async () => {
+  const handleSaveDraft = async (
+    status: "draft" | "sent" = "draft"
+  ): Promise<string | null> => {
+
+    if (!validateStep1()) return;
     try {
+      // Update existing draft
       if (draftId) {
+        // await persistDraft({
+        //   status: "draft",
+        //   current_step: step,
+        // });
+
         await persistDraft({
-          status: "draft",
+          status,
+          sent_at:
+            status === "sent"
+              ? new Date().toISOString()
+              : null,
           current_step: step,
         });
 
@@ -1051,11 +1069,13 @@ export default function QuotationBuilder() {
           description: `Quotation saved at Step ${step}.`,
         });
 
-        return;
+        return draftId;
       }
 
-      const createdId = await addQuotation({
 
+
+      // Create new draft
+      const createdId = await addQuotation({
         quotation_number: `QT-${Date.now()}`,
         title: formData.title,
         client_id: formData.client_id || null,
@@ -1087,13 +1107,12 @@ export default function QuotationBuilder() {
 
         tax_amount: 0,
 
-        status: "draft",
+        // status: "draft",
 
         services: [],
 
         service_blocks: serviceBlocks,
 
-        // section_toggles: DEFAULT_SECTION_TOGGLES,
         section_toggles: sectionToggles,
 
         quotation_sections: null,
@@ -1108,17 +1127,20 @@ export default function QuotationBuilder() {
 
         share_token: null,
 
-        sent_at: null,
+        // sent_at: null,
+        status,
+
+        sent_at: status === "sent"
+          ? new Date().toISOString()
+          : null,
 
         accepted_at: null,
 
         invoiced_at: null,
 
-        // created_at: nowIso(),
-        // updated_at: nowIso(),
-
         current_step: step,
       });
+
       if (!createdId) {
         throw new Error("Failed to create draft");
       }
@@ -1134,6 +1156,9 @@ export default function QuotationBuilder() {
         description: `Quotation saved at Step ${step}.`,
       });
 
+      // ✅ IMPORTANT
+      return createdId;
+
     } catch (err) {
       console.error(err);
 
@@ -1142,47 +1167,51 @@ export default function QuotationBuilder() {
         description: "Unable to save draft.",
         variant: "destructive",
       });
+
+      // ✅ IMPORTANT
+      return null;
     }
   };
 
-
   const handleMarkSent = async () => {
-    if (!draftId) return;
+
     if (!validateStep1()) return;
+
+    let id = draftId;
+
+    if (!id) {
+
+      id = await handleSaveDraft("sent");
+
+      if (!id) return;
+
+      toast({
+        title: "Quotation Sent",
+        description: "Quotation marked as Sent.",
+      });
+
+      localStorage.removeItem(DRAFT_LS_KEY);
+
+      return;
+    }
+
     const now = new Date().toISOString();
-    await persistDraft({ status: "sent", sent_at: now });
+
+    await persistDraft(
+      {
+        status: "sent",
+        sent_at: now,
+        current_step: 5,
+      },
+      id
+    );
+
+    toast({
+      title: "Quotation Sent",
+      description: "Quotation marked as Sent.",
+    });
 
     localStorage.removeItem(DRAFT_LS_KEY);
-
-    const publicUrl = `${window.location.origin}/public/quotation/${draftId}`;
-
-    // Try clipboard API first, fall back to execCommand for HTTP
-    let copied = false;
-    try {
-      await navigator.clipboard.writeText(publicUrl);
-      copied = true;
-    } catch {
-      try {
-        const ta = document.createElement('textarea');
-        ta.value = publicUrl;
-        ta.style.position = 'fixed';
-        ta.style.opacity = '0';
-        document.body.appendChild(ta);
-        ta.focus();
-        ta.select();
-        copied = document.execCommand('copy');
-        document.body.removeChild(ta);
-      } catch {
-        copied = false;
-      }
-    }
-
-    if (copied) {
-      toast({ title: "Link copied", description: "Public quotation link copied to clipboard." });
-    } else {
-      // Show the URL so user can copy manually
-      window.prompt("Copy this quotation link:", publicUrl);
-    }
   };
 
   const handleDownloadPdf = async () => {
@@ -1190,24 +1219,55 @@ export default function QuotationBuilder() {
     if (!q) return;
 
     try {
-      const { printDocument } = await import("@/lib/printer");
-      const { QuotationDocument } = await import("@/documents/QuotationDocument");
+      const { default: ProfessionalQuotationPDF } =
+        await import("@/components/quotation/ProfessionalQuotationPDF");
 
-      const clientName = q.client?.business_name || q.client?.name || 'Client';
-      const safeClientName = clientName.replace(/[^a-zA-Z0-9-_ ]/g, "").trim();
-      const safeNumber = q.quotation_number.replace(/[^a-zA-Z0-9-_]/g, "_");
+      const clientName =
+        q.client?.business_name || q.client?.name || "Client";
 
-      const title = `${safeClientName} - ${safeNumber}`;
+      const safeClientName = clientName
+        .replace(/[^a-zA-Z0-9-_ ]/g, "")
+        .trim();
 
-      await printDocument(
-        <QuotationDocument quotation={q} client={q.client} brandKit={brandKit} />,
-        { title }
+      const safeNumber = q.quotation_number.replace(
+        /[^a-zA-Z0-9-_]/g,
+        "_"
       );
 
-      toast({ title: "Generated", description: "PDF print dialog opened." });
+      const fileName = `${safeClientName} - ${safeNumber}.pdf`;
+
+      const blob = await pdf(
+        <ProfessionalQuotationPDF
+          quotation={q}
+          client={q.client}
+          brandKit={brandKit}
+        />
+      ).toBlob();
+
+      const url = URL.createObjectURL(blob);
+
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = fileName;
+
+      document.body.appendChild(link);
+      link.click();
+
+      document.body.removeChild(link);
+      URL.revokeObjectURL(url);
+
+      toast({
+        title: "PDF Generated",
+        description: "Quotation downloaded successfully.",
+      });
     } catch (err) {
-      if (import.meta.env.DEV) console.error(err);
-      toast({ title: "Print failed", description: "Could not generate PDF.", variant: "destructive" });
+      console.error(err);
+
+      toast({
+        title: "PDF Generation Failed",
+        description: "Unable to generate quotation PDF.",
+        variant: "destructive",
+      });
     }
   };
 
@@ -1292,10 +1352,33 @@ export default function QuotationBuilder() {
                   <Input
                     list="quotation-title-suggestions"
                     value={formData.title}
-                    onChange={(e) => setFormData((p) => ({ ...p, title: e.target.value }))}
-                    className="rounded-xl"
+                    onChange={(e) => {
+                      const value = e.target.value;
+
+                      setFormData((p) => ({
+                        ...p,
+                        title: value,
+                      }));
+
+                      const duplicate = quotations.find(
+                        (q) =>
+                          q.title.trim().toLowerCase() === value.trim().toLowerCase() &&
+                          q.id !== draftId
+                      );
+
+                      setTitleError(
+                        duplicate ? "Duplicate quotation title" : ""
+                      );
+                    }}
+                    className={`rounded-xl ${titleError
+                      ? "border-red-500 focus-visible:ring-red-500"
+                      : ""
+                      }`}
                     placeholder="e.g., Social Media Management Proposal"
                   />
+                  {titleError && (
+                    <p className="text-red-500 text-xs mt-1 ml-1">{titleError}</p>
+                  )}
                   <datalist id="quotation-title-suggestions">
                     {titleSuggestions.map((t) => (
                       <option key={t} value={t} />
@@ -1523,7 +1606,7 @@ export default function QuotationBuilder() {
 
           <Button
             variant="outline"
-            onClick={handleSaveDraft}
+            onClick={() => handleSaveDraft("draft")}
             className="rounded-xl"
           >
             <Save className="w-4 h-4 mr-2" />
@@ -2033,7 +2116,7 @@ export default function QuotationBuilder() {
 
           <Button
             variant="outline"
-            onClick={handleSaveDraft}
+            onClick={() => handleSaveDraft("draft")}
             className="rounded-xl"
           >
             <Save className="w-4 h-4 mr-2" />
@@ -2163,7 +2246,7 @@ export default function QuotationBuilder() {
 
           <Button
             variant="outline"
-            onClick={handleSaveDraft}
+            onClick={() => handleSaveDraft("draft")}
           >
             <Save className="w-4 h-4 mr-2" />
             Save Draft
@@ -2255,7 +2338,7 @@ export default function QuotationBuilder() {
 
           <Button
             variant="outline"
-            onClick={handleSaveDraft}
+            onClick={() => handleSaveDraft("draft")}
           >
             <Save className="w-4 h-4 mr-2" />
             Save Draft
@@ -2281,7 +2364,8 @@ export default function QuotationBuilder() {
           return (
             <div className="grid grid-cols-1 lg:grid-cols-[1fr_360px] gap-6 max-w-[1320px] mx-auto">
               <div>
-                <QuotationLayout quotation={pq} brandKit={brandKit} mode="screen" />
+                {/* <QuotationLayout quotation={pq} brandKit={brandKit} mode="screen" /> */}
+                <ProfessionalQuotationLayout quotation={pq} brandKit={brandKit} mode="screen" />
               </div>
 
               <aside className="no-print lg:sticky lg:top-6 h-fit">
@@ -2315,126 +2399,88 @@ export default function QuotationBuilder() {
                       <Pencil className="w-4 h-4" /> Edit Quotation
                     </Button>
 
-                    <Button variant="outline" className="w-full gap-2 rounded-xl" onClick={handleSaveDraft}>
+                    {/* <Button
+                      className="w-full rounded-xl gap-2 bg-blue-600 hover:bg-blue-700 text-white"
+                      onClick={async () => {
+                        try {
+                          // Make sure the quotation exists
+                          if (!draftId) {
+                            const id = await handleSaveDraft();
+                            if (!id) return;
+                          }
+
+                          // Update the quotation status
+                          await persistDraft({
+                            status: "sent",
+                            sent_at: new Date().toISOString(),
+                            current_step: 5,
+                          });
+
+                          toast({
+                            title: "Quotation Sent",
+                            description: "Quotation has been marked as Sent.",
+                          });
+
+                          // Refresh the page data so the new status is shown
+                          window.location.reload();
+
+                        } catch (err) {
+                          console.error(err);
+
+                          toast({
+                            title: "Error",
+                            description: "Failed to mark quotation as Sent.",
+                            variant: "destructive",
+                          });
+                        }
+                      }}
+                    >
+                      <Send className="w-4 h-4" />
+                      Send to Client
+                    </Button>
+                     */}
+
+                    <Button
+                      className="w-full rounded-xl gap-2 bg-blue-600 hover:bg-blue-700"
+                      onClick={handleMarkSent}
+                    >
+                      <Send className="w-4 h-4" />
+                      Mark as Sent
+                    </Button>
+                    <Button variant="outline" className="w-full gap-2 rounded-xl" onClick={() => handleSaveDraft("draft")}>
                       <Save className="w-4 h-4" /> Save Draft
-                    </Button>
-                    <Button className="w-full gap-2 rounded-xl" onClick={handleMarkSent}>
-                      <Send className="w-4 h-4" /> Share Quotation Link
-                    </Button>
-                    <Button variant="outline" className="w-full gap-2 rounded-xl" onClick={handleDownloadPdf}>
-                      <Download className="w-4 h-4" /> Generate PDF
-                    </Button>
-                  </div>
-
-                  <p className="text-xs text-muted-foreground">
-                    Quotation is not saved automatically.
-
-                    Click "Save Draft" to save your progress.
-
-                    Your draft will reopen from the same step.
-                  </p>
-                </div>
-                <div className="grid grid-cols-2 gap-3 mb-3">
-
-                  <Button
-                    className="bg-green-600 hover:bg-green-700 text-white"
-                    onClick={async () => {
-
-                      let quotationId = draftId;
-
-                      // Create quotation first if it hasn't been saved
-                      if (!quotationId) {
-
-                        await handleSaveDraft();
-
-                        quotationId =
-                          localStorage.getItem("currentDraftId");
-
-                      }
-
-                      if (!quotationId) return;
-
-                      const quotation =
-                        getQuotationById(quotationId);
-
-                      if (!quotation) return;
-
-                      await updateQuotation({
-
-                        ...quotation,
-
-                        status: "accepted",
-
-                        accepted_at: new Date().toISOString(),
-
-                      });
-
-                      toast({
-                        title: "Quotation Approved",
-                        description: "Quotation moved to Accepted."
-                      });
-
-                    }}
-                  >
-                    Approve
                   </Button>
-
-
-                  <Button
-                    variant="destructive"
-                    onClick={async () => {
-
-                      let quotationId = draftId;
-
-                      if (!quotationId) {
-
-                        await handleSaveDraft();
-
-                        quotationId =
-                          localStorage.getItem("currentDraftId");
-
-                      }
-
-                      if (!quotationId) return;
-
-                      const quotation =
-                        getQuotationById(quotationId);
-
-                      if (!quotation) return;
-
-                      await updateQuotation({
-
-                        ...quotation,
-
-                        status: "declined",
-
-                      });
-
-                      toast({
-                        title: "Quotation Declined",
-                        description: "Quotation moved to Declined."
-                      });
-
-                    }}
-                  >
-                    Reject
+                  <Button className="w-full gap-2 rounded-xl" onClick={handleMarkSent}>
+                    <Send className="w-4 h-4" /> Share Quotation Link
                   </Button>
-
+                  <Button variant="outline" className="w-full gap-2 rounded-xl" onClick={handleDownloadPdf}>
+                    <Download className="w-4 h-4" /> Generate PDF
+                  </Button>
                 </div>
-              </aside>
+
+                <p className="text-xs text-muted-foreground">
+                  Quotation is not saved automatically.
+
+                  Click "Save Draft" to save your progress.
+
+                  Your draft will reopen from the same step.
+                </p>
             </div>
+
+              </aside>
+            </div >
           );
-        })()
+}) ()
       }
 
-      <AddClientDialog
-        open={isAddClientOpen}
-        onOpenChange={setIsAddClientOpen}
-        onClientCreated={(clientId) => {
-          setFormData((p) => ({ ...p, client_id: clientId }));
-        }}
-      />
-    </div>
+<AddClientDialog
+  open={isAddClientOpen}
+  onOpenChange={setIsAddClientOpen}
+  onClientCreated={(clientId) => {
+    setFormData((p) => ({ ...p, client_id: clientId }));
+  }}
+/>
+    </div >
 
   )
 }

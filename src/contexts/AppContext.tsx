@@ -514,24 +514,6 @@ export function AppProvider({ children }: { children: ReactNode }) {
   };
 
   const addQuotation: AppContextType["addQuotation"] = async (quotation) => {
-    // Enforce single active draft: if a draft is being created and one already exists in storage,
-    // return the existing draft id instead of creating another.
-    // if (
-    //   quotation.status === "draft" &&
-    //   !quotation.is_template &&
-    //   !quotation.sent_at &&
-    //   !quotation.accepted_at &&
-    //   !quotation.invoiced_at
-    // ) {
-    //   const existing = (await repo.listQuotations())
-    //     .filter((q) => q.status === "draft" && !q.is_template)
-    //     .find((q) => !q.sent_at && !q.accepted_at && !q.invoiced_at);
-
-    //   if (existing) {
-    //     await refreshQuotations();
-    //     return existing.id;
-    //   }
-    // }
 
     const id = newId();
     const now = nowIso();
@@ -541,6 +523,16 @@ export function AppProvider({ children }: { children: ReactNode }) {
       created_at: now,
       updated_at: now,
     } as Quotation;
+
+    console.log("ROW =", row);
+
+    // for (const [key, value] of Object.entries(row)) {
+    //   try {
+    //     JSON.stringify(value);
+    //   } catch {
+    //     console.error("❌ Circular field:", key, value);
+    //   }
+    // }
 
     await repo.createQuotation(row);
     await refreshQuotations();
@@ -621,7 +613,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
       }))
     );
   };
-  
+
   const refreshInvoiceItems = async () => {
     const list = await repo.listInvoiceItems();
     setInvoiceItems(list);

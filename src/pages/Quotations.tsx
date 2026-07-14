@@ -12,10 +12,14 @@ import {
   Filter,
   ArrowUpDown,
   Calendar,
+  CreditCard,
   CheckCircle,
   Receipt,
   RotateCcw,
+  CheckCircle2,
+  XCircle,
 } from 'lucide-react';
+
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -202,6 +206,56 @@ export default function Quotations() {
     toast({ title: "Template saved", description: "Quotation saved as a reusable template." });
   };
 
+  const handleApprove = async (quotation: Quotation) => {
+    try {
+      const updated = {
+        ...quotation,
+        status: "accepted" as const,
+        accepted_at: new Date().toISOString(),
+      };
+
+      await updateQuotation(updated);
+
+      toast({
+        title: "Quotation Approved",
+        description: "Quotation moved to Accepted.",
+      });
+    } catch (err) {
+      console.error(err);
+
+      toast({
+        title: "Error",
+        description: "Failed to approve quotation.",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const handleDecline = async (quotation: Quotation) => {
+    try {
+      const updated = {
+        ...quotation,
+        status: "declined" as const,
+      };
+
+      await updateQuotation(updated);
+
+      toast({
+        title: "Quotation Declined",
+        description: "Quotation moved to Declined.",
+        variant: "destructive",
+      });
+    } catch (err) {
+      console.error(err);
+
+      toast({
+        title: "Error",
+        description: "Failed to decline quotation.",
+        variant: "destructive",
+      });
+    }
+  };
+
   const formatDate = (dateString: string) => {
     return new Date(dateString).toLocaleDateString('en-US', {
       month: 'short',
@@ -326,11 +380,51 @@ export default function Quotations() {
                   </div>
 
                   <div className="flex items-center gap-6">
-                    <div className="text-right">
+                    {/* <div className="text-right">
                       <p className="text-xs text-muted-foreground">Total Value</p>
                       <p className="font-heading font-bold text-xl text-foreground">
                         {(quotation.currency || currency) === 'INR' ? '₹' : '$'}{quotation.total.toLocaleString()}
                       </p>
+                    </div> */}
+
+                    <div className="flex items-center gap-4">
+
+                      {quotation.status === "sent" && (
+                        <div className="flex items-center gap-2">
+
+                          <Button
+                            size="icon"
+                            variant="ghost"
+                            className="h-9 w-9 rounded-full text-green-600 hover:bg-green-50 hover:text-green-700"
+                            title="Accept"
+                            onClick={() => handleApprove(quotation)}
+                          >
+                            <CheckCircle2 className="h-7 w-7" strokeWidth={2.2} />
+                          </Button>
+
+                          <Button
+                            size="icon"
+                            variant="ghost"
+                            className="h-9 w-9 rounded-full text-red-600 hover:bg-red-50 hover:text-red-700"
+                            title="Decline"
+                            onClick={() => handleDecline(quotation)}
+                          >
+                            <XCircle className="h-10 w-10" strokeWidth={2.2} />
+                          </Button>
+
+                        </div>
+                      )}
+
+                      <div className="text-right">
+                        <div className="text-sm text-muted-foreground">
+                          Total Value
+                        </div>
+
+                        <div className="text-2xl font-bold">
+                          {(quotation.currency || currency) === 'INR' ? '₹' : '$'}{quotation.total.toLocaleString()}
+                        </div>
+                      </div>
+
                     </div>
 
 

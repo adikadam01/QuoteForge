@@ -8,6 +8,8 @@ import { useToast } from "@/hooks/use-toast";
 import type { Quotation } from "@/lib/types";
 import { QuotationLayout } from "@/components/quotation/QuotationLayout";
 
+import { pdf } from "@react-pdf/renderer";
+
 import { GenerateInvoiceModal } from "@/components/invoices/GenerateInvoiceModal";
 import {
   getQuotationServiceBlocks, getQuotationTotalsForDisplay,
@@ -17,6 +19,8 @@ import {
 import {
   getServiceProgress,
 } from "@/lib/phase4Invoicing";
+import ProfessionalQuotationPDF from "@/components/quotation/ProfessionalQuotationPDF";
+import ProfessionalQuotationLayout from "@/components/quotation/ProfessionalQuotationLayout";
 
 export default function QuotationPreview() {
   const { id } = useParams<{ id: string }>();
@@ -232,7 +236,12 @@ export default function QuotationPreview() {
       <div className="grid grid-cols-1 lg:grid-cols-[1fr_360px] gap-6 max-w-[1320px] mx-auto">
         {/* Left: Document (single source of truth for PDF) */}
         <div>
-          <QuotationLayout quotation={quotation} brandKit={brandKit} mode="screen" />
+          <div>
+            <ProfessionalQuotationLayout
+              quotation={quotation}
+              brandKit={brandKit}
+            />
+          </div>
         </div>
 
         {/* Right: Summary + Actions */}
@@ -278,22 +287,37 @@ export default function QuotationPreview() {
                   className="w-full gap-2 rounded-xl"
                   onClick={async () => {
                     if (!quotation) return;
-                    try {
-                      const { printDocument } = await import('@/lib/printer');
-                      const { QuotationDocument } = await import('@/documents/QuotationDocument');
-                      const safe = `QT-${new Date(quotation.created_at).toISOString().slice(2, 10).replace(/-/g, '')}`;
-                      const title = quotation.title.replace(/[^a-zA-Z0-9-_]/g, '_');
 
-                      await printDocument(
-                        <QuotationDocument
+                    try {
+                      const blob = await pdf(
+                        <ProfessionalQuotationPDF
                           quotation={quotation}
                           client={quotation.client}
                           brandKit={brandKit}
-                        />,
-                        { title: `Quotation_${safe}_${title}` }
-                      );
+                        />
+                      ).toBlob();
+
+                      const url = URL.createObjectURL(blob);
+
+                      const a = document.createElement("a");
+
+                      const clientName =
+                        quotation.client?.business_name ||
+                        quotation.client?.name ||
+                        "Client";
+
+                      a.href = url;
+                      a.download = `${clientName} - ${quotation.quotation_number}.pdf`;
+
+                      document.body.appendChild(a);
+                      a.click();
+
+                      document.body.removeChild(a);
+
+                      URL.revokeObjectURL(url);
+
                     } catch (err) {
-                      console.error('Print failed', err);
+                      console.error(err);
                     }
                   }}
                 >
@@ -306,83 +330,49 @@ export default function QuotationPreview() {
                 <div className="rounded-xl border border-border/50 p-3 bg-secondary/30">
                   <p className="text-xs uppercase tracking-wider text-muted-foreground">Actions</p>
                   <div className="mt-2 space-y-2">
-                    {/* Approve / Decline */}
+                    <Button
+                      className="w-full gap-2 rounded-xl"
+                      disabled={updatingStatus !== null}
+                      onClick={async () => {
+                        setUpdatingStatus("sent");
 
-                    <div className="grid grid-cols-2 gap-2">
+                        try {
+                          const now = new Date().toISOString();
 
-                      <Button
-                        className="bg-green-600 hover:bg-green-700 text-white rounded-xl"
-                        onClick={async () => {
-                          try {
+                          const updated = {
+                            ...quotation,
+                            status: "sent" as const,
+                            sent_at: now,
+                          };
 
-                            const updated = {
-                              ...quotation,
-                              status: "accepted" as const,
-                              accepted_at: new Date().toISOString(),
-                            };
+                          await updateQuotation(updated);
 
-                            await updateQuotation(updated);
+                          setQuotation(updated);
 
-                            setQuotation(updated);
+                          toast({
+                            title: "Quotation Sent",
+                            description: "Quotation marked as Sent.",
+                          });
 
-                            toast({
-                              title: "Quotation Approved",
-                              description: "Quotation moved to Accepted.",
-                            });
+                        } catch (err) {
+                          console.error(err);
 
-                          } catch (err) {
+                          toast({
+                            title: "Error",
+                            description: "Failed to send quotation.",
+                            variant: "destructive",
+                          });
 
-                            console.error(err);
+                        } finally {
+                          setUpdatingStatus(null);
+                        }
+                      }}
+                    >
+                      <Send className="w-4 h-4" />
+                      Mark as Sent
+                    </Button>
 
-                            toast({
-                              title: "Error",
-                              description: "Failed to approve quotation.",
-                              variant: "destructive",
-                            });
 
-                          }
-                        }}
-                      >
-                        Approve
-                      </Button>
-
-                      <Button
-                        variant="destructive"
-                        className="rounded-xl"
-                        onClick={async () => {
-                          try {
-
-                            const updated = {
-                              ...quotation,
-                              status: "declined" as const,
-                            };
-
-                            await updateQuotation(updated);
-
-                            setQuotation(updated);
-
-                            toast({
-                              title: "Quotation Declined",
-                              description: "Quotation moved to Declined.",
-                            });
-
-                          } catch (err) {
-
-                            console.error(err);
-
-                            toast({
-                              title: "Error",
-                              description: "Failed to decline quotation.",
-                              variant: "destructive",
-                            });
-
-                          }
-                        }}
-                      >
-                        Decline
-                      </Button>
-
-                    </div>
                     <Button
                       className="w-full gap-2 rounded-xl"
                       disabled={updatingStatus !== null}

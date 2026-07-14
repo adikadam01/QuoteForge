@@ -10,7 +10,7 @@ import { Label } from '@/components/ui/label';
 import { useApp } from '@/contexts/AppContext';
 import { getRepo } from '@/repo';
 import type { BrandKit, Quotation } from '@/lib/types';
-import { QuotationLayout } from '@/components/quotation/QuotationLayout';
+import ProfessionalQuotationLayout from '@/components/quotation/ProfessionalQuotationLayout';
 
 export default function PublicQuotation() {
   const { id } = useParams<{ id: string }>();
@@ -76,17 +76,34 @@ export default function PublicQuotation() {
         // Also critical for public API access where listQuotations is protected but getQuotation is public.
         const repo = getRepo();
         const direct = await repo.getQuotation(quotationId);
+        console.log("DIRECT FROM API", direct);
+        console.log("DIRECT CLIENT", direct?.client);
 
-        console.log("PUBLIC QUOTATION ID =", quotationId);
-        console.log("PUBLIC API RESULT =", direct);
+        // console.log("PUBLIC QUOTATION ID =", quotationId);
+        // console.log("PUBLIC API RESULT =", direct);
+        // console.log("CLIENT =", direct.client);
+        // console.log("CLIENT ID =", direct.client_id);
+        // console.log("FULL OBJECT =", JSON.stringify(direct, null, 2));
 
         if (!direct) {
           if (!cancelled) setQuotation(null);
           return;
         }
 
-        const client = direct.client_id ? clients.find((c) => c.id === direct.client_id) : undefined;
-        if (!cancelled) setQuotation({ ...direct, status: (direct.status || 'draft') as Quotation['status'], client });
+        // Prefer the client returned by the API.
+        // Only fall back to AppContext if it is missing.
+        const client =
+          direct.client ??
+          (direct.client_id
+            ? clients.find((c) => c.id === direct.client_id)
+            : undefined);
+
+        if (!cancelled)
+          setQuotation({
+            ...direct,
+            status: (direct.status || "draft") as Quotation["status"],
+            client,
+          });
       } finally {
         if (!cancelled) setLoading(false);
       }
@@ -107,12 +124,17 @@ export default function PublicQuotation() {
     if (!quotation) return;
     try {
       const { pdf } = await import('@react-pdf/renderer');
-      const { QuotationPDF } = await import('@/documents/pdf/QuotationPDF');
+      const {
+        default: ProfessionalQuotationPDF,
+      } = await import(
+        '@/components/quotation/ProfessionalQuotationPDF'
+      );
 
       const blob = await pdf(
-        <QuotationPDF
+        <ProfessionalQuotationPDF
           quotation={quotation}
-          brandKit={displayBrand || { ...brandKit, id: 'temp' } as BrandKit}
+          client={quotation.client}
+          brandKit={displayBrand || { ...brandKit, id: "temp" } as BrandKit}
         />
       ).toBlob();
 
@@ -175,13 +197,16 @@ export default function PublicQuotation() {
           </CardHeader>
           <CardContent className="space-y-3">
             <p className="text-sm text-muted-foreground">
-              Accepted by: <span className="text-foreground font-medium">{quotation.accepted_by_name || acceptedBy || '—'}</span>
+              Accepted by:
             </p>
           </CardContent>
         </Card>
 
         <div className="quotation-card p-6 md:p-10 mb-8 border border-gray-100 shadow-sm">
-          <QuotationLayout quotation={quotation} brandKit={displayBrand} mode="print" />
+          <ProfessionalQuotationLayout
+            quotation={quotation}
+            brandKit={displayBrand}
+          />
         </div>
       </div>
     );
@@ -215,7 +240,10 @@ export default function PublicQuotation() {
         </DialogContent>
       </Dialog>
 
-      <QuotationLayout quotation={quotation} brandKit={brandKit} mode="screen" />
+      <ProfessionalQuotationLayout
+        quotation={quotation}
+        brandKit={displayBrand}
+      />
 
       {/* Acceptance section (bottom only) */}
       {quotation.status === 'sent' || quotation.status === 'draft' ? (
@@ -249,14 +277,21 @@ export default function PublicQuotation() {
                   ...quotation,
                   status: 'accepted',
                   accepted_at: quotation.accepted_at || now,
-                  accepted_by_name: acceptedBy.trim(),
+                  // accepted_by_name: acceptedBy.trim(),
                 };
 
                 // Try to persist, but don't block UI if it fails (external user)
                 try {
                   await updateQuotation(next);
+
+                  console.log("Quotation saved successfully");
+
                 } catch (err) {
-                  console.warn('Failed to persist acceptance (expected for external link)', err);
+                  console.error("Quotation update failed:", err);
+
+                  alert("Failed to save quotation status.");
+
+                  return;
                 }
 
                 // Always update local UI state to show success

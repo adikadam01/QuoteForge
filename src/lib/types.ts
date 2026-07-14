@@ -199,7 +199,7 @@ export interface Quotation {
   status: QuotationStatus;
   sent_at: string | null; // ISO timestamp
   accepted_at: string | null; // ISO timestamp
-  accepted_by_name?: string | null;
+  // accepted_by_name?: string | null;
   invoiced_at?: string | null; // ISO timestamp (locked from edits once invoiced)
   is_template: boolean;
   template_name: string | null;
@@ -419,7 +419,7 @@ export const PRICING_MODEL_LABELS: Record<PricingModel, string> = {
   custom: 'Custom / Scope-based',
 };
 
-// Currency formatting
+// // Currency formatting
 export const formatCurrency = (amount: number, currency: Currency): string => {
   if (currency === 'INR') {
     return new Intl.NumberFormat('en-IN', {
@@ -436,6 +436,20 @@ export const formatCurrency = (amount: number, currency: Currency): string => {
     maximumFractionDigits: 2,
   }).format(amount);
 };
+
+// export function formatCurrency(
+//     amount: number,
+//     currency: string
+// ) {
+//     if (currency === "INR") {
+//         return `Rs. ${Number(amount).toLocaleString("en-IN")}`;
+//     }
+
+//     return new Intl.NumberFormat("en-US", {
+//         style: "currency",
+//         currency,
+//     }).format(amount);
+// }
 
 export const getCurrencySymbol = (currency: Currency): string => {
   return currency === 'INR' ? '₹' : '$';

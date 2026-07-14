@@ -88,8 +88,8 @@ async function request<T>(path: string, options?: RequestInit): Promise<T> {
 
     const text = await res.text();
 
-    console.log("Response from server:");
-    console.log(text);
+    // console.log("Response from server:");
+    // console.log(text);
 
     return JSON.parse(text);
 
