@@ -72,7 +72,10 @@ export default function ProfessionalQuotationDocument({
         { label: "Company", value: currentClient?.business_name || "—" },
         { label: "Contact Number", value: currentClient?.phone || "—" },
         { label: "Email Address", value: currentClient?.email || "—" },
-        { label: "Address", value: currentClient?.address || "—" },
+        {
+            label: "Address",
+            value: currentClient?.address || currentClient?.location || "—",
+        },
     ];
 
     // const clientRows = [
@@ -100,9 +103,9 @@ export default function ProfessionalQuotationDocument({
 
     const projectOverview =
         quotation.introduction ||
-        `${companyName} is pleased to present this formal quotation for ${primaryService?.service_name
-            ? primaryService.service_name.toLowerCase()
-            : "the requested services"
+        `${companyName} is pleased to present this formal quotation for ${serviceBlocks?.length
+            ? serviceBlocks.map((service) => service.service_name).join(", ").toLowerCase()
+            : primaryService?.service_name || "General Services"
         }, prepared specifically for ${currentClient?.business_name || currentClient?.name || "the client"
         }. The scope, deliverables, and detailed breakdown are outlined on the following pages of this proposal.`;
 
@@ -220,10 +223,14 @@ export default function ProfessionalQuotationDocument({
                     <p className="text-[10px] tracking-[0.2em] text-gray-400 mb-2">
                         SERVICE TYPE
                     </p>
+
                     <p className="text-[15px] font-bold text-gray-900">
-                        {primaryService?.service_name || "General Services"}
+                        {serviceBlocks?.length
+                            ? serviceBlocks.map((service) => service.service_name).join(", ")
+                            : primaryService?.service_name || "General Services"}
                     </p>
                 </div>
+
 
                 {/* Project Overview */}
                 <div className="mb-8">
@@ -848,7 +855,7 @@ export default function ProfessionalQuotationDocument({
                             {currentClient?.business_name || currentClient?.name || "you"}.
                         </p>
                         <p className="text-[10px] text-gray-400">
-                            {brandKit?.website || "www.example.com"} ·{" "}
+                            {brandKit?.website || "https://triplesproduction.com/"} ·{" "}
                             {brandKit?.email || "info@example.com"} ·{" "}
                             {brandKit?.phone || "+91 00000 00000"}
                         </p>

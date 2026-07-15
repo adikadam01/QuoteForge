@@ -123,7 +123,7 @@ export default function CommercialPage(props: Props) {
 
             {/* Contact Information / Signatures */}
             <View style={styles.footerRow}>
-                <View style={styles.footerCol}>
+                <View style={styles.footerContactCol}>
                     <Text style={styles.footerColLabel}>CONTACT INFORMATION</Text>
                     <Text style={styles.footerCompanyName}>{companyName}</Text>
                     <Text style={styles.footerContactText}>{brandKit?.phone || "—"}</Text>
@@ -152,12 +152,19 @@ export default function CommercialPage(props: Props) {
 
                 <View style={styles.footerCol}>
                     <Text style={styles.footerColLabel}>CLIENT SIGNATURE</Text>
+
+                    {/* Digital Signature */}
+                    <Text style={styles.clientSignatureName}
+
+                    >
+                        {(quotation.accepted_by || "NAME").toUpperCase()}
+                    </Text>
+
+                    {/* Signature Line */}
                     <View style={styles.signatureLine} />
-                    <Text style={styles.signatureCaption}>
-                        {quotation.accepted_by || "Name"}
 
-                        {"\n"}
-
+                    {/* Date */}
+                    <Text style={styles.clientSignatureDate}>
                         {quotation.accepted_at
                             ? new Date(quotation.accepted_at).toLocaleDateString()
                             : "Date"}

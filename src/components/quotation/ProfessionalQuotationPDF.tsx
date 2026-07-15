@@ -541,7 +541,8 @@ const styles = StyleSheet.create({
         marginTop: 18,
     },
     footerCol: {
-        width: "32%",
+        width: "33%",
+        alignItems: "center",
     },
     footerColLabel: {
         fontSize: 8.5,
@@ -657,6 +658,32 @@ const styles = StyleSheet.create({
         color: "#9CA3AF",
         marginTop: 2,
     },
+
+    signatureHeading: {
+        fontSize: 8.5,
+        fontWeight: "bold",
+        letterSpacing: 1,
+        color: "#9CA3AF",
+        marginBottom: 8,
+    },
+
+    clientSignatureName: {
+        width: 140,
+        textAlign: "center",
+        fontSize: 11,
+        fontWeight: "bold",
+        color: "#111827",
+        textTransform: "uppercase",
+        marginBottom: 4,
+    },
+
+    clientSignatureDate: {
+        width: 140,
+        textAlign: "center",
+        fontSize: 8,
+        color: "#9CA3AF",
+        marginTop: 4,
+    },
 });
 
 export default function ProfessionalQuotationPDF({
@@ -683,7 +710,10 @@ export default function ProfessionalQuotationPDF({
         { label: "Company", value: currentClient?.business_name || "—" },
         { label: "Contact Number", value: currentClient?.phone || "—" },
         { label: "Email Address", value: currentClient?.email || "—" },
-        { label: "Address", value: currentClient?.address || "—" },
+        {
+            label: "Address",
+            value: currentClient?.address || currentClient?.location || "—",
+        },
     ];
 
     const projectOverview =
@@ -777,15 +807,15 @@ export default function ProfessionalQuotationPDF({
                     <View style={styles.clientInfoHeader}>
                         <Text style={styles.clientInfoHeaderText}>CLIENT INFORMATION</Text>
                     </View>
-                    
+
                     {clientRows.map((row, idx) => (
                         <View
-                            key=    {row.label}
+                            key={row.label}
                             style={idx !== clientRows.length - 1 ? styles.clientRow : styles.clientRowLast}
                         >
                             <Text style={styles.clientRowLabel}>{row.label.toUpperCase()}</Text>
-                        <Text style={styles.clientRowValue}>{row.value}</Text>
-                    </View>
+                            <Text style={styles.clientRowValue}>{row.value}</Text>
+                        </View>
                     ))}
                 </View>
 

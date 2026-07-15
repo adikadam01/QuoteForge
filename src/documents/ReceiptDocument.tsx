@@ -132,7 +132,7 @@ export function ReceiptDocument({
         receipt,
         invoiceNumber,
     ]);
-    
+
     return (
         <div className="document-container flex flex-col">
             {/* Header */}
@@ -169,18 +169,52 @@ export function ReceiptDocument({
                     }}>Payment Receipt</div>
                     <h1 style={{ fontSize: '36px', fontWeight: '900', color: brandColor, margin: '0' }}>PAID</h1>
 
-                    <div style={{ marginTop: '16px', fontSize: '12px' }}>
-                        <div style={{ display: 'flex', marginBottom: '4px' }}>
-                            <span className="doc-label" style={{ width: '90px', textAlign: 'left', flexShrink: 0 }}>Receipt No</span>
-                            <span className="doc-value" style={{ fontFamily: 'monospace', flex: 1, textAlign: 'left' }}>{receipt.receipt_number || receipt.id}</span>
-                        </div>
-                        <div style={{ display: 'flex', marginBottom: '4px' }}>
-                            <span className="doc-label" style={{ width: '90px', textAlign: 'left', flexShrink: 0 }}>Date</span>
-                            <span className="doc-value" style={{ flex: 1, textAlign: 'left' }}>{receiptDate}</span>
-                        </div>
-                        <div style={{ display: 'flex' }}>
-                            <span className="doc-label" style={{ width: '90px', textAlign: 'left', flexShrink: 0 }}>Invoice Ref</span>
-                            <span className="doc-value" style={{ flex: 1, textAlign: 'left' }}>{invoiceNumber}</span>
+                    <div
+                        style={{
+                            marginTop: "18px",
+                            width: "220px",
+                            marginLeft: "auto",
+                            border: "1px solid #e5e7eb",
+                            borderRadius: "8px",
+                            padding: "12px 14px",
+                            background: "#fafafa",
+                        }}
+                    >
+                        <div
+                            style={{
+                                display: "grid",
+                                gridTemplateColumns: "90px 1fr",
+                                rowGap: "10px",
+                                columnGap: "12px",
+                                alignItems: "center",
+                                fontSize: "12px",
+                            }}
+                        >
+                            <span className="doc-label">Receipt No</span>
+                            <span
+                                className="doc-value"
+                                style={{
+                                    fontFamily: "monospace",
+                                    fontWeight: 700,
+                                }}
+                            >
+                                RCPT-{receipt.receipt_number?.slice(-4) || receipt.id?.slice(-4)}
+                            </span>
+
+                            <span className="doc-label">Date</span>
+                            <span className="doc-value">
+                                {receiptDate}
+                            </span>
+
+                            <span className="doc-label">Invoice Ref</span>
+                            <span
+                                className="doc-value"
+                                style={{
+                                    fontWeight: 700,
+                                }}
+                            >
+                                INV-{invoiceNumber.slice(-4)}
+                            </span>
                         </div>
                     </div>
                 </div>
@@ -273,9 +307,9 @@ export function ReceiptDocument({
                     </div>
                 </div>
 
-                <div style={{ textAlign: 'center', marginTop: '6px', paddingTop: '5px', borderTop: '1px solid #f9fafb', fontSize: '10px', color: '#0c0c0cff', textTransform: 'uppercase', letterSpacing: '0.1em' }}>
-                    {companyName} • Receipt #{receipt.receipt_number || receipt.id}
-                </div>
+                {/* <div style={{ textAlign: 'center', marginTop: '6px', paddingTop: '5px', borderTop: '1px solid #f9fafb', fontSize: '10px', color: '#0c0c0cff', textTransform: 'uppercase', letterSpacing: '0.1em' }}>
+                    {companyName} • RCPT-{(receipt.receipt_number || receipt.id).slice(-4)}
+                </div> */}
             </div>
 
         </div>

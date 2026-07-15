@@ -15,7 +15,13 @@ import ProfessionalQuotationLayout from '@/components/quotation/ProfessionalQuot
 export default function PublicQuotation() {
   const { id } = useParams<{ id: string }>();
   const quotationId = id;
-  const { brandKit, clients, refreshQuotations, getQuotationById, updateQuotation } = useApp();
+  const {
+    updateQuotation,
+    refreshQuotations,
+    getQuotationById,
+    clients,
+    brandKit,
+  } = useApp();
 
   const [loading, setLoading] = useState(true);
   const [quotation, setQuotation] = useState<Quotation | null>(null);
@@ -258,7 +264,8 @@ export default function PublicQuotation() {
             </div>
 
             <div className="space-y-2">
-              <Label>Accepted by (name)</Label>
+              {/* <Label>Accepted by (name)</Label> */}
+              <Label>Digital Signature(Name)</Label>
               <Input
                 value={acceptedBy}
                 onChange={(e) => setAcceptedBy(e.target.value)}
@@ -285,17 +292,15 @@ export default function PublicQuotation() {
                 try {
                   await updateQuotation(next);
 
-                  console.log("Quotation saved successfully");
+                  // Refresh quotations in AppContext
+                  await refreshQuotations();
 
                 } catch (err) {
                   console.error("Quotation update failed:", err);
-
                   alert("Failed to save quotation status.");
-
                   return;
                 }
 
-                // Always update local UI state to show success
                 setQuotation(next);
                 setAccepted(true);
                 setAcceptedModalOpen(true);

@@ -886,6 +886,41 @@ export default function QuotationBuilder() {
       return;
     }
     if (step === 2) {
+      for (const block of serviceBlocks) {
+        if (block.billing_type !== "milestone") continue;
+
+        const milestones = block.milestone_template ?? [];
+
+        if (milestones.length === 0) {
+          toast({
+            title: "Milestones Required",
+            description: `Please create milestones for "${block.service_name}".`,
+            variant: "destructive",
+          });
+          return;
+        }
+
+        const totalPercentage = calculateTotalPercentage(milestones);
+
+        if (totalPercentage !== 100) {
+          toast({
+            title: "Invalid Milestone Plan",
+            description: `Milestones for "${block.service_name}" must total exactly 100%.`,
+            variant: "destructive",
+          });
+          return;
+        }
+
+        if (calculateMilestoneTotal(milestones) !== block.price) {
+          toast({
+            title: "Milestone Amount Mismatch",
+            description: `Milestone amount must equal ₹${block.price}.`,
+            variant: "destructive",
+          });
+          return;
+        }
+      }
+
       setStep(3);
       return;
     }
@@ -1185,31 +1220,56 @@ export default function QuotationBuilder() {
 
       if (!id) return;
 
-      toast({
-        title: "Quotation Sent",
-        description: "Quotation marked as Sent.",
-      });
+    } else {
 
-      localStorage.removeItem(DRAFT_LS_KEY);
+      const now = new Date().toISOString();
 
-      return;
+      await persistDraft(
+        {
+          status: "sent",
+          sent_at: now,
+          current_step: 5,
+        },
+        id
+      );
     }
 
-    const now = new Date().toISOString();
+    const publicUrl = `${window.location.origin}/public/quotation/${id}`;
 
-    await persistDraft(
-      {
-        status: "sent",
-        sent_at: now,
-        current_step: 5,
-      },
-      id
-    );
+    try {
 
-    toast({
-      title: "Quotation Sent",
-      description: "Quotation marked as Sent.",
-    });
+      if (navigator.clipboard && window.isSecureContext) {
+
+        await navigator.clipboard.writeText(publicUrl);
+
+      } else {
+
+        const textArea = document.createElement("textarea");
+        textArea.value = publicUrl;
+        textArea.style.position = "fixed";
+        textArea.style.left = "-9999px";
+
+        document.body.appendChild(textArea);
+        textArea.focus();
+        textArea.select();
+
+        document.execCommand("copy");
+
+        document.body.removeChild(textArea);
+      }
+
+      toast({
+        title: "Quotation link copied",
+        // description: publicUrl,
+      });
+
+    } catch (err) {
+
+      console.error(err);
+
+      window.prompt("Copy quotation link:", publicUrl);
+
+    }
 
     localStorage.removeItem(DRAFT_LS_KEY);
   };
@@ -1891,20 +1951,35 @@ export default function QuotationBuilder() {
                                         max={100}
                                         value={m.percentage}
                                         className="pr-8"
-                                        onChange={(e) => {
+                                        // onChange={(e) => {
 
-                                          const updated =
-                                            updateMilestonePercentage(
-                                              b.milestone_template ?? [],
-                                              m.id,
-                                              Number(e.target.value),
-                                              b.price
-                                            );
+                                        //   const updated =
+                                        //     updateMilestonePercentage(
+                                        //       b.milestone_template ?? [],
+                                        //       m.id,
+                                        //       Number(e.target.value),
+                                        //       b.price
+                                        //     );
+
+                                        //   updateBlock(idx, {
+                                        //     milestone_template: updated,
+                                        //   });
+
+                                        // }}
+
+                                        onChange={(e) => {
+                                          const percentage = parseInt(e.target.value.replace(/^0+(?=\d)/, ""), 10) || 0;
+
+                                          const updated = updateMilestonePercentage(
+                                            b.milestone_template ?? [],
+                                            m.id,
+                                            percentage,
+                                            b.price
+                                          );
 
                                           updateBlock(idx, {
                                             milestone_template: updated,
                                           });
-
                                         }}
                                       />
 
@@ -2449,37 +2524,37 @@ export default function QuotationBuilder() {
                     </Button>
                     <Button variant="outline" className="w-full gap-2 rounded-xl" onClick={() => handleSaveDraft("draft")}>
                       <Save className="w-4 h-4" /> Save Draft
-                  </Button>
-                  <Button className="w-full gap-2 rounded-xl" onClick={handleMarkSent}>
-                    <Send className="w-4 h-4" /> Share Quotation Link
-                  </Button>
-                  <Button variant="outline" className="w-full gap-2 rounded-xl" onClick={handleDownloadPdf}>
-                    <Download className="w-4 h-4" /> Generate PDF
-                  </Button>
+                    </Button>
+                    <Button className="w-full gap-2 rounded-xl" onClick={handleMarkSent}>
+                      <Send className="w-4 h-4" /> Share Quotation Link
+                    </Button>
+                    <Button variant="outline" className="w-full gap-2 rounded-xl" onClick={handleDownloadPdf}>
+                      <Download className="w-4 h-4" /> Generate PDF
+                    </Button>
+                  </div>
+
+                  <p className="text-xs text-muted-foreground">
+                    Quotation is not saved automatically.
+
+                    Click "Save Draft" to save your progress.
+
+                    Your draft will reopen from the same step.
+                  </p>
                 </div>
-
-                <p className="text-xs text-muted-foreground">
-                  Quotation is not saved automatically.
-
-                  Click "Save Draft" to save your progress.
-
-                  Your draft will reopen from the same step.
-                </p>
-            </div>
 
               </aside>
             </div >
           );
-}) ()
+        })()
       }
 
-<AddClientDialog
-  open={isAddClientOpen}
-  onOpenChange={setIsAddClientOpen}
-  onClientCreated={(clientId) => {
-    setFormData((p) => ({ ...p, client_id: clientId }));
-  }}
-/>
+      <AddClientDialog
+        open={isAddClientOpen}
+        onOpenChange={setIsAddClientOpen}
+        onClientCreated={(clientId) => {
+          setFormData((p) => ({ ...p, client_id: clientId }));
+        }}
+      />
     </div >
 
   )

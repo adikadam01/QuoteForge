@@ -819,7 +819,8 @@ export default function InvoiceView() {
                 if (!existing) {
                   await createReceipt({
                     id: invoice.id,
-                    receipt_number: `RCPT-${new Date().toISOString().slice(2, 10).replace(/-/g, '')}-${invoice.invoice_number}`,
+                    receipt_number: `RCPT-${invoice.invoice_number}`,
+                    // receipt_number: `RCPT-${new Date().toISOString().slice(2, 10).replace(/-/g, '')}-${invoice.invoice_number}`,
                     invoice_id: invoice.id,
                     client_id: invoice.client_id,
                     currency: invoice.currency,
