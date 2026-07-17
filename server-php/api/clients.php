@@ -1,4 +1,3 @@
-
 <?php
 
 // Variable $pdo, $path, $method are available from index.php
