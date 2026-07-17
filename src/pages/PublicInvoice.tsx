@@ -102,11 +102,11 @@ export default function PublicInvoice() {
     if (!invoice) return;
     try {
       const { printDocument } = await import('@/lib/printer');
-      const { InvoiceDocument } = await import('@/documents/InvoiceDocument');
+      const { default: InvoiceDocument } = await import('@/documents/InvoiceDocument');
       const safe = invoice.invoice_number.replace(/[^a-zA-Z0-9-_]/g, "_");
 
       await printDocument(
-        <InvoiceDocument invoice={invoice} brandKit={displayBrand} />,
+        <InvoiceDocument invoice={invoice} items={items} brandKit={displayBrand} />,
         { title: `Invoice_${safe}` }
       );
     } catch (err) {

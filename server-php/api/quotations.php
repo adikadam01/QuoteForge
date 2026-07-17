@@ -4,11 +4,28 @@ global $pdo, $path, $method;
 
 function formatQuotation($q) {
     if (!$q) return null;
-    $q['service_blocks'] = json_decode($q['service_blocks_json'] ?? '[]', true);
-    $q['section_toggles'] = json_decode($q['section_toggles_json'] ?? '{}', true);
-    $q['selected_points'] = json_decode($q['selected_points_json'] ?? '{}', true);
-    $q['quotation_sections'] = json_decode($q['quotation_sections_json'] ?? '{}', true);
+    // $q['service_blocks'] = json_decode($q['service_blocks_json'] ?? '[]', true);
+    // $q['section_toggles'] = json_decode($q['section_toggles_json'] ?? '{}', true);
+    // $q['selected_points'] = json_decode($q['selected_points_json'] ?? '{}', true);
+    // $q['quotation_sections'] = json_decode($q['quotation_sections_json'] ?? '{}', true);
     
+    $q['service_blocks'] = is_string($q['service_blocks_json'] ?? null)
+    ? json_decode($q['service_blocks_json'], true)
+    : ($q['service_blocks_json'] ?? []);
+
+$q['section_toggles'] = is_string($q['section_toggles_json'] ?? null)
+    ? json_decode($q['section_toggles_json'], true)
+    : ($q['section_toggles_json'] ?? []);
+
+$q['selected_points'] = is_string($q['selected_points_json'] ?? null)
+    ? json_decode($q['selected_points_json'], true)
+    : ($q['selected_points_json'] ?? []);
+
+$q['quotation_sections'] = is_string($q['quotation_sections_json'] ?? null)
+    ? json_decode($q['quotation_sections_json'], true)
+    : ($q['quotation_sections_json'] ?? []);
+
+
     // Numbers
     $q['subtotal'] = (float)$q['subtotal'];
     $q['total'] = (float)$q['total'];
@@ -116,7 +133,7 @@ foreach ($input as $key => $value) {
     }
 }
 
-    $input['is_template'] = !empty($input['is_template']) ? 1 : 0;
+    $input['is_template'] = !empty($input['is_template']) ? true : false;
     
     // Extract JSON fields
     $service_blocks = $input['service_blocks'] ?? [];
@@ -170,13 +187,44 @@ if (!empty($input['updated_at'])) {
         date('Y-m-d H:i:s', strtotime($input['updated_at']));
 }
     
+    // $columns = array_keys($input);
+    // $values = array_values($input);
+    // $placeholders = array_fill(0, count($values), '?');
+
     $columns = array_keys($input);
-    $values = array_values($input);
-    $placeholders = array_fill(0, count($values), '?');
-    
+$values = array_values($input);
+
+/*
+|--------------------------------------------------------------------------
+| PostgreSQL boolean fix
+|--------------------------------------------------------------------------
+*/
+
+$isTemplateIndex = array_search('is_template', $columns);
+
+if ($isTemplateIndex !== false) {
+    $values[$isTemplateIndex] = $input['is_template'] ? 'true' : 'false';
+}
+
+$placeholders = array_fill(0, count($values), '?');
+
+
     $sql = "INSERT INTO quotations (" . implode(', ', $columns) . ") VALUES (" . implode(', ', $placeholders) . ")";
     $stmt = $pdo->prepare($sql);
+    try {
+
     $stmt->execute($values);
+
+} catch (PDOException $e) {
+
+    jsonResponse([
+        "success" => false,
+        "message" => $e->getMessage(),
+        "sql" => $sql,
+        "input" => $input
+    ],500);
+
+}
     
     // Reconstruct full object for response
     $input['service_blocks'] = $service_blocks;
@@ -204,10 +252,13 @@ if (!empty($input['updated_at'])) {
 if (preg_match('#^/quotations/([\w\-]+)$#', $path, $matches) && $method === 'PUT') {
 
     $id = $matches[1];
-    $input = getJsonInput();
+$input = getJsonInput();
+
+// Never update the primary key
+unset($input['id']);
 
     if (isset($input['is_template'])) {
-        $input['is_template'] = !empty($input['is_template']) ? 1 : 0;
+        $input['is_template'] = !empty($input['is_template']) ? true : false;
     }
 
     /*
@@ -285,24 +336,69 @@ if ($service_blocks !== null) {
         $input['quotation_sections_json'] = json_encode($quotation_sections);
     }
 
+    // $sets = [];
+    // $values = [];
+
+    // foreach ($input as $key => $value) {
+    //     $sets[] = "$key = ?";
+    //     $values[] = $value;
+    // }
+
+    // $values[] = $id;
+
+    // $sql = "UPDATE quotations SET " . implode(', ', $sets) . " WHERE id = ?";
+
     $sets = [];
-    $values = [];
+$values = [];
+$columns = [];
 
-    foreach ($input as $key => $value) {
-        $sets[] = "$key = ?";
-        $values[] = $value;
-    }
+foreach ($input as $key => $value) {
 
-    $values[] = $id;
+    $columns[] = $key;
+    $sets[] = "$key = ?";
+    $values[] = $value;
+}
 
-    $sql = "UPDATE quotations SET " . implode(', ', $sets) . " WHERE id = ?";
+/*
+|--------------------------------------------------------------------------
+| PostgreSQL boolean fix
+|--------------------------------------------------------------------------
+*/
 
-    $stmt = $pdo->prepare($sql);
+$isTemplateIndex = array_search('is_template', $columns);
+
+if ($isTemplateIndex !== false) {
+    $values[$isTemplateIndex] =
+        $input['is_template'] ? 'true' : 'false';
+}
+
+$values[] = $id;
+
+$sql = "UPDATE quotations SET " . implode(', ', $sets) . " WHERE id = ?";
+
+    
+$stmt = $pdo->prepare($sql);
+
+try {
+
     $stmt->execute($values);
 
-    $input['id'] = $id;
+} catch (PDOException $e) {
 
-    jsonResponse($input);
+    jsonResponse([
+        "success" => false,
+        "message" => $e->getMessage(),
+        "sql" => $sql,
+        "input" => $input,
+        "values" => $values
+    ], 500);
+
+}
+
+$input['id'] = $id;
+
+jsonResponse($input);
+
 }
 
 // DELETE /quotations/:id

@@ -2,8 +2,21 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Link, useSearchParams } from "react-router-dom";
-import { ArrowLeft, Download, Pencil, Save, Send, UserPlus, X } from "lucide-react";
+import { ArrowLeft, Download, Pencil, Save, Send, UserPlus, X, FileText, ListChecks, Package, Clock, Wallet, ScrollText, ChevronRight, Users, Calendar as CalendarIcon, Tag, ChevronDown } from "lucide-react";
 import { pdf } from "@react-pdf/renderer";
+
+
+import {
+  generateMilestones,
+  updateMilestonePercentage,
+  calculateMilestoneTotal,
+  calculateRemainingPercentage,
+  updateMilestoneLabel,
+  calculateTotalPercentage,
+  createMilestone,
+  isMilestonePlanValid,
+  normalizeMilestonesFromTemplate, // add this
+} from "@/components/quotation/milestoneCal";
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -40,19 +53,6 @@ import {
 } from "@/lib/quotationServiceBlocks";
 import { calculateMonthly } from "@/components/quotation/pricing";
 
-import {
-
-  generateMilestones,
-
-  updateMilestonePercentage,
-  calculateMilestoneTotal,
-  calculateRemainingPercentage,
-  updateMilestoneLabel,
-  calculateTotalPercentage,
-  createMilestone,
-  isMilestonePlanValid
-
-} from "@/components/quotation/milestoneCal";
 
 
 // const monthly = calculateMonthly(
@@ -79,6 +79,25 @@ function dedupeTitles(list: string[]): string[] {
     out.push(s);
   }
   return out;
+}
+
+function getCategoryTermsText(
+  termsConditions: { category: string; clause: string; is_general: boolean | number; sort_order: number }[],
+  category: string | undefined
+): string {
+  if (!termsConditions?.length || !category) return "";
+
+  const rows = termsConditions
+    .filter(
+      (t) =>
+        !Number(t.is_general) &&
+        t.category?.toLowerCase() === category.toLowerCase()
+    )
+    .sort((a, b) => a.sort_order - b.sort_order);
+
+  if (!rows.length) return "";
+
+  return rows.map((t) => `• ${t.clause}`).join("\n");
 }
 
 export default function QuotationBuilder() {
@@ -110,7 +129,21 @@ export default function QuotationBuilder() {
   const draftIdParam = searchParams.get("draftId");
   const [titleError, setTitleError] = useState("");
 
+  const rightColumnRef = useRef<HTMLDivElement>(null);
+  const [rightColumnHeight, setRightColumnHeight] = useState<number | null>(null);
+  const [openCategories, setOpenCategories] = useState<Set<string>>(new Set());
 
+  const toggleCategory = (category: string) => {
+    setOpenCategories((prev) => {
+      const next = new Set(prev);
+      if (next.has(category)) {
+        next.delete(category);
+      } else {
+        next.add(category);
+      }
+      return next;
+    });
+  };
 
   // Never auto-resume from localStorage — only resume via explicit URL param
   // This prevents old quotations from being overwritten when creating new ones
@@ -177,13 +210,11 @@ export default function QuotationBuilder() {
 
 
 
-  // STEP 4 — Global Terms
-  const [sectionToggles, setSectionToggles] = useState<QuotationSectionToggles>(() => DEFAULT_SECTION_TOGGLES);
-  const [globalTerms, setGlobalTerms] = useState({
-    introduction: "",
-    payment_terms_text: "",
-    terms_conditions_text: "",
-  });
+  // Step 4 (Global Terms) has been removed.
+  // Introduction and the global payment-terms fallback are no longer
+  // collected — payment terms live per-service, and terms & conditions
+  // are assembled automatically (general + each selected service's terms).
+  const sectionToggles = DEFAULT_SECTION_TOGGLES;
 
   const [resuming, setResuming] = useState(false);
 
@@ -224,9 +255,7 @@ export default function QuotationBuilder() {
     setStep(1);
     setFormData({ title: "", client_id: "", quote_date: today, valid_until: defaultValidUntil });
     setServiceBlocks([]);
-    setSectionToggles(DEFAULT_SECTION_TOGGLES);
-    setGlobalTerms({ introduction: "", payment_terms_text: "", terms_conditions_text: "" });
-  }, [DEFAULT_SECTION_TOGGLES, defaultValidUntil, setSearchParams, today]);
+  }, [defaultValidUntil, setSearchParams, today]);
 
   // Cross-tab sync: if currentDraftId changes elsewhere, reflect it here.
   useEffect(() => {
@@ -288,6 +317,19 @@ export default function QuotationBuilder() {
     setConflictDraftId(preferred.id);
     setDraftConflictOpen(true);
   }, [draftId, draftIdParam, quotations, refreshQuotations]);
+
+  useEffect(() => {
+    const el = rightColumnRef.current;
+    if (!el) return;
+
+    const update = () => setRightColumnHeight(el.offsetHeight);
+    update();
+
+    const observer = new ResizeObserver(update);
+    observer.observe(el);
+
+    return () => observer.disconnect();
+  }, [serviceBlocks]); // re-measure whenever selections change (Pricing card grows/shrinks)
 
   // useEffect(() => {
 
@@ -356,8 +398,7 @@ export default function QuotationBuilder() {
       setStep(1);
       setFormData({ title: "", client_id: "", quote_date: today, valid_until: defaultValidUntil });
       setServiceBlocks([]);
-      setSectionToggles(DEFAULT_SECTION_TOGGLES);
-      setGlobalTerms({ introduction: "", payment_terms_text: "", terms_conditions_text: "" });
+
     } catch (err) {
       if (import.meta.env.DEV) console.error("Failed to start a new quotation", err);
       toast({
@@ -456,6 +497,10 @@ export default function QuotationBuilder() {
             service_terms:
               b.service_terms || lib?.service_terms || "",
 
+            terms_conditions_text:
+              b.terms_conditions_text ||
+              getCategoryTermsText(termsConditions, b.category || lib?.category || ""),
+
           };
 
         })
@@ -483,14 +528,6 @@ export default function QuotationBuilder() {
     } else {
       setServiceBlocks([]);
     }
-
-    setGlobalTerms({
-      introduction: q.introduction || "",
-      payment_terms_text: q.payment_terms_text || "",
-      terms_conditions_text: q.terms_conditions_text || "",
-    });
-
-    setSectionToggles((q.section_toggles || DEFAULT_SECTION_TOGGLES) as QuotationSectionToggles);
 
     setSearchParams({ draftId });
   }, [
@@ -616,22 +653,35 @@ export default function QuotationBuilder() {
 
   }, [serviceBlocks, termsConditions]);
 
-  useEffect(() => {
+  const autoGeneratedPaymentTerms = useMemo(() => {
+    const withTerms = serviceBlocks.filter((b) => (b.payment_terms || "").trim());
+    if (!withTerms.length) return "";
 
-    setGlobalTerms(prev => {
+    if (withTerms.length === 1) {
+      return withTerms[0].payment_terms || "";
+    }
 
-      if (prev.terms_conditions_text === autoGeneratedTerms) {
-        return prev;
-      }
+    return withTerms
+      .map((b) => `${(b.service_name || "Service").toUpperCase()}\n\n${b.payment_terms}`)
+      .join("\n\n\n");
+  }, [serviceBlocks]);
 
-      return {
-        ...prev,
-        terms_conditions_text: autoGeneratedTerms,
-      };
+  // useEffect(() => {
 
-    });
+  //   setGlobalTerms(prev => {
 
-  }, [autoGeneratedTerms]);
+  //     if (prev.terms_conditions_text === autoGeneratedTerms) {
+  //       return prev;
+  //     }
+
+  //     return {
+  //       ...prev,
+  //       terms_conditions_text: autoGeneratedTerms,
+  //     };
+
+  //   });
+
+  // }, [autoGeneratedTerms]);
 
   const filteredServices = useMemo(() => {
     const search = serviceSearch.toLowerCase().trim();
@@ -649,6 +699,16 @@ export default function QuotationBuilder() {
       );
     });
   }, [services, serviceSearch]);
+
+  const groupedFilteredServices = useMemo(() => {
+    const groups: Record<string, typeof filteredServices> = {};
+    filteredServices.forEach((service) => {
+      const cat = service.category || "Other";
+      if (!groups[cat]) groups[cat] = [];
+      groups[cat].push(service);
+    });
+    return groups;
+  }, [filteredServices]);
 
   const persistDraft = useCallback(
     async (
@@ -785,6 +845,22 @@ export default function QuotationBuilder() {
     setServiceBlocks((prev) => {
       if (checked) {
         if (prev.some((b) => b.service_id === serviceId)) return prev;
+
+        // Parse the library's predefined milestone template once
+        const rawTemplate =
+          lib.billing_type === "milestone"
+            ? typeof lib.milestone_template === "string"
+              ? JSON.parse(lib.milestone_template)
+              : lib.milestone_template || []
+            : [];
+
+        const price =
+          lib.billing_type === "milestone"
+            ? rawTemplate.length > 0
+              ? rawTemplate.reduce((sum: number, m: any) => sum + Number(m.amount || 0), 0)
+              : Number(lib.base_price)
+            : Number(lib.base_price);
+
         return [
           ...prev,
           {
@@ -796,18 +872,8 @@ export default function QuotationBuilder() {
             scope_of_work: String(lib.scope_of_work || ""),
             deliverables: String(lib.deliverables || ""),
             timeline: String(lib.timeline || ""),
-            price:
-              lib.billing_type === "milestone"
-                ? (
-                  Array.isArray(lib.milestone_template) &&
-                  lib.milestone_template.length > 0
-                )
-                  ? lib.milestone_template.reduce(
-                    (sum, m) => sum + Number(m.amount || 0),
-                    0
-                  )
-                  : Number(lib.base_price)
-                : Number(lib.base_price),
+            terms_conditions_text: getCategoryTermsText(termsConditions, String(lib.category || "")),
+            price,
             billing_type: (
               lib.billing_type === "one_time" ||
                 lib.billing_type === "monthly" ||
@@ -815,7 +881,6 @@ export default function QuotationBuilder() {
                 lib.billing_type === "retainer"
                 ? lib.billing_type
                 : "one_time"
-
             ) as QuotationServiceBlockBillingType,
 
             duration_months: (() => {
@@ -823,7 +888,6 @@ export default function QuotationBuilder() {
                 ("duration_months" in lib
                   ? (lib as { duration_months?: number | null }).duration_months
                   : null) ?? 1;
-
               return Number(months) || 1;
             })(),
 
@@ -838,16 +902,21 @@ export default function QuotationBuilder() {
                   )
                 ).monthlyAmount
                 : undefined,
+
             payment_terms: String(("payment_terms" in lib ? (lib as { payment_terms?: string | null }).payment_terms : "") || ""),
             service_terms: String(lib.service_terms || ""),
+
+            // 🔧 normalized instead of raw copy
             milestone_template:
               lib.billing_type === "milestone"
-                ? (
-                  typeof lib.milestone_template === "string"
-                    ? JSON.parse(lib.milestone_template)
-                    : lib.milestone_template || []
-                )
+                ? normalizeMilestonesFromTemplate(rawTemplate, price)
                 : [],
+
+            // 🔧 count now matches the actual number of predefined milestones
+            milestone_count:
+              lib.billing_type === "milestone" && rawTemplate.length > 0
+                ? rawTemplate.length
+                : undefined,
           },
         ];
       }
@@ -882,10 +951,7 @@ export default function QuotationBuilder() {
   const goNext = async () => {
     if (step === 1) {
       if (!validateStep1()) return;
-      setStep(2);
-      return;
-    }
-    if (step === 2) {
+
       for (const block of serviceBlocks) {
         if (block.billing_type !== "milestone") continue;
 
@@ -925,10 +991,6 @@ export default function QuotationBuilder() {
       return;
     }
     if (step === 3) {
-      setStep(4);
-      return;
-    }
-    if (step === 4) {
       setStep(5);
       return;
     }
@@ -936,8 +998,16 @@ export default function QuotationBuilder() {
 
   const goBack = () => {
     if (step === 1) return;
-    setStep((s) => (s - 1) as BuilderStep);
+    if (step === 3) {
+      setStep(1);
+      return;
+    }
+    if (step === 5) {
+      setStep(3);
+      return;
+    }
   };
+
 
 
   const buildPreviewQuotation = (): Quotation | null => {
@@ -954,12 +1024,11 @@ export default function QuotationBuilder() {
         quote_date: formData.quote_date,
         valid_until: formData.valid_until,
 
-        introduction: globalTerms.introduction || null,
+        introduction: null,
         scope_of_work: null,
 
-        payment_terms_text: globalTerms.payment_terms_text || null,
-        terms_conditions_text: globalTerms.terms_conditions_text || null,
-
+        payment_terms_text: null,
+        terms_conditions_text: autoGeneratedTerms || null,
         currency,
 
         subtotal: derivedTotals.total,
@@ -1034,9 +1103,9 @@ export default function QuotationBuilder() {
         tax_rate: 0,
         tax_amount: 0,
         currency,
-        introduction: sectionToggles.introduction ? (globalTerms.introduction || null) : null,
-        payment_terms_text: sectionToggles.payment_terms ? (globalTerms.payment_terms_text || null) : null,
-        terms_conditions_text: sectionToggles.terms_conditions ? (globalTerms.terms_conditions_text || null) : null,
+        introduction: null,
+        payment_terms_text: null,
+        terms_conditions_text: autoGeneratedTerms || null,
         section_toggles: sectionToggles,
         client: clients.find(c => c.id === formData.client_id),
         created_at: new Date().toISOString(),
@@ -1053,15 +1122,9 @@ export default function QuotationBuilder() {
       client_id: formData.client_id || null,
       quote_date: formData.quote_date,
       valid_until: formData.valid_until,
-      introduction: sectionToggles.introduction
-        ? (globalTerms.introduction || null)
-        : null,
-      payment_terms_text: sectionToggles.payment_terms
-        ? (globalTerms.payment_terms_text || null)
-        : null,
-      terms_conditions_text: sectionToggles.terms_conditions
-        ? (globalTerms.terms_conditions_text || null)
-        : null,
+      introduction: null,
+      payment_terms_text: null,
+      terms_conditions_text: autoGeneratedTerms || null,
       section_toggles: sectionToggles,
       service_blocks: serviceBlocks,
       subtotal: derivedTotals.total,
@@ -1081,7 +1144,7 @@ export default function QuotationBuilder() {
     status: "draft" | "sent" = "draft"
   ): Promise<string | null> => {
 
-    if (!validateStep1()) return;
+    if (!validateStep1()) return null;
     try {
       // Update existing draft
       if (draftId) {
@@ -1118,15 +1181,13 @@ export default function QuotationBuilder() {
         quote_date: formData.quote_date,
         valid_until: formData.valid_until,
 
-        introduction: globalTerms.introduction || null,
+        introduction: null,
 
         scope_of_work: null,
 
-        payment_terms_text:
-          globalTerms.payment_terms_text || null,
+        payment_terms_text: null,
 
-        terms_conditions_text:
-          globalTerms.terms_conditions_text || null,
+        terms_conditions_text: autoGeneratedTerms || null,
 
         currency,
 
@@ -1334,13 +1395,11 @@ export default function QuotationBuilder() {
   const stepLabel =
     step === 1
       ? "Basic Info"
-      : step === 2
-        ? "Services Selection"
-        : step === 3
-          ? "Service Details"
-          : step === 4
-            ? "Global Terms"
-            : "Review";
+      : step === 3
+        ? "Service Details"
+        : "Review";
+
+  const stepIndex = step === 1 ? 1 : step === 3 ? 2 : 3;
 
   // const previewQuotation = step === 5 ? buildPreviewQuotation() : null;
 
@@ -1365,12 +1424,20 @@ export default function QuotationBuilder() {
           </Link>
           <div>
             <h1 className="text-3xl font-heading font-bold text-foreground">New Quotation</h1>
-            <p className="text-muted-foreground mt-1">Step {step} of 5 — {stepLabel}</p>
+            <p className="text-muted-foreground mt-1">Step {stepIndex} of 3 — {stepLabel}</p>
           </div>
         </div>
 
         <div className="flex flex-wrap items-center gap-3 lg:justify-end">
 
+          <Button
+            variant="outline"
+            onClick={() => handleSaveDraft("draft")}
+            className="rounded-xl"
+          >
+            <Save className="w-4 h-4 mr-2" />
+            Save Draft
+          </Button>
 
           {step > 1 && (
             <Button
@@ -1390,7 +1457,6 @@ export default function QuotationBuilder() {
               disabled={resuming}
             >
               Next
-
             </Button>
           )}
 
@@ -1399,353 +1465,407 @@ export default function QuotationBuilder() {
 
       {/* Step content */}
       {step === 1 ? (
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          <div className="lg:col-span-2 space-y-6">
-            <Card className="glass-card">
-              <CardHeader>
-                <CardTitle className="font-heading">Basic Info</CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-4">
+        <>
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mt-8">
+            <div className="lg:col-span-2 space-y-6">
+              <Card className="relative rounded-2xl border border-border/60 shadow-sm hover:shadow-xl transition-shadow duration-300 overflow-hidden">
+                {/* Thick left accent bar */}
+                <div className="absolute left-0 top-0 bottom-0 w-1.5 bg-foreground" />
 
-                <div className="space-y-2">
-                  <Label>Quotation Title</Label>
-                  <Input
-                    list="quotation-title-suggestions"
-                    value={formData.title}
-                    onChange={(e) => {
-                      const value = e.target.value;
+                <CardHeader className="pl-8 pb-5 border-b border-border/50">
+                  <div className="flex items-baseline gap-4">
+                    <span className="font-heading text-4xl font-bold text-foreground/10 leading-none select-none">
+                      01
+                    </span>
+                    <CardTitle className="text-xl font-heading font-bold text-foreground leading-tight">
+                      Basic Info
+                    </CardTitle>
+                  </div>
+                </CardHeader>
 
-                      setFormData((p) => ({
-                        ...p,
-                        title: value,
-                      }));
+                <CardContent className="pl-8 space-y-7 pt-6">
 
-                      const duplicate = quotations.find(
-                        (q) =>
-                          q.title.trim().toLowerCase() === value.trim().toLowerCase() &&
-                          q.id !== draftId
-                      );
+                  {/* Quotation Title */}
+                  <div className="space-y-2.5">
+                    <div className="flex items-center gap-2">
+                      <FileText className="w-3.5 h-3.5 text-foreground" strokeWidth={2.5} />
+                      <Label className="text-xs uppercase tracking-wide text-foreground font-bold">
+                        Quotation Title
+                      </Label>
+                    </div>
+                    <Input
+                      list="quotation-title-suggestions"
+                      value={formData.title}
+                      onChange={(e) => {
+                        const value = e.target.value;
 
-                      setTitleError(
-                        duplicate ? "Duplicate quotation title" : ""
-                      );
-                    }}
-                    className={`rounded-xl ${titleError
-                      ? "border-red-500 focus-visible:ring-red-500"
-                      : ""
-                      }`}
-                    placeholder="e.g., Social Media Management Proposal"
-                  />
-                  {titleError && (
-                    <p className="text-red-500 text-xs mt-1 ml-1">{titleError}</p>
-                  )}
-                  <datalist id="quotation-title-suggestions">
-                    {titleSuggestions.map((t) => (
-                      <option key={t} value={t} />
-                    ))}
-                  </datalist>
-                </div>
+                        setFormData((p) => ({
+                          ...p,
+                          title: value,
+                        }));
 
-                <div className="space-y-2">
-                  <Label>Client</Label>
-                  <Select
-                    open={clientSelectOpen}
-                    onOpenChange={setClientSelectOpen}
-                    value={formData.client_id || undefined}
-                    onValueChange={(value) => setFormData((p) => ({ ...p, client_id: value }))}
-                  >
-                    <SelectTrigger className="rounded-xl">
-                      <SelectValue placeholder="Select a client" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <div
-                        role="button"
-                        tabIndex={0}
-                        className="flex cursor-pointer select-none items-center gap-2 rounded-sm px-2 py-1.5 text-sm text-primary outline-none focus:bg-accent  "
-                        onMouseDown={(e) => {
-                          e.preventDefault();
-                          e.stopPropagation();
-                        }}
-                        onClick={(e) => {
-                          e.preventDefault();
-                          e.stopPropagation();
-                          openAddClientDialog();
-                        }}
-                        onKeyDown={(e) => {
-                          if (e.key === "Enter" || e.key === " ") {
+                        const duplicate = quotations.find(
+                          (q) =>
+                            q.title.trim().toLowerCase() === value.trim().toLowerCase() &&
+                            q.id !== draftId
+                        );
+
+                        setTitleError(
+                          duplicate ? "Duplicate quotation title" : ""
+                        );
+                      }}
+                      className={`rounded-xl border-border/70 h-[42px] ${titleError
+                        ? "border-red-500 focus-visible:ring-red-500"
+                        : ""
+                        }`}
+                      placeholder="e.g., Social Media Management Proposal"
+                    />
+                    {titleError && (
+                      <p className="text-red-500 text-xs mt-1 ml-1">{titleError}</p>
+                    )}
+                    <datalist id="quotation-title-suggestions">
+                      {titleSuggestions.map((t) => (
+                        <option key={t} value={t} />
+                      ))}
+                    </datalist>
+                  </div>
+
+                  {/* Client */}
+                  <div className="space-y-2.5">
+                    <div className="flex items-center gap-2">
+                      <Users className="w-3.5 h-3.5 text-foreground" strokeWidth={2.5} />
+                      <Label className="text-xs uppercase tracking-wide text-foreground font-bold">
+                        Client
+                      </Label>
+                    </div>
+                    <Select
+                      open={clientSelectOpen}
+                      onOpenChange={setClientSelectOpen}
+                      value={formData.client_id || undefined}
+                      onValueChange={(value) => setFormData((p) => ({ ...p, client_id: value }))}
+                    >
+                      <SelectTrigger className="rounded-xl border-border/70 h-[42px]">
+                        <SelectValue placeholder="Select a client" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <div
+                          role="button"
+                          tabIndex={0}
+                          className="flex cursor-pointer select-none items-center gap-2 rounded-sm px-2 py-1.5 text-sm text-primary outline-none focus:bg-accent  "
+                          onMouseDown={(e) => {
+                            e.preventDefault();
+                            e.stopPropagation();
+                          }}
+                          onClick={(e) => {
                             e.preventDefault();
                             e.stopPropagation();
                             openAddClientDialog();
-                          }
-                        }}
-                      >
-                        <UserPlus className="w-4 h-4 scrollbar-modern" /> + Add New Client
+                          }}
+                          onKeyDown={(e) => {
+                            if (e.key === "Enter" || e.key === " ") {
+                              e.preventDefault();
+                              e.stopPropagation();
+                              openAddClientDialog();
+                            }
+                          }}
+                        >
+                          <UserPlus className="w-4 h-4 scrollbar-modern" /> + Add New Client
+                        </div>
+                        <div className="h-px bg-muted my-1" />
+                        {clients.map((client) => (
+                          <SelectItem key={client.id} value={client.id}>
+                            {client.name} {client.business_name && `- ${client.business_name}`}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  {/* Dates */}
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
+                    <div className="space-y-2.5">
+                      <div className="flex items-center gap-2">
+                        <CalendarIcon className="w-3.5 h-3.5 text-muted-foreground" strokeWidth={2.5} />
+                        <Label className="text-xs uppercase tracking-wide text-muted-foreground font-bold">
+                          Quotation Date
+                        </Label>
                       </div>
-                      <div className="h-px bg-muted my-1" />
-                      {clients.map((client) => (
-                        <SelectItem key={client.id} value={client.id}>
-                          {client.name} {client.business_name && `- ${client.business_name}`}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  <div className="space-y-2">
-                    <Label>Quotation Date</Label>
-                    <DatePicker
-                      value={formData.quote_date}
-                      onChange={(value) =>
-                        setFormData((p) => ({
-                          ...p,
-                          quote_date: value,
-                        }))
-                      }
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label>Valid Until</Label>
-                    <DatePicker
-                      value={formData.valid_until}
-                      onChange={(value) =>
-                        setFormData((p) => ({
-                          ...p,
-                          valid_until: value,
-                        }))
-                      }
-                    />
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-          </div>
-
-          {/* <div>
-            <Card className="glass-card lg:sticky lg:top-6">
-              <CardHeader>
-                <CardTitle className="font-heading">Saved</CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-2">
-                <p className="text-sm text-muted-foreground">Saved automatically as you type.</p>
-              </CardContent>
-            </Card>
-
-          </div> */}
-
-          <div>
-            <Card className="glass-card lg:sticky lg:top-6 rounded-2xl border border-border/50 overflow-hidden transition-all duration-300 hover:shadow-lg hover:shadow-primary/5">
-              <CardHeader className="pb-3">
-                <CardTitle className="font-heading text-base">Client Summary</CardTitle>
-                <p className="text-xs text-muted-foreground">
-                  Information updates automatically when a client is selected.
-                </p>
-              </CardHeader>
-
-              <CardContent className="p-0">
-                {!formData.client_id || !clients.find((c) => c.id === formData.client_id) ? (
-                  /* Empty State */
-                  <div className="flex flex-col items-center justify-center text-center py-12 px-6 animate-in fade-in-20 duration-200">
-                    <div className="w-24 h-24 mb-3 rounded-full bg-gray-100 flex items-center justify-center animate-in [animation-duration:5s] shadow-sm">
-                      <img
-                        src="/public/office-man.png"
-                        alt="Person"
-                        className="w-18 h-18 object-contain opacity-70 select-none pointer-events-none"
-                        draggable={false}
+                      <DatePicker
+                        value={formData.quote_date}
+                        onChange={(value) =>
+                          setFormData((p) => ({
+                            ...p,
+                            quote_date: value,
+                          }))
+                        }
                       />
                     </div>
-                    <p className="text-sm font-semibold text-foreground">No Client Selected</p>
-                    <p className="text-xs text-muted-foreground mt-1 max-w-[220px]">
-                      Select a client from the form to view their information here.
-                    </p>
+                    <div className="space-y-2.5">
+                      <div className="flex items-center gap-2">
+                        <Clock className="w-3.5 h-3.5 text-muted-foreground" strokeWidth={2.5} />
+                        <Label className="text-xs uppercase tracking-wide text-muted-foreground font-bold">
+                          Valid Until
+                        </Label>
+                      </div>
+                      <DatePicker
+                        value={formData.valid_until}
+                        onChange={(value) =>
+                          setFormData((p) => ({
+                            ...p,
+                            valid_until: value,
+                          }))
+                        }
+                      />
+                    </div>
                   </div>
-                ) : (
-                  (() => {
-                    const selectedClient = clients.find(
-                      (c) => c.id === formData.client_id
-                    );
+                </CardContent>
+              </Card>
+            </div>
 
-                    if (!selectedClient) return null;
+            <div>
+              <Card className="relative lg:sticky lg:top-6 rounded-2xl border border-border/60 overflow-hidden shadow-sm hover:shadow-xl transition-shadow duration-300">
+                {/* Thick left accent bar */}
+                <div className="absolute left-0 top-0 bottom-0 w-1.5 bg-foreground" />
 
-                    return (
-                      <div className="animate-in fade-in-50 slide-in-from-bottom-2 duration-500">
-                        {/* Name / Business */}
-                        <div className="p-5 border-b border-border/50 bg-muted/30 relative overflow-hidden group">
-                          <div className="absolute inset-0 bg-gradient-to-br from-primary/5 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
-                          <div className="relative flex items-center gap-3">
-                            <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0 ring-2 ring-primary/10 transition-transform duration-300 hover:scale-105">
-                              <span className="text-sm font-bold text-primary">
-                                {(selectedClient.name || "?").charAt(0).toUpperCase()}
+                <CardHeader className="pl-8 pb-3 border-b border-border/50">
+                  <CardTitle className="font-heading text-base font-bold text-foreground">Client Summary</CardTitle>
+                  <p className="text-xs text-muted-foreground">
+                    Information updates automatically when a client is selected.
+                  </p>
+                </CardHeader>
+
+                <CardContent className="p-0">
+                  {!formData.client_id || !clients.find((c) => c.id === formData.client_id) ? (
+                    /* Empty State */
+                    <div className="flex flex-col items-center justify-center text-center py-12 px-6 animate-in fade-in-20 duration-200">
+                      <div className="w-24 h-24 mb-3 rounded-full bg-gray-100 flex items-center justify-center animate-in [animation-duration:5s] shadow-sm">
+                        <img
+                          src="/public/office-man.png"
+                          alt="Person"
+                          className="w-18 h-18 object-contain opacity-70 select-none pointer-events-none"
+                          draggable={false}
+                        />
+                      </div>
+                      <p className="text-sm font-semibold text-foreground">No Client Selected</p>
+                      <p className="text-xs text-muted-foreground mt-1 max-w-[220px]">
+                        Select a client from the form to view their information here.
+                      </p>
+                    </div>
+                  ) : (
+                    (() => {
+                      const selectedClient = clients.find(
+                        (c) => c.id === formData.client_id
+                      );
+
+                      if (!selectedClient) return null;
+
+                      return (
+                        <div className="animate-in fade-in-50 slide-in-from-bottom-2 duration-500">
+                          {/* Name / Business */}
+                          <div className="p-5 border-b border-border/50 bg-muted/30 relative overflow-hidden group">
+                            <div className="absolute inset-0 bg-gradient-to-br from-primary/5 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
+                            <div className="relative flex items-center gap-3">
+                              <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0 ring-2 ring-primary/10 transition-transform duration-300 hover:scale-105">
+                                <span className="text-sm font-bold text-primary">
+                                  {(selectedClient.name || "?").charAt(0).toUpperCase()}
+                                </span>
+                              </div>
+                              <div className="min-w-0">
+                                <p className="text-sm font-bold font-heading truncate">
+                                  {selectedClient.name || "—"}
+                                </p>
+                                <p className="text-xs text-muted-foreground mt-0.5 truncate">
+                                  {selectedClient.business_name || "—"}
+                                </p>
+                              </div>
+                            </div>
+                          </div>
+
+                          {/* Business Details */}
+                          <div className="border-b border-border/50">
+                            <div className="flex items-center justify-between px-5 py-2.5 transition-colors duration-200 hover:bg-muted/40">
+                              <span className="text-xs text-muted-foreground">Business Type</span>
+                              <span className="text-sm font-bold text-right truncate max-w-[60%]">
+                                {selectedClient.business_type || "—"}
                               </span>
                             </div>
-                            <div className="min-w-0">
-                              <p className="text-sm font-bold font-heading truncate">
-                                {selectedClient.name || "—"}
-                              </p>
-                              <p className="text-xs text-muted-foreground mt-0.5 truncate">
-                                {selectedClient.business_name || "—"}
-                              </p>
+                            <div className="flex items-center justify-between px-5 py-2.5 transition-colors duration-200 hover:bg-muted/40">
+                              <span className="text-xs text-muted-foreground">Industry</span>
+                              <span className="text-sm font-bold text-right truncate max-w-[60%]">
+                                {selectedClient.industry || "—"}
+                              </span>
+                            </div>
+                            <div className="flex items-center justify-between px-5 py-2.5 transition-colors duration-200 hover:bg-muted/40">
+                              <span className="text-xs text-muted-foreground">Location</span>
+                              <span className="text-sm font-bold text-right truncate max-w-[60%]">
+                                {selectedClient.location || selectedClient.location || "—"}
+                              </span>
                             </div>
                           </div>
-                        </div>
 
-                        {/* Business Details */}
-                        <div className="border-b border-border/50">
-                          <div className="flex items-center justify-between px-5 py-2.5 transition-colors duration-200 hover:bg-muted/40">
-                            <span className="text-xs text-muted-foreground">Business Type</span>
-                            <span className="text-sm font-bold text-right truncate max-w-[60%]">
-                              {selectedClient.business_type || "—"}
-                            </span>
+                          {/* Contact Details */}
+                          <div className="border-b border-border/50">
+                            <div className="flex items-center justify-between px-5 py-2.5 transition-colors duration-200 hover:bg-muted/40">
+                              <span className="text-xs text-muted-foreground">Email</span>
+                              <span className="text-sm font-bold text-right truncate max-w-[60%]">
+                                {selectedClient.email || "—"}
+                              </span>
+                            </div>
+                            <div className="flex items-center justify-between px-5 py-2.5 transition-colors duration-200 hover:bg-muted/40">
+                              <span className="text-xs text-muted-foreground">Phone</span>
+                              <span className="text-sm font-bold text-right truncate max-w-[60%]">
+                                {selectedClient.phone || "—"}
+                              </span>
+                            </div>
                           </div>
-                          <div className="flex items-center justify-between px-5 py-2.5 transition-colors duration-200 hover:bg-muted/40">
-                            <span className="text-xs text-muted-foreground">Industry</span>
-                            <span className="text-sm font-bold text-right truncate max-w-[60%]">
-                              {selectedClient.industry || "—"}
-                            </span>
-                          </div>
-                          <div className="flex items-center justify-between px-5 py-2.5 transition-colors duration-200 hover:bg-muted/40">
-                            <span className="text-xs text-muted-foreground">Location</span>
-                            <span className="text-sm font-bold text-right truncate max-w-[60%]">
-                              {selectedClient.city || selectedClient.location || "—"}
-                            </span>
-                          </div>
-                        </div>
 
-                        {/* Contact Details */}
-                        <div className="border-b border-border/50">
-                          <div className="flex items-center justify-between px-5 py-2.5 transition-colors duration-200 hover:bg-muted/40">
-                            <span className="text-xs text-muted-foreground">Email</span>
-                            <span className="text-sm font-bold text-right truncate max-w-[60%]">
-                              {selectedClient.email || "—"}
+                          {/* Created */}
+                          <div className="flex items-center justify-between px-5 py-3.5 transition-colors duration-200 hover:bg-muted/40">
+                            <span className="text-xs text-muted-foreground">Created</span>
+                            <span className="text-sm font-bold">
+                              {selectedClient.created_at
+                                ? new Date(selectedClient.created_at).toLocaleDateString("en-IN", {
+                                  day: "2-digit",
+                                  month: "short",
+                                  year: "numeric",
+                                })
+                                : "—"}
                             </span>
                           </div>
-                          <div className="flex items-center justify-between px-5 py-2.5 transition-colors duration-200 hover:bg-muted/40">
-                            <span className="text-xs text-muted-foreground">Phone</span>
-                            <span className="text-sm font-bold text-right truncate max-w-[60%]">
-                              {selectedClient.phone || "—"}
-                            </span>
-                          </div>
-                          {/* <div className="flex items-center justify-between px-5 py-2.5 transition-colors duration-200 hover:bg-muted/40">
-                            <span className="text-xs text-muted-foreground">GSTIN</span>
-                            <span className="text-sm font-bold text-right truncate max-w-[60%]">
-                              {selectedClient.gstin || "—"}
-                            </span>
-                          </div> */}
                         </div>
-
-                        {/* Created */}
-                        <div className="flex items-center justify-between px-5 py-3.5 transition-colors duration-200 hover:bg-muted/40">
-                          <span className="text-xs text-muted-foreground">Created</span>
-                          <span className="text-sm font-bold">
-                            {selectedClient.created_at
-                              ? new Date(selectedClient.created_at).toLocaleDateString("en-IN", {
-                                day: "2-digit",
-                                month: "short",
-                                year: "numeric",
-                              })
-                              : "—"}
-                          </span>
-                        </div>
-                      </div>
-                    );
-                  })()
-                )}
-              </CardContent>
-            </Card>
+                      );
+                    })()
+                  )}
+                </CardContent>
+              </Card>
+            </div>
           </div>
-        </div>
-      ) : null
-      }
 
-      {/* Step content */}
-      {/* Step 1 Footer */}
-      {step === 1 && (
-        <div className="flex justify-between items-center mt-8">
-          {/* Approve / Reject */}
-
-
-          <Button
-            variant="outline"
-            onClick={() => handleSaveDraft("draft")}
-            className="rounded-xl"
-          >
-            <Save className="w-4 h-4 mr-2" />
-            Save Draft
-          </Button>
-
-          {/* <Button
-            onClick={goNext}
-            className="rounded-xl"
-          >
-            Next
-          </Button> */}
-        </div>
-      )}
-
-
-      {
-        step === 2 ? (
-          <div className="grid grid-cols-1 lg:grid-cols-9 gap-6">
+          {/* ===== Services Selection ===== */}
+          <div className="mt-6 grid grid-cols-1 lg:grid-cols-9 gap-6">
 
             {/* Left */}
             <div className="lg:col-span-5 space-y-6">
-              <Card className="glass-card">
-                <CardHeader>
-                  <CardTitle className="font-heading">Services Selection</CardTitle>
+              <Card className="relative rounded-2xl border border-border/60 shadow-sm hover:shadow-xl transition-shadow duration-300 overflow-hidden">
+                {/* Thick left accent bar */}
+                <div className="absolute left-0 top-0 bottom-0 w-1.5 bg-foreground" />
+
+                <CardHeader className="pl-8 pb-5 border-b border-border/50">
+                  <div className="flex items-baseline gap-4 mb-4">
+                    <span className="font-heading text-4xl font-bold text-foreground/10 leading-none select-none">
+                      02
+                    </span>
+                    <CardTitle className="text-xl font-heading font-bold text-foreground leading-tight">
+                      Services Selection
+                    </CardTitle>
+                  </div>
                   <Input
                     placeholder="Search services..."
                     value={serviceSearch}
                     onChange={(e) => setServiceSearch(e.target.value)}
-                    className="rounded-xl"
+                    className="rounded-xl border-border/70 h-[42px]"
                   />
                 </CardHeader>
-                <CardContent className="lg:col-span-5 space-y-6">
+                <CardContent className="pl-8 pt-6 space-y-6">
                   {services.length > 0 ? (
-                    <div className="space-y-2">
-                      {filteredServices.map((service) => {
-                        const checked = serviceBlocks.some((b) => b.service_id === service.id);
-                        return (
-                          <label
-                            key={service.id}
-                            className="flex items-center gap-3 p-3 rounded-xl bg-secondary/50 hover:bg-secondary cursor-pointer transition-colors"
-                          >
-                            <input
-                              type="checkbox"
-                              checked={checked}
-                              onChange={(e) => addOrRemoveServiceAsBlock(service.id, e.target.checked)}
-                              className="rounded"
-                            />
-                            <div className="flex-1 min-w-0">
-                              <p className="font-medium text-foreground truncate">{service.name}</p>
-                              {service.description ? (
-                                <p className="text-sm text-muted-foreground line-clamp-2">{service.description}</p>
-                              ) : null}
+                    Object.keys(groupedFilteredServices).length > 0 ? (
+                      <div
+                        className="space-y-3 overflow-y-auto pr-2 scrollbar-modern"
+                        style={{
+                          maxHeight: rightColumnHeight ? `${Math.max(rightColumnHeight, 220)}px` : undefined,
+                          minHeight: 220,
+                        }}
+                      >
+                        {Object.entries(groupedFilteredServices).map(([category, categoryServices]) => {
+                          const isOpen = openCategories.has(category) || serviceSearch.trim().length > 0;
+                          const selectedCount = categoryServices.filter((s) =>
+                            serviceBlocks.some((b) => b.service_id === s.id)
+                          ).length;
+
+                          return (
+                            <div key={category} className="rounded-2xl border border-border/60 bg-card overflow-hidden">
+                              <button
+                                type="button"
+                                onClick={() => toggleCategory(category)}
+                                className="w-full flex items-center justify-between p-5 hover:bg-muted/40 transition-colors duration-200"
+                              >
+                                <div className="flex items-center gap-2">
+                                  <Tag className="w-3.5 h-3.5 text-accent" strokeWidth={2.5} />
+                                  <p className="text-xs uppercase tracking-wide text-accent font-bold">{category}</p>
+                                  {selectedCount > 0 && (
+                                    <span className="flex items-center justify-center min-w-[18px] h-[18px] px-1 rounded-full bg-accent text-accent-foreground text-[10px] font-bold">
+                                      {selectedCount}
+                                    </span>
+                                  )}
+                                </div>
+                                <ChevronDown
+                                  className={`w-4 h-4 text-muted-foreground transition-transform duration-200 ${isOpen ? "rotate-180" : ""}`}
+                                />
+                              </button>
+
+                              {isOpen && (
+                                <div className="px-5 pb-5 flex flex-wrap gap-2">
+                                  {categoryServices.map((service) => {
+                                    const checked = serviceBlocks.some((b) => b.service_id === service.id);
+                                    return (
+                                      <button
+                                        key={service.id}
+                                        type="button"
+                                        onClick={() => addOrRemoveServiceAsBlock(service.id, !checked)}
+                                        title={service.description || service.name}
+                                        className={`inline-flex items-center gap-1.5 pl-3 pr-2 py-1.5 rounded-full text-sm font-medium transition-all duration-200 ${checked
+                                          ? "bg-accent text-accent-foreground shadow-sm"
+                                          : "bg-secondary/60 text-foreground hover:bg-secondary"
+                                          }`}
+                                      >
+                                        {service.name}
+                                        <span
+                                          className={`flex items-center justify-center w-4 h-4 rounded-full text-[10px] font-bold transition-transform duration-200 ${checked ? "bg-accent-foreground/20" : "bg-foreground/10"
+                                            }`}
+                                        >
+                                          {checked ? "×" : "+"}
+                                        </span>
+                                      </button>
+                                    );
+                                  })}
+                                </div>
+                              )}
                             </div>
-                          </label>
-                        );
-                      })}
-                    </div>
+                          );
+                        })}
+                      </div>
+                    ) : (
+                      <p className="text-center text-muted-foreground py-8">
+                        {serviceSearch
+                          ? `No services found for "${serviceSearch}"`
+                          : "No services available."}
+                      </p>
+                    )
                   ) : (
                     <p className="text-center text-muted-foreground py-8">
-                      {serviceSearch
-                        ? `No services found for "${serviceSearch}"`
-                        : "No services available."}
+                      No services available.
                     </p>
                   )}
                 </CardContent>
               </Card>
-
-              {/* {serviceBlocks.length > 0 ? (
-              
-            ) : null} */}
             </div>
 
-            <div className="w-[500px]">
-              <Card className="glass-card">
-                <CardHeader>
-                  <CardTitle className="font-heading">Pricing</CardTitle>
+            <div ref={rightColumnRef} className="w-[500px] space-y-6">
+              <Card className="relative rounded-2xl border-2 shadow-sm hover:shadow-xl transition-shadow duration-300 overflow-hidden">
+                {/* Thick left accent bar */}
+                <div className="absolute left-0 top-0 bottom-0 w-1.5 bg-foreground" />
+
+                <CardHeader className="pl-8 pb-5 border-b border-border/50">
+                  <div className="flex items-baseline gap-4">
+                    <span className="font-heading text-4xl font-bold text-foreground/10 leading-none select-none">
+                      03
+                    </span>
+                    <CardTitle className="text-xl font-heading font-bold text-foreground leading-tight">
+                      Pricing
+                    </CardTitle>
+                  </div>
                 </CardHeader>
-                <CardContent className="lg:col-span-4 space-y-6">
+                <CardContent className="pl-8 pt-6 space-y-6">
                   {serviceBlocks.map((b, idx) => {
 
                     const monthlyPlan =
@@ -1759,8 +1879,7 @@ export default function QuotationBuilder() {
                     return (
                       <div
                         key={`${b.service_id}-${idx}`}
-                        className="p-4 rounded-xl border border-purple-500/40 bg-purple-600/10 space-y-4 transition-all duration-300 shadow-[0_0_20px_rgba(168,85,247,0.2)]">
-
+                        className="p-4 rounded-xl border border-black bg-[#e5e5e5] space-y-4 transition-all duration-300 shadow-[0_0_20px_rgba(168,85,247,0.2)]">
 
                         {/* Header */}
                         <div className="flex items-start justify-between gap-4">
@@ -1789,10 +1908,12 @@ export default function QuotationBuilder() {
                           </Button>
                         </div>
 
-
                         {/* Billing Type */}
                         <div className="space-y-2">
-                          <Label>Billing Type</Label>
+                          <div className="flex items-center gap-2">
+                            <Wallet className="w-3.5 h-3.5 text-muted-foreground" strokeWidth={2.5} />
+                            <Label className="text-xs uppercase tracking-wide text-muted-foreground font-bold">Billing Type</Label>
+                          </div>
 
                           <Select
                             value={b.billing_type}
@@ -1951,22 +2072,6 @@ export default function QuotationBuilder() {
                                         max={100}
                                         value={m.percentage}
                                         className="pr-8"
-                                        // onChange={(e) => {
-
-                                        //   const updated =
-                                        //     updateMilestonePercentage(
-                                        //       b.milestone_template ?? [],
-                                        //       m.id,
-                                        //       Number(e.target.value),
-                                        //       b.price
-                                        //     );
-
-                                        //   updateBlock(idx, {
-                                        //     milestone_template: updated,
-                                        //   });
-
-                                        // }}
-
                                         onChange={(e) => {
                                           const percentage = parseInt(e.target.value.replace(/^0+(?=\d)/, ""), 10) || 0;
 
@@ -2154,14 +2259,17 @@ export default function QuotationBuilder() {
                   })}
                 </CardContent>
               </Card>
-              <Card className="glass-card lg:sticky lg:top-6">
-                <CardHeader>
-                  <CardTitle className="font-heading">Summary</CardTitle>
+              <Card className="relative lg:sticky lg:top-6 rounded-2xl border border-border/60 overflow-hidden shadow-sm hover:shadow-xl transition-shadow duration-300">
+                {/* Thick left accent bar */}
+                <div className="absolute left-0 top-0 bottom-0 w-1.5 bg-foreground" />
+
+                <CardHeader className="pl-8 pb-4 border-b border-border/50">
+                  <CardTitle className="font-heading text-base font-bold text-foreground">Summary</CardTitle>
                 </CardHeader>
-                <CardContent className="space-y-2">
+                <CardContent className="pl-8 pt-4 space-y-2 ">
                   <div className="flex items-center justify-between text-sm">
-                    <span className="text-muted-foreground">Selected services</span>
-                    <span className="text-foreground font-medium">{serviceBlocks.length}</span>
+                    <span className="text-muted-foreground  text-black">Selected services</span>
+                    <span className="text-foreground font-medium  text-black">{serviceBlocks.length}</span>
                   </div>
                   {derivedTotals.monthly > 0 ? (
                     <div className="flex items-center justify-between text-sm">
@@ -2176,138 +2284,193 @@ export default function QuotationBuilder() {
                     </div>
                   ) : null}
                   <div className="flex items-center justify-between pt-2">
-                    <span className="font-heading font-semibold text-foreground">Total</span>
+                    <span className="font-heading font-bold text-foreground">Total</span>
                     <span className="font-heading font-bold text-foreground">{(currency === "INR" ? "₹" : "$")}{derivedTotals.total.toLocaleString()}</span>
                   </div>
                 </CardContent>
               </Card>
             </div>
           </div>
-        ) : null
+        </>
+      ) : null
       }
+      {/* Step content */}
 
-      {step === 2 && (
-        <div className="flex justify-between items-center mt-8">
-
-          <Button
-            variant="outline"
-            onClick={() => handleSaveDraft("draft")}
-            className="rounded-xl"
-          >
-            <Save className="w-4 h-4 mr-2" />
-            Save Draft
-          </Button>
-
-          <div className="flex gap-3">
-
-            <Button
-              variant="outline"
-              onClick={goBack}
-              className="rounded-xl"
-            >
-              Back
-            </Button>
-
-            <Button
-              onClick={goNext}
-              className="rounded-xl"
-            >
-              Next
-            </Button>
-
-          </div>
-
-        </div>
-      )}
       {
         step === 3 ? (
-          <div className="lg:col-span-1 space-y-6">
-            <div className="flex items-center justify-between">
-              <h2 className="text-xl font-heading font-semibold text-foreground">Service Details</h2>
-              <span className="text-sm text-muted-foreground">Add details for {serviceBlocks.length} services</span>
+          <div className="lg:col-span-2 space-y-8">
+            <div className="flex items-end justify-between border-b-2 border-foreground pb-5">
+              <div>
+                <p className="text-xs uppercase tracking-[0.2em] text-muted-foreground font-bold mb-1">Step 3</p>
+                <h2 className="text-2xl font-heading font-bold text-foreground">Service Details</h2>
+                <p className="text-sm text-muted-foreground mt-1">Define scope, deliverables, and terms for each service.</p>
+              </div>
+              <div className="flex flex-col items-end gap-1 shrink-0">
+                <span className="text-3xl font-heading font-bold text-foreground leading-none">
+                  {serviceBlocks.length}
+                </span>
+                <span className="text-[11px] uppercase tracking-wide text-muted-foreground font-semibold">
+                  {serviceBlocks.length === 1 ? "Service" : "Services"}
+                </span>
+              </div>
             </div>
 
             {serviceBlocks.length === 0 ? (
-              <Card className="glass-card">
-                <CardContent className="py-8 text-center">
-                  <p className="text-muted-foreground">No services selected. Go back to Step 2.</p>
-                  <Button variant="link" onClick={goBack}>Back to Services</Button>
+              <Card className="border-2 border-dashed border-foreground/40 rounded-2xl bg-transparent shadow-none">
+                <CardContent className="py-14 text-center">
+                  <Package className="w-10 h-10 mx-auto mb-3 text-muted-foreground/50" strokeWidth={1.5} />
+                  <p className="text-muted-foreground mb-1">No services selected yet</p>
+                  <Button variant="link" onClick={goBack} className="text-foreground font-semibold gap-1">
+                    Back to Services <ChevronRight className="w-3.5 h-3.5" />
+                  </Button>
                 </CardContent>
               </Card>
             ) : (
               serviceBlocks.map((b, idx) => (
 
-                <Card key={`${b.service_id}-${idx}`} className="glass-card">
-                  <CardHeader className="pb-3">
-                    <CardTitle className="text-lg font-medium text-primary flex items-center gap-2">
-                      <div className="flex h-6 w-6 items-center justify-center rounded-full bg-primary/10 text-xs text-primary">
-                        {idx + 1}
+                <Card
+                  key={`${b.service_id}-${idx}`}
+                  className="relative lg:sticky lg:top-6 rounded-2xl border border-border/60 shadow-sm hover:shadow-xl transition-shadow duration-300 overflow-hidden">
+                  {/* Thick left accent bar */}
+                  <div className="absolute left-0 top-0 bottom-0 w-1.5 bg-foreground" />
+
+                  <CardHeader className="pl-8 pb-5 border-b border-border/50 shrink-0">
+                    <div className="flex items-start justify-between gap-4">
+                      <div className="flex items-baseline gap-4">
+                        <span className="font-heading text-4xl font-bold text-foreground/10 leading-none select-none">
+                          {String(idx + 1).padStart(2, "0")}
+                        </span>
+                        <CardTitle className="text-xl font-heading font-bold text-foreground leading-tight">
+                          {b.service_name || "Service"}
+                        </CardTitle>
                       </div>
-                      {b.service_name || "Service"}
-                    </CardTitle>
+
+                      {/* Timeline tucked in the corner */}
+                      <div className="flex flex-col items-end gap-1 shrink-0">
+                        <div className="flex items-center gap-1.5 text-muted-foreground">
+                          <Clock className="w-3.5 h-3.5" strokeWidth={2.5} />
+                          <span className="text-[10px] uppercase tracking-wide font-bold">Timeline</span>
+                        </div>
+                        <Input
+                          value={b.timeline || ""}
+                          onChange={(e) => updateBlock(idx, { timeline: e.target.value })}
+                          className="rounded-xl border-border/70 h-[34px] w-[120px] text-sm text-right"
+                          placeholder="e.g., 2 weeks"
+                        />
+                      </div>
+                    </div>
                   </CardHeader>
-                  <CardContent className="space-y-5">
-                    <div className="space-y-2">
-                      <Label>Description</Label>
-                      <RichEditor
-                        value={b.description || ""}
-                        onChange={(val) => updateBlock(idx, { description: val })}
-                        className="min-h-[100px]"
-                        placeholder="Service description..."
-                      />
-                    </div>
 
-                    <div className="space-y-2">
-                      <Label>Scope of Work</Label>
-                      <RichEditor
-                        value={b.scope_of_work || ""}
-                        onChange={(val) => updateBlock(idx, { scope_of_work: val })}
-                        className="min-h-[120px]"
-                        placeholder="Write scope of work for this service..."
-                      />
-                    </div>
+                  <CardContent className="pl-8 space-y-7 pt-6">
 
-                    <div className="space-y-2">
-                      <Label>Deliverables (optional)</Label>
-                      <RichEditor
-                        value={b.deliverables || ""}
-                        onChange={(val) => updateBlock(idx, { deliverables: val })}
-                        className="min-h-[80px]"
-                        placeholder="Optional deliverables for this service..."
-                      />
-                    </div>
-
-                    <div className="space-y-2">
-                      <Label>Timeline (optional)</Label>
-                      <Input
-                        value={b.timeline || ""}
-                        onChange={(e) => updateBlock(idx, { timeline: e.target.value })}
-                        className="rounded-xl"
-                        placeholder="e.g., 2 weeks"
-                      />
-                    </div>
-
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      <div className="space-y-2">
-                        <Label>Service-specific payment terms (optional)</Label>
+                    {/* Row 1: Description / Scope of Work / Deliverables — 3 square boxes */}
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
+                      <div className="space-y-2.5">
+                        <div className="flex items-center gap-2">
+                          <FileText className="w-3.5 h-3.5 text-foreground" strokeWidth={2.5} />
+                          <Label className="text-xs uppercase tracking-wide text-foreground font-bold">
+                            Description
+                          </Label>
+                        </div>
                         <RichEditor
-                          value={b.payment_terms || ""}
-                          onChange={(val) => updateBlock(idx, { payment_terms: val })}
-                          className="min-h-[100px]"
-                          placeholder="Optional payment terms..."
+                          value={b.description || ""}
+                          onChange={(val) => updateBlock(idx, { description: val })}
+                          className="h-[140px] rounded-xl border border-border/70"
+                          placeholder="Service description..."
                         />
                       </div>
 
-                      <div className="space-y-2">
-                        <Label>Service-specific terms (optional)</Label>
+                      <div className="space-y-2.5">
+                        <div className="flex items-center gap-2">
+                          <ListChecks className="w-3.5 h-3.5 text-foreground" strokeWidth={2.5} />
+                          <Label className="text-xs uppercase tracking-wide text-foreground font-bold">
+                            Scope of Work
+                          </Label>
+                        </div>
                         <RichEditor
-                          value={b.service_terms || ""}
-                          onChange={(val) => updateBlock(idx, { service_terms: val })}
-                          className="min-h-[100px]"
-                          placeholder="Optional terms..."
+                          value={b.scope_of_work || ""}
+                          onChange={(val) => updateBlock(idx, { scope_of_work: val })}
+                          className="h-[140px] rounded-xl border border-border/70"
+                          placeholder="Write scope of work for this service..."
+                        />
+                      </div>
+
+                      <div className="space-y-2.5">
+                        <div className="flex items-center gap-2">
+                          <Package className="w-3.5 h-3.5 text-muted-foreground" strokeWidth={2.5} />
+                          <Label className="text-xs uppercase tracking-wide text-muted-foreground font-bold">
+                            Deliverables <span className="normal-case font-normal text-muted-foreground/60">(optional)</span>
+                          </Label>
+                        </div>
+                        <RichEditor
+                          value={b.deliverables || ""}
+                          onChange={(val) => updateBlock(idx, { deliverables: val })}
+                          className="h-[140px] rounded-xl border border-border/70"
+                          placeholder="Optional deliverables for this service..."
                         />
                       </div>
                     </div>
+
+                    {/* Terms section, visually separated */}
+                    <div className="relative pt-6">
+                      <div className="flex items-center gap-3 mb-5">
+                        <div className="h-px flex-1 bg-border/60" />
+                        <div className="flex items-center gap-1.5 px-3 py-1 rounded-full bg-foreground text-background">
+                          <ScrollText className="w-3 h-3" strokeWidth={2.5} />
+                          <span className="text-[10px] uppercase tracking-wide font-bold">Terms & Conditions</span>
+                        </div>
+                        <div className="h-px flex-1 bg-border/60" />
+                      </div>
+
+                      {/* Row 2: Payment Terms / Service Terms / Terms & Conditions — 3 square boxes */}
+                      <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
+                        <div className="space-y-2.5">
+                          <div className="flex items-center gap-2">
+                            <Wallet className="w-3.5 h-3.5 text-muted-foreground" strokeWidth={2.5} />
+                            <Label className="text-xs uppercase tracking-wide text-muted-foreground font-bold">
+                              Payment Terms <span className="normal-case font-normal text-muted-foreground/60">(optional)</span>
+                            </Label>
+                          </div>
+                          <RichEditor
+                            value={b.payment_terms || ""}
+                            onChange={(val) => updateBlock(idx, { payment_terms: val })}
+                            className="h-[160px] rounded-xl border border-border/70"
+                            placeholder="Optional payment terms..."
+                          />
+                        </div>
+
+                        <div className="space-y-2.5">
+                          <div className="flex items-center gap-2">
+                            <ScrollText className="w-3.5 h-3.5 text-muted-foreground" strokeWidth={2.5} />
+                            <Label className="text-xs uppercase tracking-wide text-muted-foreground font-bold">
+                              Service Terms <span className="normal-case font-normal text-muted-foreground/60">(optional)</span>
+                            </Label>
+                          </div>
+                          <RichEditor
+                            value={b.service_terms || ""}
+                            onChange={(val) => updateBlock(idx, { service_terms: val })}
+                            className="h-[160px] rounded-xl border border-border/70"
+                            placeholder="Optional terms..."
+                          />
+                        </div>
+
+                        <div className="space-y-2.5">
+                          <div className="flex items-center gap-2">
+                            <ScrollText className="w-3.5 h-3.5 text-muted-foreground" strokeWidth={2.5} />
+                            <Label className="text-xs uppercase tracking-wide text-muted-foreground font-bold">
+                              Terms & Conditions
+                            </Label>
+                          </div>
+                          <RichEditor
+                            value={b.terms_conditions_text || ""}
+                            onChange={(val) => updateBlock(idx, { terms_conditions_text: val })}
+                            className="h-[160px] rounded-xl border border-border/70 border-black"
+                            placeholder="Terms & conditions specific to this service..."
+                          />
+                        </div>
+                      </div>
+                    </div>
+
                   </CardContent>
                 </Card>
               ))
@@ -2315,6 +2478,7 @@ export default function QuotationBuilder() {
           </div>
         ) : null
       }
+
 
       {step === 3 && (
         <div className="flex justify-between items-center mt-8">
@@ -2341,98 +2505,6 @@ export default function QuotationBuilder() {
       )}
 
       {
-        step === 4 ? (
-          <div className="space-y-6">
-            <Card className="glass-card">
-              <CardHeader>
-                <CardTitle className="font-heading">Global Terms</CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-6">
-                <div className="space-y-3">
-                  <div className="flex items-center justify-between gap-4">
-                    <Label className="text-sm text-foreground">Show Introduction</Label>
-                    <Switch checked={sectionToggles.introduction} onCheckedChange={(checked) => setSectionToggles((p) => ({ ...p, introduction: checked }))} />
-                  </div>
-                  <div className="flex items-center justify-between gap-4">
-                    <Label className="text-sm text-foreground">Show Payment Terms</Label>
-                    <Switch checked={sectionToggles.payment_terms} onCheckedChange={(checked) => setSectionToggles((p) => ({ ...p, payment_terms: checked }))} />
-                  </div>
-                  <div className="flex items-center justify-between gap-4">
-                    <Label className="text-sm text-foreground">Show Terms & Conditions</Label>
-                    <Switch checked={sectionToggles.terms_conditions} onCheckedChange={(checked) => setSectionToggles((p) => ({ ...p, terms_conditions: checked }))} />
-                  </div>
-                  <p className="text-xs text-muted-foreground">
-                    These global sections apply only when a service does not define its own terms.
-                  </p>
-                </div>
-
-                {sectionToggles.introduction ? (
-                  <div className="space-y-2">
-                    <Label>Introduction</Label>
-                    <Textarea
-                      value={globalTerms.introduction}
-                      onChange={(e) => setGlobalTerms((p) => ({ ...p, introduction: e.target.value }))}
-                      className="min-h-[100px] rounded-xl"
-                      placeholder="Optional introduction shown at the top of the quotation."
-                    />
-                  </div>
-                ) : null}
-
-                {sectionToggles.payment_terms ? (
-                  <div className="space-y-2">
-                    <Label>Overall payment terms (fallback)</Label>
-                    <Textarea
-                      value={globalTerms.payment_terms_text}
-                      onChange={(e) => setGlobalTerms((p) => ({ ...p, payment_terms_text: e.target.value }))}
-                      className="min-h-[100px] rounded-xl"
-                      placeholder="Used if a service doesn't specify its own payment terms."
-                    />
-                  </div>
-                ) : null}
-
-                {sectionToggles.terms_conditions ? (
-                  <div className="space-y-2">
-                    <Label>Overall terms & conditions (fallback)</Label>
-                    <Textarea
-                      value={
-                        globalTerms.terms_conditions_text}
-                      onChange={(e) => setGlobalTerms((p) => ({ ...p, terms_conditions_text: e.target.value }))}
-                      className="min-h-[120px] rounded-xl"
-                      placeholder="Used if a service doesn't specify its own terms."
-                    />
-                  </div>
-                ) : null}
-              </CardContent>
-            </Card>
-          </div>
-        ) : null
-      }
-
-      {step === 4 && (
-        <div className="flex justify-between items-center mt-8">
-
-          <Button
-            variant="outline"
-            onClick={() => handleSaveDraft("draft")}
-          >
-            <Save className="w-4 h-4 mr-2" />
-            Save Draft
-          </Button>
-
-          <div className="flex gap-3">
-            <Button variant="outline" onClick={goBack}>
-              Back
-            </Button>
-
-            <Button onClick={goNext}>
-              Review
-            </Button>
-          </div>
-
-        </div>
-      )}
-
-      {
         step === 5 && (() => {
           const pq = previewQuotation ?? buildPreviewQuotation();
           if (!pq) return null;
@@ -2440,7 +2512,7 @@ export default function QuotationBuilder() {
             <div className="grid grid-cols-1 lg:grid-cols-[1fr_360px] gap-6 max-w-[1320px] mx-auto">
               <div>
                 {/* <QuotationLayout quotation={pq} brandKit={brandKit} mode="screen" /> */}
-                <ProfessionalQuotationLayout quotation={pq} brandKit={brandKit} mode="screen" />
+                <ProfessionalQuotationLayout quotation={pq} brandKit={brandKit} />
               </div>
 
               <aside className="no-print lg:sticky lg:top-6 h-fit">
@@ -2470,7 +2542,7 @@ export default function QuotationBuilder() {
                   </div>
 
                   <div className="space-y-2">
-                    <Button variant="outline" className="w-full gap-2 rounded-xl" onClick={goBack}>
+                    <Button variant="outline" className="w-full gap-2 rounded-xl border border-black" onClick={goBack}>
                       <Pencil className="w-4 h-4" /> Edit Quotation
                     </Button>
 
@@ -2516,19 +2588,19 @@ export default function QuotationBuilder() {
                      */}
 
                     <Button
-                      className="w-full rounded-xl gap-2 bg-blue-600 hover:bg-blue-700"
+                      className="w-full rounded-xl gap-2 bg-black border border-black"
                       onClick={handleMarkSent}
                     >
                       <Send className="w-4 h-4" />
                       Mark as Sent
                     </Button>
-                    <Button variant="outline" className="w-full gap-2 rounded-xl" onClick={() => handleSaveDraft("draft")}>
+                    <Button variant="outline" className="w-full gap-2 rounded-xl border border-black" onClick={() => handleSaveDraft("draft")}>
                       <Save className="w-4 h-4" /> Save Draft
                     </Button>
-                    <Button className="w-full gap-2 rounded-xl" onClick={handleMarkSent}>
+                    <Button className="w-full rounded-xl gap-2 bg-black border border-black" onClick={handleMarkSent}>
                       <Send className="w-4 h-4" /> Share Quotation Link
                     </Button>
-                    <Button variant="outline" className="w-full gap-2 rounded-xl" onClick={handleDownloadPdf}>
+                    <Button variant="outline" className="w-full gap-2 rounded-xl border border-black" onClick={handleDownloadPdf}>
                       <Download className="w-4 h-4" /> Generate PDF
                     </Button>
                   </div>

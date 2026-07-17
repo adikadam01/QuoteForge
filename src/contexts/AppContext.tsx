@@ -694,21 +694,22 @@ export function AppProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     (async () => {
       try {
-        await refreshBrandKit();
-        await refreshClientOptions();
-        await refreshClients();
-        await refreshServices();
-        await refreshQuotations();
-        await refreshTermsConditions();
-        await refreshInvoices();
-        await refreshInvoiceItems();
-        await refreshReceipts();
-        await refreshQuotationPointTemplates();
+        await Promise.all([
+          refreshBrandKit(),
+          refreshClientOptions(),
+          refreshClients(),
+          refreshServices(),
+          refreshQuotations(),
+          refreshTermsConditions(),
+          refreshInvoices(),
+          refreshInvoiceItems(),
+          refreshReceipts(),
+          refreshQuotationPointTemplates(),
+        ]);
       } finally {
         setLoading(false);
       }
     })();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   return (

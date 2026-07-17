@@ -234,7 +234,7 @@ export default function InvoiceView() {
 
       console.log("Secure Context:", window.isSecureContext);
       console.log("showSaveFilePicker:", "showSaveFilePicker" in window);
-      
+
       if ("showSaveFilePicker" in window) {
         const handle = await (window as any).showSaveFilePicker({
           suggestedName: fileName,
@@ -452,7 +452,8 @@ export default function InvoiceView() {
                     <div>
                       <div className="doc-sectionTitle">From</div>
                       <div className="doc-block">
-                        <div className="doc-strong">Triple S Production</div>
+                        {/* <div className="doc-strong">Triple S Production</div> */}
+
                         {brandKit?.address ? <div className="doc-meta whitespace-pre-wrap">{brandKit.address}</div> : null}
                         <div className="doc-meta">
                           {[brandKit?.email, brandKit?.phone, brandKit?.website].filter(Boolean).join("  •  ") || "—"}

@@ -5,8 +5,11 @@
 global $pdo, $path, $method;
 
 global $pdo, $path, $method;
-ini_set('display_errors', 0);
-error_reporting(E_ERROR);
+// ini_set('display_errors', 0);
+// error_reporting(E_ERROR);
+
+ini_set('display_errors', 1);
+error_reporting(E_ALL);
 
 // GET /clients/options
 if ($path === '/clients/options' && $method === 'GET') {
@@ -40,10 +43,35 @@ if ($path === '/clients/options' && $method === 'POST') {
 }
 
 // GET /clients
+// if ($path === '/clients' && $method === 'GET') {
+//     $stmt = $pdo->query("SELECT * FROM clients WHERE is_deleted = 0 ORDER BY created_at DESC");
+//     jsonResponse($stmt->fetchAll());
+// }
+
+
 if ($path === '/clients' && $method === 'GET') {
-    $stmt = $pdo->query("SELECT * FROM clients WHERE is_deleted = 0 ORDER BY created_at DESC");
-    jsonResponse($stmt->fetchAll());
+
+    try {
+
+        $stmt = $pdo->query("
+            SELECT *
+            FROM clients
+            WHERE is_deleted = false
+            ORDER BY created_at DESC
+        ");
+
+        jsonResponse($stmt->fetchAll());
+
+    } catch (Throwable $e) {
+
+        jsonResponse([
+            "error" => $e->getMessage()
+        ],500);
+
+    }
+
 }
+
 
 // POST /clients
 // POST /clients
@@ -261,13 +289,13 @@ if (preg_match('#^/clients/([\w\-]+)$#', $path, $matches) && $method === 'DELETE
     try {
 
         $stmt = $pdo->prepare(
-            "UPDATE clients
-             SET is_deleted = 1,
-                 deleted_at = NOW()
-             WHERE id = ?"
-        );
+    "UPDATE clients
+     SET is_deleted = ?,
+         deleted_at = NOW()
+     WHERE id = ?"
+);
 
-        $stmt->execute([$id]);
+$stmt->execute([true, $id]);
 
         jsonResponse([
             'success' => true,

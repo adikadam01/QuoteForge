@@ -19,12 +19,12 @@ set_error_handler(function($errno, $errstr) {
     exit;
 });
 
-set_exception_handler(function($e) {
-    http_response_code(500);
-    header('Content-Type: application/json');
-    echo json_encode(['error' => $e->getMessage()]);
-    exit;
-});
+// set_exception_handler(function($e) {
+//     http_response_code(500);
+//     header('Content-Type: application/json');
+//     echo json_encode(['error' => $e->getMessage()]);
+//     exit;
+// });
 
 function formatInvoice($r) {
     if (!$r) return null;
@@ -35,8 +35,18 @@ function formatInvoice($r) {
     $r['tax_amount'] = (float)$r['tax_amount'];
     $r['discount'] = (float)$r['discount'];
     
-    $r['milestones'] = json_decode($r['milestones_json'] ?? '[]', true);
-    $r['quotation_selected_points'] = json_decode($r['quotation_selected_points_json'] ?? 'null', true);
+    // $r['milestones'] = json_decode($r['milestones_json'] ?? '[]', true);
+    // $r['quotation_selected_points'] = json_decode($r['quotation_selected_points_json'] ?? 'null', true);
+
+    $r['milestones'] =
+    is_string($r['milestones_json'] ?? null)
+        ? json_decode($r['milestones_json'], true)
+        : ($r['milestones_json'] ?? []);
+
+$r['quotation_selected_points'] =
+    is_string($r['quotation_selected_points_json'] ?? null)
+        ? json_decode($r['quotation_selected_points_json'], true)
+        : ($r['quotation_selected_points_json'] ?? null);
    $r['milestone_index'] = isset($r['milestone_index']) && $r['milestone_index'] !== null ? (int)$r['milestone_index'] : null;
     $r['balance_amount'] = $r['balance_amount'] !== null ? (float)$r['balance_amount'] : null;
     
@@ -135,17 +145,36 @@ $placeholders = array_fill(0, count($values), '?');
         // Assuming ID is PART of the input or we need lastInsertId.
         // If ID is not in input, we get lastInsertId.
         
-        if (!empty($input['id'])) {
-            $invoiceId = $input['id'];
-        } else {
-             // If auto inc
-             $invoiceId = $pdo->lastInsertId();
-             $input['id'] = $invoiceId;
-        }
+        // if (!empty($input['id'])) {
+        //     $invoiceId = $input['id'];
+        // } else {
+        //      // If auto inc
+        //      $invoiceId = $pdo->lastInsertId();
+        //      $input['id'] = $invoiceId;
+        // }
+
+        $invoiceId = $input['id'];
+
 
         // Insert Items
         if (!empty($items)) {
-            $sqlItems = "INSERT INTO invoice_items (id, invoice_id, name, description, quantity, unit_price, total, sort_order) VALUES (?, ?, ?, ?, ?, ?, ?, ?)";
+            // $sqlItems = "INSERT INTO invoice_items (id, invoice_id, name, description, quantity, unit_price, total, sort_order) VALUES (?, ?, ?, ?, ?, ?, ?, ?)";
+
+            $sqlItems = "INSERT INTO invoice_items
+(
+    id,
+    invoice_id,
+    quotation_id,
+    service_id,
+    pricing_model,
+    name,
+    description,
+    quantity,
+    unit_price,
+    total,
+    sort_order
+)
+VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
             $stmtItems = $pdo->prepare($sqlItems);
             
             foreach ($items as $item) {
@@ -203,7 +232,7 @@ if (preg_match('#^/invoices/([\w\-]+)$#', $path, $matches) && $method === 'PUT')
     $sets = [];
     $values = [];
     foreach ($input as $key => $value) {
-        $sets[] = "`$key` = ?";
+        $sets[] = "$key = ?";
         $values[] = $value;
     }
     $values[] = $id;

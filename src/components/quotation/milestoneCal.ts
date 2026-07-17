@@ -17,6 +17,41 @@ export interface MilestoneResult {
     total: number;
 }
 
+// src/lib/quotation/milestoneCal.ts
+// add this export alongside the others
+
+export function normalizeMilestonesFromTemplate(
+    template: Array<{ id?: string; label?: string; amount?: number; percentage?: number }>,
+    totalPrice: number
+): MilestoneItem[] {
+    const items = template.map((m, i) => {
+        const amount = Number(m.amount) || 0;
+        const percentage =
+            m.percentage != null && Number.isFinite(Number(m.percentage))
+                ? Number(m.percentage)
+                : totalPrice > 0
+                    ? Number(((amount / totalPrice) * 100).toFixed(2))
+                    : 0;
+
+        return {
+            id: m.id || `ms_${Date.now()}_${i}_${Math.random().toString(36).substring(2)}`,
+            label: m.label || `Milestone ${i + 1}`,
+            percentage,
+            amount,
+        };
+    });
+
+    // Snap the last milestone so percentages sum to exactly 100
+    if (items.length > 0) {
+        const sumExceptLast = items
+            .slice(0, -1)
+            .reduce((sum, m) => sum + m.percentage, 0);
+        const last = items[items.length - 1];
+        last.percentage = Number((100 - sumExceptLast).toFixed(2));
+    }
+
+    return items;
+}
 /**
  * Creates an empty milestone
  */
@@ -58,35 +93,18 @@ export function generateMilestones(
 }
 
 export function calculateTotalPercentage(
-
     milestones: MilestoneItem[]
-
 ) {
-
-    return milestones.reduce(
-
-        (sum, m) => sum + m.percentage,
-
-        0
-
-    );
-
+    const total = milestones.reduce((sum, m) => sum + m.percentage, 0);
+    return Number(total.toFixed(2)); // round away float dust
 }
 
 export function calculateRemainingPercentage(
-
     milestones: MilestoneItem[]
-
 ) {
-
-    return Math.max(
-
-        0,
-
-        100 - calculateTotalPercentage(milestones)
-
+    return Number(
+        Math.max(0, 100 - calculateTotalPercentage(milestones)).toFixed(2)
     );
-
 }
 
 export function updateMilestonePercentage(

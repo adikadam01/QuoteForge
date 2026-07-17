@@ -56,7 +56,6 @@ export type QuotationServiceBlockBillingType =
 
 export type QuotationServiceBlock = {
 
-
   service_id: string;
   service_name: string;
   description: string;
@@ -77,6 +76,7 @@ export type QuotationServiceBlock = {
 
   payment_terms?: string;
   service_terms?: string;
+  terms_conditions_text?: string; // NEW — auto-filled from this service's category, editable
 
   milestone_count?: number;
   milestone_template?: MilestoneItem[];
@@ -180,6 +180,12 @@ export function getQuotationServiceBlocks(q: Quotation): QuotationServiceBlock[]
 
           price:
             normalizeNumber(r.price),
+
+          service_terms:
+            normalizeText(r.service_terms) || undefined,
+
+          terms_conditions_text:
+            normalizeText(r.terms_conditions_text) || undefined,
 
           billing_type: (
             r.billing_type === "one_time" ||

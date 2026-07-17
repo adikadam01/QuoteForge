@@ -455,7 +455,7 @@ export const InvoicePDF = ({ invoice, brandKit }: InvoicePDFProps) => {
       <Page size="A4" style={styles.page}>
 
         {/* Header */}
-        <View style={styles.header}>
+        {/* <View style={styles.header}>
           <View>
             <Image
               src="public/triplesimage.png"
@@ -477,6 +477,55 @@ export const InvoicePDF = ({ invoice, brandKit }: InvoicePDFProps) => {
               </Text>
             </View>
           </View>
+        </View> */}
+
+        <View style={styles.header}>
+
+          {/* Left Side */}
+          <View style={{ flex: 1 }}>
+            <Text style={styles.brandName}>
+              {brandKit.company_name || "Triple S Production"}
+            </Text>
+
+            <Text style={styles.brandInfo}>
+              {brandKit.address}
+            </Text>
+
+            <Text style={styles.brandInfo}>
+              {brandKit.email}
+            </Text>
+
+            <Text style={styles.brandInfo}>
+              {brandKit.phone}
+            </Text>
+          </View>
+
+          {/* Right Side */}
+          <View style={{ alignItems: "flex-end" }}>
+
+
+
+            {/* <Text style={styles.docTitle}>INVOICE</Text> */}
+            <Text style={styles.docTitle}>
+              THIS PDF IS EDITED
+            </Text>
+
+            <Text style={styles.docRef}>
+              #{invoice.invoice_number}
+            </Text>
+
+            <Text style={styles.docRef}>
+              Date: {format(new Date(invoice.created_at), "dd MMM yyyy")}
+            </Text>
+
+            <Text style={styles.docRef}>
+              Due: {invoice.due_date
+                ? format(new Date(invoice.due_date), "dd MMM yyyy")
+                : "—"}
+            </Text>
+
+          </View>
+
         </View>
 
         {/* Client Grid */}

@@ -22,6 +22,8 @@ if (strpos($requestUri, $basePrefix) !== 0) {
     exit;
 }
 
+
+
 // Remove prefix for internal routing
 $path = substr($requestUri, strlen($basePrefix));
 
@@ -121,6 +123,15 @@ if ($path === '/db-test') {
 
     exit;
 }
+
+if ($path === '/db-test') {
+
+    require 'test-db.php';
+
+    exit;
+
+}
+
 // Health Check
 if ($path === '/health') {
     jsonResponse(['status' => 'ok', 'server' => 'php']);

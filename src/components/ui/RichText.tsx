@@ -64,8 +64,8 @@ export function RichEditor({ value, onChange, placeholder, className, rows = 3, 
     };
 
     return (
-        <div className={cn("border rounded-md focus-within:ring-1 focus-within:ring-ring", className)}>
-            <div className="flex items-center gap-1 p-1 border-b bg-muted/20">
+        <div className={cn("flex flex-col border rounded-md focus-within:ring-1 focus-within:ring-ring overflow-hidden", className)}>
+            <div className="flex items-center gap-1 p-1 border-b bg-muted/20 shrink-0">
                 <Button
                     type="button"
                     variant="ghost"
@@ -103,7 +103,7 @@ export function RichEditor({ value, onChange, placeholder, className, rows = 3, 
                 value={value}
                 onChange={(e) => onChange(e.target.value)}
                 placeholder={placeholder}
-                className="border-0 focus-visible:ring-0 shadow-none rounded-t-none resize-y min-h-[80px]"
+                className="flex-1 min-h-0 border-0 focus-visible:ring-0 shadow-none rounded-t-none resize-none overflow-y-auto scrollbar-modern"
                 rows={rows}
             />
         </div>

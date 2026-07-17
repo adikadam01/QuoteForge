@@ -185,7 +185,7 @@ export function InvoiceLayout({ invoice, items, brandKit, mode = "screen" }: Pro
         </Card>
 
         {/* Content sections (optional, from quotation snapshot) */}
-        {pointSections
+        {/* {pointSections
           ? pointSections.map((sec) => (
             <Card key={sec.section} className="doc-card">
               <CardContent className="doc-pad">
@@ -201,7 +201,7 @@ export function InvoiceLayout({ invoice, items, brandKit, mode = "screen" }: Pro
               </CardContent>
             </Card>
           ))
-          : null}
+          : null} */}
 
         {/* Pricing table */}
         <Card className="doc-card">

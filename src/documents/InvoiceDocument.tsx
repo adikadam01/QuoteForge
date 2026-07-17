@@ -61,8 +61,8 @@ const styles = StyleSheet.create({
     overflow: "hidden",
   },
   logoImage: {
-    width: 64,
-    height: 64,
+    width: 140,
+    height: 60,
     objectFit: "contain",
   },
   logoFallback: {
@@ -299,55 +299,66 @@ const InvoiceDocument: React.FC<Props> = ({ invoice, brandKit, items: passedItem
 
         {/* Header */}
         <View style={styles.header}>
+
+          {/* Left Side */}
           <View style={styles.companyInfo}>
             {brandKit?.company_name ? (
-              <Text style={styles.companyName}>{brandKit.company_name}</Text>
+              <Image
+                src="/triplesimage.png"
+                style={styles.logoImage}
+              />
             ) : null}
+
             {brandKit?.address ? (
               <Text style={styles.companyDetail}>{brandKit.address}</Text>
             ) : null}
+
             {brandKit?.email ? (
               <Text style={styles.companyDetail}>{brandKit.email}</Text>
             ) : null}
+
             {brandKit?.phone ? (
               <Text style={styles.companyDetail}>{brandKit.phone}</Text>
             ) : null}
+
             {brandKit?.website ? (
               <Text style={styles.companyDetail}>{brandKit.website}</Text>
             ) : null}
           </View>
 
-         
-            <Image
-              src="/triplesimage.png"
-              style={styles.logoImage}
-            />
-          
-        </View>
+          {/* Right Side */}
+          <View style={{ alignItems: "flex-end" }}>
 
-        {/* Invoice Banner */}
-        <View style={styles.banner}>
-          <Text style={styles.bannerTitle}>INVOICE</Text>
-          <View style={styles.bannerMeta}>
             <View style={styles.bannerMetaRow}>
               <Text style={styles.bannerMetaLabel}>Invoice #</Text>
               <Text style={styles.bannerMetaValue}>
                 {invoice.invoice_number ?? "—"}
               </Text>
             </View>
+
             <View style={styles.bannerMetaRow}>
               <Text style={styles.bannerMetaLabel}>Issue Date</Text>
               <Text style={styles.bannerMetaValue}>
                 {formatDate(invoice.created_at)}
               </Text>
             </View>
+
             <View style={styles.bannerMetaRow}>
               <Text style={styles.bannerMetaLabel}>Due Date</Text>
               <Text style={styles.bannerMetaValue}>
                 {formatDate(invoice.due_date)}
               </Text>
             </View>
-            <View style={styles.bannerMetaRow}>
+
+          </View>
+
+        </View>
+
+        {/* Invoice Banner */}
+        <View style={styles.banner}>
+          <Text style={styles.bannerTitle}>INVOICE</Text>
+          <View style={styles.bannerMeta}>
+            {/* <View style={styles.bannerMetaRow}>
               <Text style={styles.bannerMetaLabel}>Status</Text>
               <Text
                 style={[
@@ -357,7 +368,7 @@ const InvoiceDocument: React.FC<Props> = ({ invoice, brandKit, items: passedItem
               >
                 {displayStatus.toUpperCase()}
               </Text>
-            </View>
+            </View> */}
           </View>
         </View>
 

@@ -26,7 +26,33 @@ import { useToast } from '@/hooks/use-toast';
 import { Service, PRICING_MODEL_LABELS, PricingModel } from '@/lib/types';
 import { RichEditor, RichTextDisplay } from '@/components/ui/RichText';
 
+type TimelineUnit = 'Days' | 'Weeks' | 'Months';
 
+const TIMELINE_UNIT_MAX: Record<TimelineUnit, number> = {
+  Days: 30,
+  Weeks: 20,
+  Months: 12,
+};
+
+function parseTimelineString(value: string): { unit: TimelineUnit; amount: number } {
+  const match = (value || '').trim().match(/^(\d+)\s*(day|days|week|weeks|month|months)$/i);
+  if (!match) return { unit: 'Weeks', amount: 1 };
+
+  const amount = Math.max(1, parseInt(match[1], 10) || 1);
+  const rawUnit = match[2].toLowerCase();
+
+  let unit: TimelineUnit = 'Weeks';
+  if (rawUnit.startsWith('day')) unit = 'Days';
+  else if (rawUnit.startsWith('week')) unit = 'Weeks';
+  else if (rawUnit.startsWith('month')) unit = 'Months';
+
+  return { unit, amount: Math.min(amount, TIMELINE_UNIT_MAX[unit]) };
+}
+
+function formatTimelineString(unit: TimelineUnit, amount: number): string {
+  const singular = unit.slice(0, -1);
+  return `${amount} ${amount === 1 ? singular : unit}`;
+}
 
 const DEFAULT_CATEGORY_SUBCATEGORY: Record<string, string[]> = {
   Branding: [
@@ -117,6 +143,8 @@ const DEFAULT_CATEGORY_SUBCATEGORY: Record<string, string[]> = {
   ]
 };
 
+
+
 interface LocalAddon {
   id: string;
   name: string;
@@ -132,6 +160,8 @@ export default function Services() {
   const [viewingService, setViewingService] = useState<Service | null>(null);
   const [isViewDialogOpen, setIsViewDialogOpen] = useState(false);
   const firstCategory = Object.keys(DEFAULT_CATEGORY_SUBCATEGORY)[0] || '';
+  const [timelineUnit, setTimelineUnit] = useState<TimelineUnit>('Weeks');
+  const [timelineAmount, setTimelineAmount] = useState<number>(1);
 
   const [formData, setFormData] = useState<{
     name: string;
@@ -176,6 +206,9 @@ export default function Services() {
   const handleOpenDialog = (service?: Service) => {
     if (service) {
       setEditingService(service);
+      const parsedTimeline = parseTimelineString(service.timeline || '');
+      setTimelineUnit(parsedTimeline.unit);
+      setTimelineAmount(parsedTimeline.amount);
       setFormData({
         name: service.name,
         description: service.description || '',
@@ -206,6 +239,8 @@ export default function Services() {
       });
     } else {
       setEditingService(null);
+      setTimelineUnit('Weeks');
+      setTimelineAmount(1);
       const firstCategory = Object.keys(DEFAULT_CATEGORY_SUBCATEGORY)[0] || '';
 
       setFormData({
@@ -327,6 +362,13 @@ export default function Services() {
     }));
   };
 
+  const updateTimeline = (unit: TimelineUnit, amount: number) => {
+    const clamped = Math.min(Math.max(1, amount), TIMELINE_UNIT_MAX[unit]);
+    setTimelineUnit(unit);
+    setTimelineAmount(clamped);
+    setFormData(prev => ({ ...prev, timeline: formatTimelineString(unit, clamped) }));
+  };
+
   const categoryMap = (serviceOptions.service_categories && Object.keys(serviceOptions.service_categories).length > 0)
     ? serviceOptions.service_categories
     : DEFAULT_CATEGORY_SUBCATEGORY;
@@ -365,7 +407,7 @@ export default function Services() {
         </div>
         <Button
           onClick={() => handleOpenDialog()}
-          className="bg-[#111111] text-white hover:bg-[#8a00d9] gap-2"
+          className="bg-[#111111] text-white hover:bg-black/80 gap-2"
         >
           <Plus className="w-4 h-4" />
           Add Service
@@ -754,47 +796,94 @@ export default function Services() {
                 />
               </div>
 
-              <div className="relative">
-                <Input
-                  id="timeline"
-                  value={formData.timeline}
-                  onChange={(e) => setFormData(prev => ({ ...prev, timeline: e.target.value }))}
-                  placeholder=" "
-                  className="peer h-14 pt-5 pb-1.5 px-4 rounded-xl border-input bg-background/60 transition-all duration-300 focus-visible:ring-4 focus-visible:ring-accent/10 focus:border-accent"
-                />
-                <Label
-                  htmlFor="timeline"
-                  className="absolute left-4 top-4 text-muted-foreground text-sm transition-all duration-200 pointer-events-none peer-focus:top-1.5 peer-focus:text-[10px] peer-focus:font-semibold peer-focus:uppercase peer-focus:tracking-wide peer-focus:text-accent peer-[:not(:placeholder-shown)]:top-1.5 peer-[:not(:placeholder-shown)]:text-[10px] peer-[:not(:placeholder-shown)]:font-semibold peer-[:not(:placeholder-shown)]:uppercase peer-[:not(:placeholder-shown)]:tracking-wide"
-                >
+              <div className="rounded-xl border border-input bg-background/60 p-4 space-y-3 transition-all duration-300 focus-within:border-accent focus-within:ring-4 focus-within:ring-accent/10">
+                <Label className="text-[11px] uppercase tracking-wide text-muted-foreground font-semibold">
                   Timeline
                 </Label>
-                <span className="pointer-events-none absolute left-4 right-4 bottom-1.5 h-[2px] rounded-full bg-accent scale-x-0 peer-focus:scale-x-100 origin-left transition-transform duration-500" />
+
+                <div className="flex items-center gap-3">
+                  {/* Stepper */}
+                  <div className="flex items-center rounded-xl border border-border/60 bg-card overflow-hidden shrink-0">
+                    <button
+                      type="button"
+                      onClick={() => updateTimeline(timelineUnit, timelineAmount - 1)}
+                      disabled={timelineAmount <= 1}
+                      className="h-11 w-10 flex items-center justify-center text-muted-foreground hover:bg-accent/10 hover:text-accent disabled:opacity-30 disabled:hover:bg-transparent transition-colors"
+                    >
+                      −
+                    </button>
+                    <input
+                      type="number"
+                      min={1}
+                      max={TIMELINE_UNIT_MAX[timelineUnit]}
+                      value={timelineAmount}
+                      onChange={(e) => {
+                        const raw = parseInt(e.target.value, 10);
+                        updateTimeline(timelineUnit, Number.isFinite(raw) ? raw : 1);
+                      }}
+                      className="h-11 w-14 text-center font-heading font-bold text-foreground bg-transparent border-none outline-none focus:ring-0 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => updateTimeline(timelineUnit, timelineAmount + 1)}
+                      disabled={timelineAmount >= TIMELINE_UNIT_MAX[timelineUnit]}
+                      className="h-11 w-10 flex items-center justify-center text-muted-foreground hover:bg-accent/10 hover:text-accent disabled:opacity-30 disabled:hover:bg-transparent transition-colors"
+                    >
+                      +
+                    </button>
+                  </div>
+
+                  {/* Unit segmented control */}
+                  <div className="relative flex flex-1 gap-1 p-1 rounded-xl bg-muted">
+                    <div
+                      className="absolute top-1 bottom-1 rounded-lg bg-accent shadow-md transition-transform duration-300 ease-out"
+                      style={{
+                        width: 'calc(33.333% - 0.166rem)',
+                        transform: `translateX(${(['Days', 'Weeks', 'Months'] as TimelineUnit[]).indexOf(timelineUnit) * 100}%)`,
+                      }}
+                    />
+                    {(['Days', 'Weeks', 'Months'] as TimelineUnit[]).map((unit) => (
+                      <button
+                        key={unit}
+                        type="button"
+                        onClick={() => updateTimeline(unit, Math.min(timelineAmount, TIMELINE_UNIT_MAX[unit]))}
+                        className={`relative z-10 flex-1 py-2 text-xs font-semibold rounded-lg transition-colors duration-300 ${timelineUnit === unit ? 'text-accent-foreground' : 'text-muted-foreground hover:text-foreground'
+                          }`}
+                      >
+                        {unit}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                <p className="text-[11px] text-muted-foreground">
+                  Max {TIMELINE_UNIT_MAX[timelineUnit]} {timelineUnit.toLowerCase()} · Currently: <span className="font-semibold text-foreground">{formatTimelineString(timelineUnit, timelineAmount)}</span>
+                </p>
               </div>
 
               <div className="grid grid-cols-1 gap-4">
                 <div className="space-y-2">
                   <Label
-                    htmlFor="service_terms"
+                    htmlFor="payment_terms"
                     className="text-[11px] uppercase tracking-wide text-muted-foreground font-semibold"
                   >
                     Payment Terms (optional)
                   </Label>
 
                   <Textarea
-                    id="service_terms"
+                    id="payment_terms"
                     value={formData.payment_terms}
                     onChange={(e) =>
                       setFormData((prev) => ({
                         ...prev,
-                        service_terms: e.target.value,
+                        payment_terms: e.target.value,
                       }))
                     }
                     rows={5}
-                    placeholder="Enter any service-specific terms..."
+                    placeholder="Enter any payment-specific terms..."
                     className="rounded-xl border-input bg-background/60 px-4 py-3 resize-none transition-all duration-300 focus-visible:ring-4 focus-visible:ring-accent/10 focus:border-accent"
                   />
                 </div>
-
                 <div className="space-y-2">
                   <Label
                     htmlFor="service_terms"

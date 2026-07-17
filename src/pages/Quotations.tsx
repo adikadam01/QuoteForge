@@ -1,5 +1,6 @@
 import { useRef, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
+import { GenerateInvoiceModal } from '@/components/invoices/GenerateInvoiceModal';
 import {
   Plus,
   Search,
@@ -54,8 +55,8 @@ const statusConfig = {
 
 export default function Quotations() {
   const navigate = useNavigate();
-  const { quotations, deleteQuotation, addQuotation, updateQuotation, currency } = useApp();
-  const { toast } = useToast();
+  const { quotations, deleteQuotation, addQuotation, updateQuotation, currency,  refreshQuotations, refreshInvoices, invoices } = useApp();
+  const { toast } = useToast(); 
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('all');
   const [sortBy, setSortBy] = useState<string>('newest');
@@ -105,6 +106,9 @@ export default function Quotations() {
     await deleteQuotation(id);
     toast({ title: "Quotation deleted", description: "The quotation has been removed." });
   };
+
+  const [invoiceModalOpen, setInvoiceModalOpen] = useState(false);
+  const [invoiceQuotation, setInvoiceQuotation] = useState<Quotation | null>(null);
 
   const duplicateInProgressRef = useRef(false);
   const handleDuplicate = async (quotation: Quotation) => {
@@ -256,6 +260,12 @@ export default function Quotations() {
         variant: "destructive",
       });
     }
+  };
+
+  const getLatestInvoiceForQuotation = (quotationId: string) => {
+    return invoices
+      .filter((inv) => inv.quotation_id === quotationId)
+      .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())[0] ?? null;
   };
 
   const formatDate = (dateString: string) => {
@@ -421,11 +431,50 @@ export default function Quotations() {
                         <div className="text-sm text-muted-foreground">
                           Total Value
                         </div>
-
                         <div className="text-2xl font-bold">
                           {(quotation.currency || currency) === 'INR' ? '₹' : '$'}{quotation.total.toLocaleString()}
                         </div>
                       </div>
+
+                      {quotation.status === 'accepted' && (() => {
+                        const latestInvoice = getLatestInvoiceForQuotation(quotation.id);
+                        // No invoice yet -> first invoice, always allowed.
+                        // Latest invoice must be 'paid' to unlock the next one.
+                        const canGenerate = !latestInvoice || latestInvoice.invoice_status === 'paid';
+
+                        return (
+                          <Button
+                            className="bg-foreground text-background hover:bg-foreground/90 rounded-xl disabled:opacity-40 disabled:cursor-not-allowed"
+                            disabled={!canGenerate}
+                            title={
+                              !canGenerate
+                                ? latestInvoice?.invoice_status === 'draft'
+                                  ? 'Previous invoice is still a draft — send and mark it as paid first'
+                                  : 'Previous invoice must be marked as paid before generating the next one'
+                                : undefined
+                            }
+                            onClick={() => {
+                              if (!canGenerate) return;
+                              setInvoiceQuotation(quotation);
+                              setInvoiceModalOpen(true);
+                            }}
+                          >
+                            Generate Invoice
+                          </Button>
+                        );
+                      })()}
+
+                      {quotation.status === 'invoiced' && (
+                        <Button
+                          variant="outline"
+                          className="rounded-xl"
+                          onClick={() => {
+                            // TODO: wire up history view later
+                          }}
+                        >
+                          Check History
+                        </Button>
+                      )}
 
                     </div>
 
@@ -620,6 +669,26 @@ export default function Quotations() {
           </div>
         )
       }
+      {invoiceQuotation && (
+        <GenerateInvoiceModal
+          open={invoiceModalOpen}
+          onOpenChange={(open) => {
+            setInvoiceModalOpen(open);
+            if (!open) {
+              setInvoiceQuotation(null);
+            }
+          }}
+          quotation={invoiceQuotation}
+          selectedServiceId={null}
+          onGenerated={async (invoiceId) => {
+            await refreshQuotations();
+            await refreshInvoices();
+            setInvoiceModalOpen(false);
+            setInvoiceQuotation(null);
+            navigate(`/invoices/${invoiceId}`);
+          }}
+        />
+      )}
     </div >
   );
 }

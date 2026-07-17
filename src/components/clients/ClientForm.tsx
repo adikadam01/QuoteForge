@@ -11,6 +11,9 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { cn } from "@/lib/utils";
 import type { SafeClientOptions } from "@/components/clients/useClientOptions";
 
+import PhoneInput from "react-phone-number-input";
+import "react-phone-number-input/style.css";
+
 const OTHER = "Other";
 
 const createSchema = (
@@ -265,7 +268,10 @@ export default function ClientForm({ options, initialValues, submitLabel, onSubm
                 <SelectTrigger>
                   <SelectValue placeholder="Select business type" />
                 </SelectTrigger>
-                <SelectContent>
+                <SelectContent
+                  position="popper"
+                  className="max-h-[300px] overflow-y-auto"
+                >
                   {businessTypeOptions.map((opt) => (
                     <SelectItem key={opt} value={opt}>
                       {opt}
@@ -292,7 +298,10 @@ export default function ClientForm({ options, initialValues, submitLabel, onSubm
                 <SelectTrigger>
                   <SelectValue placeholder="Select industry" />
                 </SelectTrigger>
-                <SelectContent>
+                <SelectContent
+                  position="popper"
+                  className="max-h-[300px] overflow-y-auto"
+                >
                   {industryOptions.map((opt) => (
                     <SelectItem key={opt} value={opt}>
                       {opt}
@@ -339,14 +348,43 @@ export default function ClientForm({ options, initialValues, submitLabel, onSubm
         </div>
 
         {/* Row 5 */}
+        {/* Row 5 */}
         <div className="space-y-2">
           <Label>Phone</Label>
-          <Input {...register("phone")} inputMode="tel" />
+          <Controller
+            control={control}
+            name="phone"
+            render={({ field }) => (
+              <PhoneInput
+                international
+                defaultCountry="IN"
+                value={field.value}
+                onChange={(value) => field.onChange(value || "")}
+                onBlur={field.onBlur}
+                className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-within:ring-2 focus-within:ring-ring focus-within:ring-offset-2"
+              />
+            )}
+          />
+          {err("phone") ? <p className="text-sm text-destructive">{err("phone")}</p> : null}
         </div>
 
         <div className="space-y-2">
           <Label>WhatsApp</Label>
-          <Input {...register("whatsapp")} inputMode="tel" disabled={whatsappSame} />
+          <Controller
+            control={control}
+            name="whatsapp"
+            render={({ field }) => (
+              <PhoneInput
+                international
+                defaultCountry="IN"
+                value={field.value}
+                onChange={(value) => field.onChange(value || "")}
+                onBlur={field.onBlur}
+                disabled={whatsappSame}
+                className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-within:ring-2 focus-within:ring-ring focus-within:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+              />
+            )}
+          />
         </div>
       </div>
 

@@ -548,7 +548,7 @@ export default function ProfessionalQuotationDocument({
                     <div className="border-t-2 border-gray-900 mb-10" />
 
                     {/* Payment Terms */}
-                    <div className="mb-8">
+                    {/* <div className="mb-8">
                         <p className="text-[10px] tracking-[0.2em] text-gray-400 mb-2">
                             PAYMENT TERMS
                         </p>
@@ -572,54 +572,35 @@ export default function ProfessionalQuotationDocument({
                                 </li>
                             </ol>
                         )}
-                    </div>
+                    </div> */}
+
+
+                    {/* Payment Terms */}
+                    {quotation.payment_terms_text ? (
+                        <div className="mb-8">
+                            <p className="text-[10px] tracking-[0.2em] text-gray-400 mb-2">
+                                PAYMENT TERMS
+                            </p>
+                            <RichTextDisplay
+                                content={quotation.payment_terms_text}
+                                className="text-[11px] text-gray-600 leading-[1.9]"
+                            />
+                        </div>
+                    ) : null}
 
                     {/* Terms & Conditions */}
-                    <div className="mb-10">
-                        <p className="text-[10px] tracking-[0.2em] text-gray-400 mb-2">
-                            HOSTING &amp; MAINTENANCE POLICY
-                        </p>
-                        {quotation.terms_conditions_text ? (
+                    {/* Terms & Conditions */}
+                    {quotation.terms_conditions_text ? (
+                        <div className="mb-10">
+                            <p className="text-[10px] tracking-[0.2em] text-gray-400 mb-2">
+                                TERMS &amp; CONDITIONS
+                            </p>
                             <RichTextDisplay
                                 content={quotation.terms_conditions_text}
                                 className="text-[11px] text-gray-600 leading-[1.9]"
                             />
-                        ) : (
-                            <ol className="space-y-1.5 list-decimal list-inside">
-                                <li className="text-[11px] text-gray-600">
-                                    Hosting &amp; maintenance must be renewed on time to avoid any
-                                    service interruption.
-                                </li>
-                                <li className="text-[11px] text-gray-600">
-                                    Minor support covers plugin/security updates, backups, small
-                                    text or image edits, and uptime monitoring.
-                                </li>
-                                <li className="text-[11px] text-gray-600">
-                                    If hosting is not renewed within 1 month of expiry, a{" "}
-                                    {formatCurrency(500, quotation.currency)} late renewal surcharge
-                                    will apply.
-                                </li>
-                                <li className="text-[11px] text-gray-600">
-                                    Non-payment may result in temporary website suspension until
-                                    all outstanding dues are cleared.
-                                </li>
-                                <li className="text-[11px] text-gray-600">
-                                    If suspended for more than 45 consecutive days, a{" "}
-                                    {formatCurrency(1000, quotation.currency)} reactivation fee will
-                                    be levied upon resumption.
-                                </li>
-                                <li className="text-[11px] text-gray-600">
-                                    Websites left inactive for multiple months without prior notice
-                                    may be removed due to storage constraints.
-                                </li>
-                                <li className="text-[11px] text-gray-600">
-                                    Major structural changes, redesigns, or new page additions fall
-                                    outside this scope and will be billed separately.
-                                </li>
-                            </ol>
-                        )}
-                    </div>
-
+                        </div>
+                    ) : null}
 
                     {/* Hosting & Maintenance Plan */}
                     <div className="border border-gray-200 mb-8">

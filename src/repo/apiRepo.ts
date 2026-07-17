@@ -54,8 +54,10 @@ const API_BASE = "/api";
 async function request<T>(path: string, options?: RequestInit): Promise<T> {
     const res = await fetch(`${API_BASE}${path}`, {
         ...options,
+        cache: "no-store",
         headers: {
             "Content-Type": "application/json",
+            "Cache-Control": "no-cache",
             ...options?.headers,
         },
     });
@@ -67,32 +69,13 @@ async function request<T>(path: string, options?: RequestInit): Promise<T> {
         throw new Error(`API Error: ${res.status} ${res.statusText}`);
     }
 
-    // DELETE endpoints return 204 No Content
     if (res.status === 204) {
         return {} as T;
     }
 
-    // const text = await res.text();
-
-    // // console.log("API RESPONSE:", text);
-
-    // if (!text) {
-    //     return {} as T;
-    // }
-
-    // return JSON.parse(text);
-    // console.log("RAW API RESPONSE:");
-    // console.log(text);
-
-    // const data = JSON.parse(text);
-
     const text = await res.text();
 
-    // console.log("Response from server:");
-    // console.log(text);
-
     return JSON.parse(text);
-
 }
 
 export function createApiRepo(): Repository {
@@ -125,7 +108,40 @@ export function createApiRepo(): Repository {
             return response;
         },
         createService: (service) => request<void>("/services", { method: "POST", body: JSON.stringify(service) }),
-        updateService: (service) => request<void>(`/services/${service.id}`, { method: "PUT", body: JSON.stringify(service) }),
+        // updateService: (service) => request<void>(`/services/${service.id}`, { method: "PUT", body: JSON.stringify(service) }),
+        // updateService: (service) => {
+
+        //     console.log("SERVICE SENT");
+        //     console.log(service);
+
+        //     return request<void>(
+        //         `/services/${service.id}`,
+        //         {
+        //             method: "PUT",
+        //             body: JSON.stringify(service)
+        //         }
+        //     );
+
+        // },
+
+        updateService: (service) => {
+
+            console.log("SERVICE OBJECT");
+            console.log(service);
+
+            const body = JSON.stringify(service);
+
+            console.log("BODY");
+            console.log(body);
+
+            return request(
+                `/services/${service.id}`,
+                {
+                    method: "PUT",
+                    body
+                }
+            );
+        },
         deleteService: (id) => request<void>(`/services/${id}`, { method: "DELETE" }),
 
         // --- Quotations ---
