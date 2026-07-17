@@ -20,7 +20,7 @@ import type { RepoSnapshot, QuotationPointTemplateRow } from "./types";
  * This replaces local IndexedDB calls when running in production/hybrid mode.
  */
 
-const API_BASE = "https://your-app.onrender.com/api";
+const API_BASE = "https://quoteforge-f20w.onrender.com/api";
 
 // async function request<T>(path: string, options?: RequestInit): Promise<T> {
 //     const res = await fetch(`${API_BASE}${path}`, {
