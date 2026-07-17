@@ -11,6 +11,8 @@ import type {
 } from "@/lib/types";
 import type { RepoSnapshot, QuotationPointTemplateRow } from "./types";
 
+
+
 /**
  * API Repository Pattern
  * 
@@ -18,7 +20,7 @@ import type { RepoSnapshot, QuotationPointTemplateRow } from "./types";
  * This replaces local IndexedDB calls when running in production/hybrid mode.
  */
 
-const API_BASE = "/api";
+const API_BASE = "https://your-app.onrender.com/api";
 
 // async function request<T>(path: string, options?: RequestInit): Promise<T> {
 //     const res = await fetch(`${API_BASE}${path}`, {
