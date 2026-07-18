@@ -22,52 +22,48 @@ export default function InvoiceView() {
   const { toast } = useToast();
   const { brandKit, currency, clients, quotations, getInvoiceById, listInvoiceItemsByInvoice, updateInvoice, refreshInvoices, refreshInvoiceItems, receipts, createReceipt, refreshReceipts } = useApp();
 
-  const [loading, setLoading] = useState(true);
-  const [invoice, setInvoice] = useState<Invoice | null>(null);
-  // const [items, setItems] = useState<InvoiceItem[]>([]);
   const [editDueDate, setEditDueDate] = useState("");
   const [editNotes, setEditNotes] = useState("");
   const [saving, setSaving] = useState(false);
   const [payModalOpen, setPayModalOpen] = useState(false);
   const [generatingNext, setGeneratingNext] = useState(false);
+  const [notFoundGraceExpired, setNotFoundGraceExpired] = useState(false);
+
+  // Derive invoice reactively from context — no local refetch, no stale closure.
+  const invoice = useMemo<Invoice | null>(() => {
+    if (!id) return null;
+    const inv = getInvoiceById(id);
+    if (!inv) return null;
+
+    const q = inv.quotation_id ? quotations.find((x) => x.id === inv.quotation_id) : undefined;
+    const clientId = inv.client_id || q?.client_id || null;
+    const client = clientId ? clients.find((c) => c.id === clientId) : undefined;
+
+    return {
+      ...inv,
+      client_id: clientId,
+      client: inv.client || q?.client || client,
+      quotation: inv.quotation || q,
+    } as Invoice;
+  }, [id, getInvoiceById, quotations, clients]);
 
   useEffect(() => {
-    if (!id) return;
+    if (invoice) {
+      setEditDueDate(invoice.due_date || "");
+      setEditNotes(invoice.notes || "");
+    }
+  }, [invoice]);
 
-    (async () => {
-      setLoading(true);
-      await refreshInvoices();
-      await refreshInvoiceItems();
-      await refreshReceipts();
-
-      const inv = getInvoiceById(id);
-      if (!inv) {
-        setInvoice(null);
-        // setItems([]);
-        setLoading(false);
-        return;
-      }
-
-      // Ensure Bill To is hydrated (fallback to linked quotation/client if missing on invoice)
-      const q = inv.quotation_id ? quotations.find((x) => x.id === inv.quotation_id) : undefined;
-      const clientId = inv.client_id || q?.client_id || null;
-      const client = clientId ? clients.find((c) => c.id === clientId) : undefined;
-      const hydrated = {
-        ...inv,
-        client_id: clientId,
-        client: inv.client || q?.client || client,
-        quotation: inv.quotation || q,
-      } as Invoice;
-
-      setInvoice(hydrated);
-      setEditDueDate(inv.due_date || "");
-      setEditNotes(inv.notes || "");
-
-      // setItems(listInvoiceItemsByInvoice(id));
-      setLoading(false);
-    })();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [id]);
+  // Grace period: if the invoice genuinely isn't found (bad id/deleted), only show
+  // "not found" after giving context state a brief moment to catch up on first mount.
+  useEffect(() => {
+    if (invoice) {
+      setNotFoundGraceExpired(false);
+      return;
+    }
+    const t = setTimeout(() => setNotFoundGraceExpired(true), 1500);
+    return () => clearTimeout(t);
+  }, [invoice, id]);
 
   const items = useMemo(() => {
     if (!invoice) return [];
@@ -139,7 +135,6 @@ export default function InvoiceView() {
         updated_at: patch.updated_at,
       });
       await refreshInvoices();
-      setInvoice({ ...invoice, ...patch });
     } catch (err) {
       if (import.meta.env.DEV) console.error('Failed to update invoice', err);
     } finally {
@@ -304,14 +299,6 @@ export default function InvoiceView() {
       status: (patch.status ?? invoice.status) as Invoice["status"],
       updated_at: nowIso(),
     });
-
-    setInvoice({
-      ...invoice,
-      invoice_status: next,
-      sent_at: (patch.sent_at ?? invoice.sent_at) as string | null,
-      paid_at: (patch.paid_at ?? invoice.paid_at) as string | null,
-      status: (patch.status ?? invoice.status) as Invoice["status"],
-    });
   };
 
   if (!id) {
@@ -323,20 +310,18 @@ export default function InvoiceView() {
     );
   }
 
-  if (loading) {
-    return (
-      <div className="min-h-[40vh] flex items-center justify-center">
-        <div className="animate-pulse">
-          <div className="w-12 h-12 rounded-full bg-primary/20"></div>
-        </div>
-      </div>
-    );
-  }
-
   if (!invoice || !totals) {
+    if (!notFoundGraceExpired) {
+      // Briefly loading state instead of the old gray pulse — context is likely just catching up.
+      return (
+        <div className="min-h-[40vh] flex items-center justify-center">
+          <p className="text-sm text-muted-foreground">Loading invoice…</p>
+        </div>
+      );
+    }
     return (
       <div className="space-y-4">
-        <p className="text-muted-foreground">Press back for the next invoice.</p>
+        <p className="text-muted-foreground">Invoice not found.</p>
         <Button onClick={() => navigate("/invoices")}>Back</Button>
       </div>
     );

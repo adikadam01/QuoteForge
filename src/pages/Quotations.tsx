@@ -691,8 +691,7 @@ export default function Quotations() {
           quotation={invoiceQuotation}
           selectedServiceId={null}
           onGenerated={async (invoiceId) => {
-            await refreshQuotations();
-            await refreshInvoices();
+            await Promise.all([refreshQuotations(), refreshInvoices()]);
             setInvoiceModalOpen(false);
             setInvoiceQuotation(null);
             navigate(`/invoices/${invoiceId}`);

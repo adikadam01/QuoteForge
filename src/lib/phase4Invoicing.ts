@@ -60,12 +60,14 @@ function updateServiceProgress(
 
 export async function getInvoicesForService(
   quotationId: string,
-  serviceId: string
+  serviceId: string,
+  preFetched?: { invoices: Invoice[]; items: InvoiceItem[] }
 ) {
-  const repo = getRepo();
-
-  const invoices = await repo.listInvoices();
-  const items = await repo.listInvoiceItems();
+  if (!preFetched) {
+    console.warn("[SLOW PATH] getInvoicesForService fetching fresh — no preFetched data passed!");
+  }
+  const invoices = preFetched?.invoices ?? (await getRepo().listInvoices());
+  const items = preFetched?.items ?? (await getRepo().listInvoiceItems());
 
   return invoices.filter((invoice) => {
     if (invoice.quotation_id !== quotationId) return false;
@@ -215,7 +217,8 @@ function buildInvoiceBase(quotation: Quotation, invoiceId: string, now: string):
 
 async function getServiceAmountDue(
   quotation: Quotation,
-  service: QuotationServiceBlock
+  service: QuotationServiceBlock,
+  preFetched: { invoices: Invoice[]; items: InvoiceItem[] }
 ): Promise<number> {
 
   switch (service.billing_type) {
@@ -225,7 +228,8 @@ async function getServiceAmountDue(
       const previousInvoices =
         await getInvoicesForService(
           quotation.id,
-          service.service_id
+          service.service_id,
+          preFetched
         );
 
       const milestoneIndex =
@@ -251,12 +255,19 @@ async function snapshotInvoiceItems(
   invoiceId: string,
   quotation: Quotation,
   now: string,
-  plan: GenerateInvoicePlan
+  plan: GenerateInvoicePlan,
+  preFetched?: { invoices: Invoice[]; items: InvoiceItem[] }
 ): Promise<void> {
 
 
   const repo = getRepo();
 
+  const resolvedPreFetched =
+    preFetched ??
+    {
+      invoices: await repo.listInvoices(),
+      items: await repo.listInvoiceItems(),
+    };
   console.log("========== SNAPSHOT ==========");
   console.log("Quotation:", quotation);
 
@@ -310,7 +321,8 @@ async function snapshotInvoiceItems(
         const previousInvoices =
           await getInvoicesForService(
             quotation.id,
-            s.service_id
+            s.service_id,
+            resolvedPreFetched
           );
 
         const milestoneIndex = previousInvoices.length;
@@ -414,6 +426,9 @@ export async function generateInvoiceForQuotationPlan(
   plan: GenerateInvoicePlan
 ): Promise<string> {
 
+  const t0 = performance.now();
+  const mark = (label: string) => console.log(`[TIMING] ${label}: ${(performance.now() - t0).toFixed(0)}ms`);
+
   console.log("========== GENERATE INVOICE ==========");
   console.log("Quotation ID:", quotation.id);
   console.log("Quotation Status:", quotation.status);
@@ -458,19 +473,26 @@ export async function generateInvoiceForQuotationPlan(
   // );
 
   const invoiceServices = selectedServices;
-  let calculatedSubtotal = 0;
-  let calculatedAmountDue = 0;
 
+  // Fetch invoices/items ONCE for this whole invoice generation instead of
+  // re-fetching per service (was causing N+1 network round trips).
+  const [allInvoices, allInvoiceItems] = await Promise.all([
+    repo.listInvoices(),
+    repo.listInvoiceItems(),
+  ]);
+  mark("Fetched invoices+items");
+  const preFetched = { invoices: allInvoices, items: allInvoiceItems };
+
+  let calculatedSubtotal = 0;
   for (const service of invoiceServices) {
     calculatedSubtotal += Number(service.price || 0);
   }
 
-  for (const service of invoiceServices) {
-    calculatedAmountDue += await getServiceAmountDue(
-      quotation,
-      service
-    );
-  }
+  const amountDueList = await Promise.all(
+    invoiceServices.map((service) => getServiceAmountDue(quotation, service, preFetched))
+  );
+  const calculatedAmountDue = amountDueList.reduce((sum, v) => sum + v, 0);
+
 
   // -------------------------------------
   // Full Payment
@@ -535,8 +557,12 @@ export async function generateInvoiceForQuotationPlan(
       const previousInvoices =
         await getInvoicesForService(
           quotation.id,
-          milestoneService.service_id
+          milestoneService.service_id,
+          preFetched
         );
+
+      base.milestone_index =
+        previousInvoices.length;
 
       base.milestone_index =
         previousInvoices.length;
@@ -587,7 +613,8 @@ export async function generateInvoiceForQuotationPlan(
       const previousInvoices =
         await getInvoicesForService(
           quotation.id,
-          monthlyService.service_id
+          monthlyService.service_id,
+          preFetched
         );
 
       base.month_index =
@@ -610,14 +637,17 @@ export async function generateInvoiceForQuotationPlan(
 
   console.log("Creating invoice...");
   await repo.createInvoice(base);
+  mark("Created invoice");
 
   console.log("Creating invoice items...");
   await snapshotInvoiceItems(
     invoiceId,
     quotation,
     now,
-    plan
+    plan,
+    preFetched
   );
+  mark("Created invoice items");
 
   console.log("Updating quotation...");
   const updatedQuotation = updateServiceProgress(
@@ -628,9 +658,9 @@ export async function generateInvoiceForQuotationPlan(
   // await repo.updateQuotation(updatedQuotation);
   // await updateQuotationStatusIfCompleted(quotation);
   await repo.updateQuotation(updatedQuotation);
+  mark("Updated quotation");
 
   console.log("Invoice generation completed.");
-
   return invoiceId;
 }
 
@@ -696,6 +726,7 @@ export async function generateNextMilestoneInvoice(currentInvoice: Invoice): Pro
       invoiceId,
       quotation,
       now,
+
       {
         type: "milestone",
         milestones: base.milestones ?? [],

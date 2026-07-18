@@ -26,6 +26,7 @@ type AppContextType = {
   user: { id: string; email?: string } | null;
   session: { user: { id: string; email?: string } } | null;
   loading: boolean;
+  loadingProgress: number;
   signIn: (email: string, password: string) => Promise<{ error: null | Error }>;
   signUp: (email: string, password: string, fullName: string) => Promise<{ error: null | Error }>;
   signOut: () => Promise<void>;
@@ -121,6 +122,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
   const [session] = useState<AppContextType["session"]>({ user: { id: "local-user", email: "local@user" } });
 
   const [loading, setLoading] = useState(true);
+  const [loadingProgress, setLoadingProgress] = useState(0);
 
   const [brandKit, setBrandKitState] = useState<BrandKit | null>(null);
   const [currency, setCurrencyState] = useState<Currency>("INR");
@@ -693,19 +695,37 @@ export function AppProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     (async () => {
+      const tasks = [
+        refreshBrandKit(),
+        refreshClientOptions(),
+        refreshClients(),
+        refreshServices(),
+        refreshQuotations(),
+        refreshTermsConditions(),
+        refreshInvoices(),
+        refreshInvoiceItems(),
+        refreshReceipts(),
+        refreshQuotationPointTemplates(),
+      ];
+
+      const total = tasks.length;
+      let completed = 0;
+
+      setLoadingProgress(0);
+
       try {
-        await Promise.all([
-          refreshBrandKit(),
-          refreshClientOptions(),
-          refreshClients(),
-          refreshServices(),
-          refreshQuotations(),
-          refreshTermsConditions(),
-          refreshInvoices(),
-          refreshInvoiceItems(),
-          refreshReceipts(),
-          refreshQuotationPointTemplates(),
-        ]);
+        await Promise.all(
+          tasks.map((task) =>
+            task
+              .catch((err) => {
+                if (import.meta.env.DEV) console.error("Startup task failed", err);
+              })
+              .finally(() => {
+                completed += 1;
+                setLoadingProgress(Math.round((completed / total) * 100));
+              })
+          )
+        );
       } finally {
         setLoading(false);
       }
@@ -718,6 +738,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
         user,
         session,
         loading,
+        loadingProgress,
         signIn,
         signUp,
         signOut,
