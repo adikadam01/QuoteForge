@@ -104,9 +104,9 @@ if (preg_match('#^/brand-kit(/.*)?$#', $path)) {
     exit;
 }
 
-// Templates
-if (preg_match('#^/templates(/.*)?$#', $path)) {
-    require 'api/templates.php';
+// Backup / Restore / Nuke
+if (preg_match('#^/backup(/.*)?$#', $path) || $path === '/nuke') {
+    require 'api/backup.php';
     exit;
 }
 
