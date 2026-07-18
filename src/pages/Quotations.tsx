@@ -1,6 +1,7 @@
 import { useRef, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { GenerateInvoiceModal } from '@/components/invoices/GenerateInvoiceModal';
+import InvoiceHistoryModal from '@/components/invoices/InvoiceHistoryModal';
 import {
   Plus,
   Search,
@@ -19,6 +20,8 @@ import {
   RotateCcw,
   CheckCircle2,
   XCircle,
+  FilePlus2,
+  History,
 } from 'lucide-react';
 
 import { Card, CardContent } from '@/components/ui/card';
@@ -55,8 +58,8 @@ const statusConfig = {
 
 export default function Quotations() {
   const navigate = useNavigate();
-  const { quotations, deleteQuotation, addQuotation, updateQuotation, currency,  refreshQuotations, refreshInvoices, invoices } = useApp();
-  const { toast } = useToast(); 
+  const { quotations, deleteQuotation, addQuotation, updateQuotation, currency, refreshQuotations, refreshInvoices, invoices } = useApp();
+  const { toast } = useToast();
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('all');
   const [sortBy, setSortBy] = useState<string>('newest');
@@ -109,6 +112,9 @@ export default function Quotations() {
 
   const [invoiceModalOpen, setInvoiceModalOpen] = useState(false);
   const [invoiceQuotation, setInvoiceQuotation] = useState<Quotation | null>(null);
+
+  const [historyModalOpen, setHistoryModalOpen] = useState(false);
+  const [historyQuotation, setHistoryQuotation] = useState<Quotation | null>(null);
 
   const duplicateInProgressRef = useRef(false);
   const handleDuplicate = async (quotation: Quotation) => {
@@ -431,7 +437,7 @@ export default function Quotations() {
                         <div className="text-sm text-muted-foreground">
                           Total Value
                         </div>
-                        <div className="text-2xl font-bold">
+                        <div className="text-md font-bold">
                           {(quotation.currency || currency) === 'INR' ? '₹' : '$'}{quotation.total.toLocaleString()}
                         </div>
                       </div>
@@ -444,14 +450,15 @@ export default function Quotations() {
 
                         return (
                           <Button
-                            className="bg-foreground text-background hover:bg-foreground/90 rounded-xl disabled:opacity-40 disabled:cursor-not-allowed"
+                            size="icon"
+                            className="h-7 w-7 rounded-full bg-foreground text-background hover:bg-foreground/90 disabled:opacity-40 disabled:cursor-not-allowed"
                             disabled={!canGenerate}
                             title={
                               !canGenerate
                                 ? latestInvoice?.invoice_status === 'draft'
                                   ? 'Previous invoice is still a draft — send and mark it as paid first'
                                   : 'Previous invoice must be marked as paid before generating the next one'
-                                : undefined
+                                : 'Generate Invoice'
                             }
                             onClick={() => {
                               if (!canGenerate) return;
@@ -459,20 +466,23 @@ export default function Quotations() {
                               setInvoiceModalOpen(true);
                             }}
                           >
-                            Generate Invoice
+                            <FilePlus2 className="h-4 w-4" />
                           </Button>
                         );
                       })()}
 
-                      {quotation.status === 'invoiced' && (
+                      {getLatestInvoiceForQuotation(quotation.id) && (
                         <Button
+                          size="icon"
                           variant="outline"
-                          className="rounded-xl"
+                          className="h-7 w-7 rounded-full border-black"
+                          title="Check History"
                           onClick={() => {
-                            // TODO: wire up history view later
+                            setHistoryQuotation(quotation);
+                            setHistoryModalOpen(true);
                           }}
                         >
-                          Check History
+                          <History className="h-4 w-4" />
                         </Button>
                       )}
 
@@ -689,6 +699,15 @@ export default function Quotations() {
           }}
         />
       )}
+
+      <InvoiceHistoryModal
+        open={historyModalOpen}
+        onOpenChange={(open) => {
+          setHistoryModalOpen(open);
+          if (!open) setHistoryQuotation(null);
+        }}
+        quotation={historyQuotation}
+      />
     </div >
   );
 }

@@ -627,7 +627,7 @@ export default function InvoiceView() {
             <div className="space-y-2">
               <Button
                 variant="outline"
-                className="w-full gap-2 rounded-xl"
+                className="w-full gap-2 rounded-xl  border border-black"
                 disabled={quotationIsDraft}
                 onClick={async () => {
                   // Keep existing status behavior, but never block link sharing.
@@ -774,8 +774,8 @@ export default function InvoiceView() {
               ) : null}
 
               {receipt ? (
-                <Link to={`/receipts/${receipt.id}`}>
-                  <Button variant="secondary" className="w-full gap-2 rounded-xl">
+                <Link to={`/receipts/${receipt.id}`} className="block mt-3">
+                  <Button variant="secondary" className="w-full gap-2 rounded-xl border border-black bg-black text-white hover:bg-white hover:text-black">
                     <ReceiptText className="w-4 h-4" /> View Receipt
                   </Button>
                 </Link>

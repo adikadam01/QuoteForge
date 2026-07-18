@@ -100,7 +100,7 @@ export function ReceiptLayout({
               ? "Milestone"
               : item.description?.toLowerCase().includes("month")
                 ? "Monthly"
-                : "Service",
+                : "One-Time",
 
         });
 
@@ -109,7 +109,6 @@ export function ReceiptLayout({
       return items;
 
     }
-    
 
     if (items.length === 0) {
       items.push({
