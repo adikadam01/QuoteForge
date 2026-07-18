@@ -256,7 +256,8 @@ async function snapshotInvoiceItems(
   quotation: Quotation,
   now: string,
   plan: GenerateInvoicePlan,
-  preFetched?: { invoices: Invoice[]; items: InvoiceItem[] }
+  preFetched?: { invoices: Invoice[]; items: InvoiceItem[] },
+  validServiceIds?: Set<string>
 ): Promise<void> {
 
 
@@ -268,6 +269,12 @@ async function snapshotInvoiceItems(
       invoices: await repo.listInvoices(),
       items: await repo.listInvoiceItems(),
     };
+
+  // Fallback: if not provided (e.g. called from generateNextMilestoneInvoice /
+  // generateNextMonthlyInvoice), fetch the current valid service ids so we
+  // never try to insert an invoice_item referencing a deleted service.
+  const resolvedValidServiceIds =
+    validServiceIds ?? new Set((await repo.listServices()).map((s) => s.id));
   console.log("========== SNAPSHOT ==========");
   console.log("Quotation:", quotation);
 
@@ -373,6 +380,11 @@ async function snapshotInvoiceItems(
         total =
           unitPrice;
       }
+      const safeServiceId =
+        s.service_id && resolvedValidServiceIds.has(s.service_id)
+          ? s.service_id
+          : null;
+
       return {
 
         id: newId(),
@@ -381,7 +393,7 @@ async function snapshotInvoiceItems(
 
         quotation_id: quotation.id,
 
-        service_id: s.service_id ?? null,
+        service_id: safeServiceId,
 
         name: s.service_name ?? "",
 
@@ -476,12 +488,14 @@ export async function generateInvoiceForQuotationPlan(
 
   // Fetch invoices/items ONCE for this whole invoice generation instead of
   // re-fetching per service (was causing N+1 network round trips).
-  const [allInvoices, allInvoiceItems] = await Promise.all([
+  const [allInvoices, allInvoiceItems, allServices] = await Promise.all([
     repo.listInvoices(),
     repo.listInvoiceItems(),
+    repo.listServices(),
   ]);
-  mark("Fetched invoices+items");
+  mark("Fetched invoices+items+services");
   const preFetched = { invoices: allInvoices, items: allInvoiceItems };
+  const validServiceIds = new Set(allServices.map((s) => s.id));
 
   let calculatedSubtotal = 0;
   for (const service of invoiceServices) {
@@ -635,32 +649,39 @@ export async function generateInvoiceForQuotationPlan(
   }
 
 
-  console.log("Creating invoice...");
-  await repo.createInvoice(base);
-  mark("Created invoice");
-
-  console.log("Creating invoice items...");
-  await snapshotInvoiceItems(
-    invoiceId,
-    quotation,
-    now,
-    plan,
-    preFetched
-  );
-  mark("Created invoice items");
-
-  console.log("Updating quotation...");
+  // updateServiceProgress is pure computation — doesn't depend on the invoice
+  // being created yet, so we can prepare it and start the quotation update
+  // in parallel with invoice/item creation instead of waiting for both first.
   const updatedQuotation = updateServiceProgress(
     quotation,
     plan.selectedServiceIds ?? []
   );
 
-  // await repo.updateQuotation(updatedQuotation);
-  // await updateQuotationStatusIfCompleted(quotation);
-  await repo.updateQuotation(updatedQuotation);
-  mark("Updated quotation");
+  console.log("Creating invoice...");
+  const createInvoicePromise = repo.createInvoice(base).then(async () => {
+    mark("Created invoice");
+
+    console.log("Creating invoice items...");
+    await snapshotInvoiceItems(
+      invoiceId,
+      quotation,
+      now,
+      plan,
+      preFetched,
+      validServiceIds
+    );
+    mark("Created invoice items");
+  });
+
+  console.log("Updating quotation...");
+  const updateQuotationPromise = repo.updateQuotation(updatedQuotation).then(() => {
+    mark("Updated quotation");
+  });
+
+  await Promise.all([createInvoicePromise, updateQuotationPromise]);
 
   console.log("Invoice generation completed.");
+
   return invoiceId;
 }
 

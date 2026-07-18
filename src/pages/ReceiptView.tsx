@@ -22,27 +22,19 @@ export default function ReceiptView() {
     listInvoiceItemsByInvoice,
   } = useApp();
 
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    if (!id) return;
-    let cancelled = false;
-    (async () => {
-      setLoading(true);
-      try {
-        await refreshInvoices();
-        await refreshReceipts();
-      } finally {
-        if (!cancelled) setLoading(false);
-      }
-    })();
-    return () => {
-      cancelled = true;
-    };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [id]);
+  const [notFoundGraceExpired, setNotFoundGraceExpired] = useState(false);
 
   const receipt = useMemo(() => receipts.find((r) => r.id === id), [id, receipts]);
+
+  useEffect(() => {
+    if (receipt) {
+      setNotFoundGraceExpired(false);
+      return;
+    }
+    const t = setTimeout(() => setNotFoundGraceExpired(true), 1500);
+    return () => clearTimeout(t);
+  }, [receipt, id]);
+
   const invoice = useMemo(() => invoices.find((i) => i.id === receipt?.invoice_id), [invoices, receipt?.invoice_id]);
   const client = useMemo(() => {
     const cid = receipt?.client_id || invoice?.client_id || null;
@@ -71,7 +63,6 @@ export default function ReceiptView() {
     if (!receipt || !invoice) return;
 
     try {
-      setLoading(true);
       const { printDocument } = await import('@/lib/printer');
       const { ReceiptDocument } = await import('@/documents/ReceiptDocument');
       const safe = (receipt.receipt_number || receipt.id).replace(/[^a-zA-Z0-9-_]/g, '_');
@@ -91,24 +82,19 @@ export default function ReceiptView() {
       );
     } catch (err) {
       console.error('Print failed', err);
-    } finally {
-      setLoading(false);
     }
   };
-
+  
   if (!id) return null;
 
-  if (loading) {
-    return (
-      <div className="min-h-[40vh] flex items-center justify-center">
-        <div className="animate-pulse">
-          <div className="w-12 h-12 rounded-full bg-primary/20" />
-        </div>
-      </div>
-    );
-  }
-
   if (!receipt) {
+    if (!notFoundGraceExpired) {
+      return (
+        <div className="min-h-[40vh] flex items-center justify-center">
+          <p className="text-sm text-muted-foreground">Loading receipt…</p>
+        </div>
+      );
+    }
     return (
       <div className="space-y-4">
         <p className="text-muted-foreground">Receipt not found.</p>

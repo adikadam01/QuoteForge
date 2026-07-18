@@ -87,20 +87,24 @@ export function ReceiptLayout({
 
       invoiceItems.forEach((item) => {
 
+        const desc = item.description || "";
+
+        const isMonthly = /^Month\s+\d+\s+of\s+\d+/i.test(desc);
+        const isMilestone = /\(\s*\d+(\.\d+)?\s*%\s*\)/.test(desc);
+
         items.push({
 
           name: item.name,
 
-          desc: item.description || "",
+          desc,
 
           amount: Number(item.total),
 
-          type:
-            item.description?.toLowerCase().includes("milestone")
+          type: isMonthly
+            ? "Monthly"
+            : isMilestone
               ? "Milestone"
-              : item.description?.toLowerCase().includes("month")
-                ? "Monthly"
-                : "One-Time",
+              : "One-Time",
 
         });
 
@@ -109,7 +113,7 @@ export function ReceiptLayout({
       return items;
 
     }
-
+    
     if (items.length === 0) {
       items.push({
         name: `Payment for Invoice #${invoiceNumber?.slice(-4)}`,

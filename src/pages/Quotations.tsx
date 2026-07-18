@@ -26,6 +26,7 @@ import {
 
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
+import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import {
@@ -58,7 +59,7 @@ const statusConfig = {
 
 export default function Quotations() {
   const navigate = useNavigate();
-  const { quotations, deleteQuotation, addQuotation, updateQuotation, currency, refreshQuotations, refreshInvoices, invoices } = useApp();
+  const { quotations, deleteQuotation, addQuotation, updateQuotation, currency, refreshQuotations, refreshInvoices, refreshInvoiceItems, invoices } = useApp();
   const { toast } = useToast();
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('all');
@@ -433,6 +434,81 @@ export default function Quotations() {
                         </div>
                       )}
 
+                      {(quotation.status === 'accepted' || quotation.status === 'invoiced') && (() => {
+                        const latestInvoice = getLatestInvoiceForQuotation(quotation.id);
+                        const hasAnyInvoice = Boolean(latestInvoice);
+
+                        const allServicesFullyInvoiced =
+                          (quotation.service_blocks?.length ?? 0) > 0 &&
+                          (quotation.service_blocks ?? []).every(
+                            (b) => b.invoice_progress?.completed
+                          );
+
+                        // No invoice yet -> first invoice, always allowed.
+                        // Latest invoice must be 'paid' to unlock the next one.
+                        // Frozen once every service on this quotation is fully invoiced.
+                        const canGenerate =
+                          !allServicesFullyInvoiced &&
+                          (!latestInvoice || latestInvoice.invoice_status === 'paid');
+
+                        const tooltipLabel = allServicesFullyInvoiced
+                          ? 'No invoice to generate'
+                          : !canGenerate
+                            ? "Can't generate right now"
+                            : 'Generate Invoice';
+
+                        return (
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <span className="inline-flex">
+                                <Button
+                                  size="icon"
+                                  className="h-7 w-7 rounded-full bg-foreground text-background hover:bg-foreground/90 disabled:opacity-40 disabled:cursor-not-allowed"
+                                  disabled={!canGenerate}
+                                  onClick={() => {
+                                    if (!canGenerate) return;
+                                    setInvoiceQuotation(quotation);
+                                    setInvoiceModalOpen(true);
+                                  }}
+                                >
+                                  <FilePlus2 className="h-4 w-4" />
+                                </Button>
+                              </span>
+                            </TooltipTrigger>
+                            <TooltipContent>{tooltipLabel}</TooltipContent>
+                          </Tooltip>
+                        );
+                      })()}
+
+                      {(quotation.status === 'accepted' || quotation.status === 'invoiced') && (() => {
+                        const hasAnyInvoice = Boolean(getLatestInvoiceForQuotation(quotation.id));
+
+                        return (
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <span className="inline-flex">
+                                <Button
+                                  size="icon"
+                                  variant="outline"
+                                  className="h-7 w-7 rounded-full border-black disabled:opacity-40 disabled:cursor-not-allowed "
+                                  disabled={!hasAnyInvoice}
+                                  onClick={() => {
+                                    if (!hasAnyInvoice) return;
+                                    setHistoryQuotation(quotation);
+                                    setHistoryModalOpen(true);
+                                  }}
+                                >
+                                  <History className="h-4 w-4 " />
+                                </Button>
+                              </span>
+                            </TooltipTrigger>
+                            <TooltipContent className="text-green-700">
+                              {hasAnyInvoice ? 'Check History' : 'No invoices generated yet'}
+                            </TooltipContent>
+                          </Tooltip>
+                        );
+                      })()}
+
                       <div className="text-right">
                         <div className="text-sm text-muted-foreground">
                           Total Value
@@ -442,49 +518,6 @@ export default function Quotations() {
                         </div>
                       </div>
 
-                      {quotation.status === 'accepted' && (() => {
-                        const latestInvoice = getLatestInvoiceForQuotation(quotation.id);
-                        // No invoice yet -> first invoice, always allowed.
-                        // Latest invoice must be 'paid' to unlock the next one.
-                        const canGenerate = !latestInvoice || latestInvoice.invoice_status === 'paid';
-
-                        return (
-                          <Button
-                            size="icon"
-                            className="h-7 w-7 rounded-full bg-foreground text-background hover:bg-foreground/90 disabled:opacity-40 disabled:cursor-not-allowed"
-                            disabled={!canGenerate}
-                            title={
-                              !canGenerate
-                                ? latestInvoice?.invoice_status === 'draft'
-                                  ? 'Previous invoice is still a draft — send and mark it as paid first'
-                                  : 'Previous invoice must be marked as paid before generating the next one'
-                                : 'Generate Invoice'
-                            }
-                            onClick={() => {
-                              if (!canGenerate) return;
-                              setInvoiceQuotation(quotation);
-                              setInvoiceModalOpen(true);
-                            }}
-                          >
-                            <FilePlus2 className="h-4 w-4" />
-                          </Button>
-                        );
-                      })()}
-
-                      {getLatestInvoiceForQuotation(quotation.id) && (
-                        <Button
-                          size="icon"
-                          variant="outline"
-                          className="h-7 w-7 rounded-full border-black"
-                          title="Check History"
-                          onClick={() => {
-                            setHistoryQuotation(quotation);
-                            setHistoryModalOpen(true);
-                          }}
-                        >
-                          <History className="h-4 w-4" />
-                        </Button>
-                      )}
 
                     </div>
 
@@ -691,7 +724,7 @@ export default function Quotations() {
           quotation={invoiceQuotation}
           selectedServiceId={null}
           onGenerated={async (invoiceId) => {
-            await Promise.all([refreshQuotations(), refreshInvoices()]);
+            await Promise.all([refreshQuotations(), refreshInvoices(), refreshInvoiceItems()]);
             setInvoiceModalOpen(false);
             setInvoiceQuotation(null);
             navigate(`/invoices/${invoiceId}`);
