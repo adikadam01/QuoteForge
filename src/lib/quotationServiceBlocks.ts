@@ -81,13 +81,17 @@ export type QuotationServiceBlock = {
   milestone_count?: number;
   milestone_template?: MilestoneItem[];
 
-  invoice_progress?: {
+invoice_progress?: {
     generated: number;
     total: number;
     completed: boolean;
   };
 
+  /** Dynamic pricing configuration state (Phase 2/3 feature). Optional — only present for services with a matching ServiceConfig. */
+  service_config?: import("@/lib/pricing-engine").ServiceConfigState;
+
 };
+
 
 function normalizeText(v: unknown): string {
   return typeof v === "string" ? v : "";

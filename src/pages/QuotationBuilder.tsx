@@ -6,6 +6,7 @@ import { ArrowLeft, Download, Pencil, Save, Send, UserPlus, X, FileText, ListChe
 import { pdf } from "@react-pdf/renderer";
 
 
+
 import {
   generateMilestones,
   updateMilestonePercentage,
@@ -52,6 +53,9 @@ import {
   type QuotationServiceBlockBillingType,
 } from "@/lib/quotationServiceBlocks";
 import { calculateMonthly } from "@/components/quotation/pricing";
+import ServiceConfigurator from "@/components/service-configurator/ServiceConfigurator";
+import { getServiceConfig } from "@/lib/service-configs";
+import type { ServiceConfigState } from "@/lib/pricing-engine";
 
 
 
@@ -1971,40 +1975,48 @@ export default function QuotationBuilder() {
                         </div>
                         <div className="space-y-5">
 
-                          {/* Total Project Price */}
-                          <div className="space-y-2">
-                            <Label>Total Project Price</Label>
+                          {/* Total Project Price — dynamic configurator OR manual input */}
+                          {(() => {
+                            const dynamicConfig = getServiceConfig(b.service_name);
 
-                            <Input
-                              type="number"
-                              value={b.price}
-                              onChange={(e) => {
+                            const applyPrice = (price: number, serviceConfig?: ServiceConfigState) => {
+                              if (b.billing_type === "monthly") {
+                                const plan = calculateMonthly(price, b.duration_months || 1);
+                                updateBlock(idx, {
+                                  price,
+                                  monthly_amount: plan.monthlyAmount,
+                                  ...(serviceConfig ? { service_config: serviceConfig } : {}),
+                                });
+                              } else {
+                                updateBlock(idx, {
+                                  price,
+                                  ...(serviceConfig ? { service_config: serviceConfig } : {}),
+                                });
+                              }
+                            };
 
-                                const price = Number(e.target.value);
+                            if (dynamicConfig) {
+                              return (
+                                <ServiceConfigurator
+                                  serviceName={b.service_name}
+                                  currency={currency}
+                                  configState={b.service_config}
+                                  onChange={(state, price) => applyPrice(price, state)}
+                                />
+                              );
+                            }
 
-                                if (b.billing_type === "monthly") {
-
-                                  const plan = calculateMonthly(
-                                    price,
-                                    b.duration_months || 1
-                                  );
-
-                                  updateBlock(idx, {
-                                    price,
-                                    monthly_amount: plan.monthlyAmount,
-                                  });
-
-                                } else {
-
-                                  updateBlock(idx, {
-                                    price,
-                                  });
-
-                                }
-
-                              }}
-                            />
-                          </div>
+                            return (
+                              <div className="space-y-2">
+                                <Label>Total Project Price</Label>
+                                <Input
+                                  type="number"
+                                  value={b.price}
+                                  onChange={(e) => applyPrice(Number(e.target.value))}
+                                />
+                              </div>
+                            );
+                          })()}
 
                           {/* Show only for milestone billing */}
                           {b.billing_type === "milestone" && (
