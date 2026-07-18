@@ -366,11 +366,11 @@ export class PDFPaginationEngine {
                     const blockHeight =
                         this.estimateHeight(block);
 
-                    console.log({
-                        id: block.id,
-                        kind: block.renderKind,
-                        height: blockHeight,
-                    });
+                    // console.log({
+                    //     id: block.id,
+                    //     kind: block.renderKind,
+                    //     height: blockHeight,
+                    // });
 
                     const safetyMargin = 8;
 
@@ -398,25 +398,25 @@ export class PDFPaginationEngine {
                         usedHeight = 0;
                     }
 
-                    console.log({
-                        page: currentPage.pageNumber,
-                        usedHeight,
-                        blockHeight,
-                        printableHeight: this.printableHeight,
-                        remaining: this.printableHeight - usedHeight,
-                        nextBlock: block.id,
-                    });
+                    // console.log({
+                    //     page: currentPage.pageNumber,
+                    //     usedHeight,
+                    //     blockHeight,
+                    //     printableHeight: this.printableHeight,
+                    //     remaining: this.printableHeight - usedHeight,
+                    //     nextBlock: block.id,
+                    // });
                     pageContainer.renderedBlocks.push(block);
 
                     currentPage.blocks.push(block);
 
                     usedHeight += blockHeight;
-                    console.log(
-                        pageContainer.id,
-                        block.id,
-                        blockHeight,
-                        usedHeight
-                    );
+                    // console.log(
+                    //     pageContainer.id,
+                    //     block.id,
+                    //     blockHeight,
+                    //     usedHeight
+                    // );
                 }
 
                 pageContainer.isLastPart = true;
