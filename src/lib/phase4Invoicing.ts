@@ -270,10 +270,10 @@ async function snapshotInvoiceItems(
 
   });
 
-  console.log(
-    "Selected Services:",
-    quoteServices.map(s => s.service_name)
-  );
+  // console.log(
+  //   "Selected Services:",
+  //   quoteServices.map(s => s.service_name)
+  // );
 
   // console.log("quoteServices =", quoteServices);
 

@@ -22,7 +22,7 @@ import type { Client } from '@/lib/types';
 
 export default function Clients() {
   const { clients, addClient, updateClient, deleteClient, quotations, currency } = useApp();
-  console.log("CLIENTS PAGE RECEIVED =", clients);
+  // console.log("CLIENTS PAGE RECEIVED =", clients);
   const clientOptions = useClientOptions();
   const { toast } = useToast();
   const [searchQuery, setSearchQuery] = useState('');

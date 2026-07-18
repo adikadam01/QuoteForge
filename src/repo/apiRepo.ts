@@ -105,7 +105,7 @@ export function createApiRepo(): Repository {
         listTermsConditions: async () => {
             const response = await request<any[]>("/services/terms-conditions");
 
-            console.log("API TERMS:", response);
+            // console.log("API TERMS:", response);
 
             return response;
         },
