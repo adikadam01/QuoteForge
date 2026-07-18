@@ -637,21 +637,21 @@ export default function QuotationBuilder() {
         text += `• ${item.clause}\n`;
       }
     });
-    console.log("SERVICE BLOCKS", serviceBlocks);
+    // console.log("SERVICE BLOCKS", serviceBlocks);
 
-    console.log("SELECTED CATEGORIES", selectedCategories);
+    // console.log("SELECTED CATEGORIES", selectedCategories);
 
-    console.log(
-      "CATEGORY TERMS",
-      categoryTerms
-    );
+    // console.log(
+    //   "CATEGORY TERMS",
+    //   categoryTerms
+    // );
 
-    console.log(
-      "ALL TERMS",
-      termsConditions
-    );
+    // console.log(
+    //   "ALL TERMS",
+    //   termsConditions
+    // );
 
-    console.log("AUTO GENERATED TEXT");
+    // console.log("AUTO GENERATED TEXT");
     console.log(text);
     return text;
 

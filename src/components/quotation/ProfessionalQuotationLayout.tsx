@@ -46,14 +46,14 @@ export default function ProfessionalQuotationDocument({
 }: Props) {
     // Referenced so payment/terms defaults and totals helpers stay wired up
     // for the pages that follow this one; not rendered on Page 1.
-    console.log("Quotation", quotation);
-    console.log("Client", client);
-    console.log("Quotation.client", quotation.client);
+    // console.log("Quotation", quotation);
+    // console.log("Client", client);
+    // console.log("Quotation.client", quotation.client);
 
 
     // const currentClient = quotation.client ?? client;
     const currentClient = (quotation as any)?.client || client || null;
-    console.log("Current Clients: ", currentClient)
+    // console.log("Current Clients: ", currentClient)
     void DEFAULT_PAYMENT_TERMS;
     void DEFAULT_TERMS_CONDITIONS;
     void getQuotationTotalsForDisplay;

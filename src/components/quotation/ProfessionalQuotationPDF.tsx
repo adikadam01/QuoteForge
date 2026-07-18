@@ -691,8 +691,8 @@ export default function ProfessionalQuotationPDF({
     client,
     brandKit,
 }: Props) {
-    console.log("PDF Client", client);
-    console.log("Quotation Client", quotation.client);
+    // console.log("PDF Client", client);
+    // console.log("Quotation Client", quotation.client);
 
     const currentClient = (quotation as any)?.client || client || null;
 
@@ -723,8 +723,8 @@ export default function ProfessionalQuotationPDF({
             : "the requested services"
         }, prepared specifically for ${currentClient?.business_name || currentClient?.name || "the client"
         }. The scope, deliverables, and detailed breakdown are outlined on the following pages of this proposal.`;
-    console.log("ProfessionalQuotationPDF Loaded");
-    console.log("Logo URL:", brandKit?.logo_url);
+    // console.log("ProfessionalQuotationPDF Loaded");
+    // console.log("Logo URL:", brandKit?.logo_url);
 
     const logoSource =
         brandKit?.logo_url
@@ -752,23 +752,23 @@ export default function ProfessionalQuotationPDF({
             paginationSections
         );
 
-    console.log('renderable pages: ', renderablePages);
+    // console.log('renderable pages: ', renderablePages);
 
     if (import.meta.env.DEV) {
 
-        console.log("Pagination Sections", paginationSections);
+        // console.log("Pagination Sections", paginationSections);
 
-        console.log("Renderable Pages", renderablePages);
+        // console.log("Renderable Pages", renderablePages);
 
         renderablePages.forEach(page => {
 
-            console.log(
-                page.pageNumber,
-                page.containers.map(c => ({
-                    id: c.id,
-                    blocks: c.renderedBlocks.length,
-                }))
-            );
+            // console.log(
+            //     page.pageNumber,
+            //     page.containers.map(c => ({
+            //         id: c.id,
+            //         blocks: c.renderedBlocks.length,
+            //     }))
+            // );
 
         });
 

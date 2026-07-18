@@ -177,7 +177,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
 
   const [clients, setClients] = useState<Client[]>([]);
   useEffect(() => {
-    console.log("CLIENTS STATE =", clients);
+    // console.log("CLIENTS STATE =", clients);
   }, [clients]);
 
   const DEFAULT_CLIENT_OPTIONS: ClientOptions = {
@@ -381,19 +381,19 @@ export function AppProvider({ children }: { children: ReactNode }) {
 
   const refreshClients = async () => {
 
-    console.log("REFRESH CLIENTS START");
+    // console.log("REFRESH CLIENTS START");
 
     const list = await repo.listClients();
 
-    console.log("CLIENTS FROM API =", list);
+    // console.log("CLIENTS FROM API =", list);
 
     const filtered = list.filter((c) => !c.is_deleted);
 
-    console.log("FILTERED CLIENTS =", filtered);
+    // console.log("FILTERED CLIENTS =", filtered);
 
     setClients(filtered);
 
-    console.log("CLIENTS STATE UPDATED");
+    // console.log("CLIENTS STATE UPDATED");
   };
 
   const addClient: AppContextType["addClient"] = async (client) => {
@@ -444,11 +444,11 @@ export function AppProvider({ children }: { children: ReactNode }) {
     try {
       const list = await repo.listTermsConditions();
 
-      console.log("TERMS LOADED", list);
+      // console.log("TERMS LOADED", list);
 
       setTermsConditions(list);
     } catch (err) {
-      console.error("FAILED TO LOAD TERMS", err);
+      // console.error("FAILED TO LOAD TERMS", err);
     }
   };
   const addService: AppContextType["addService"] = async (service) => {
@@ -524,7 +524,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
       updated_at: now,
     } as Quotation;
 
-    console.log("ROW =", row);
+    // console.log("ROW =", row);
 
     // for (const [key, value] of Object.entries(row)) {
     //   try {
