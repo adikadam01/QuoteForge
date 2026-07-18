@@ -277,10 +277,10 @@ export function InvoiceLayout({ invoice, items, brandKit, mode = "screen" }: Pro
         <Card className="doc-card">
           <CardContent className="doc-pad">
             <div className="doc-footerGrid">
-              <div>
+              {/* <div>
                 <h2 className="doc-sectionTitle">Terms</h2>
                 <div className="doc-paragraph whitespace-pre-wrap">{invoice.notes || invoice.quotation?.terms_conditions_text || "—"}</div>
-              </div>
+              </div> */}
               <div>
                 <h2 className="doc-sectionTitle">Validity</h2>
                 <div className="doc-paragraph">{invoice.due_date ? `Payable by ${invoice.due_date}` : "—"}</div>
