@@ -11,84 +11,95 @@ export default function PublicInvoice() {
   const { invoiceId } = useParams<{ invoiceId: string }>();
   const { brandKit, currency, clients, quotations, refreshInvoices, refreshInvoiceItems, getInvoiceById, listInvoiceItemsByInvoice } = useApp();
 
-  const [loading, setLoading] = useState(true);
-  const [invoice, setInvoice] = useState<Invoice | null>(null);
+  const [initialFetchDone, setInitialFetchDone] = useState(false);
+  const [notFoundGraceExpired, setNotFoundGraceExpired] = useState(false);
+  const [statelessInvoice, setStatelessInvoice] = useState<Invoice | null>(null);
+  const [statelessItems, setStatelessItems] = useState<InvoiceItem[] | null>(null);
+  const [statelessBrand, setStatelessBrand] = useState<BrandKit | undefined>(undefined);
 
+  const usingStatelessData = statelessInvoice !== null;
+
+  // Handle legacy stateless (?data=) links, if any old ones are still floating around.
   useEffect(() => {
-    // 1. Check for stateless data param
     const params = new URLSearchParams(window.location.search);
     const dataParam = params.get('data');
-
-    if (dataParam) {
-      import('@/lib/shareLink').then(({ decodeInvoiceData }) => {
-        const decoded = decodeInvoiceData(dataParam);
-        if (decoded) {
-          const { invoice: rawInv, items: rawItems, client, brandKit } = decoded;
-          // Hydrate invoice with embedded client/items
-          const hydrated = {
-            ...rawInv,
-            client: client || rawInv.client,
-            // We can attach items if we want, but listInvoiceItemsByInvoice reads from repo.
-            // Since we are in public view "stateless", we must inject items into the view.
-            // We'll handle items via a special override or by mocking the repo call result? 
-            // Actually, `items` in component state is pulled from memory or repo. 
-            // We need to bypass repo for items.
-          } as Invoice;
-
-          setInvoice(hydrated);
-          // We need to pass `items` to the view. But `PublicInvoice` uses `listInvoiceItemsByInvoice`.
-          // We will store items in a local state override.
-          setStatelessItems(rawItems);
-          setStatelessBrand(brandKit || undefined);
-          setLoading(false);
-        } else {
-          setLoading(false); // bad data
-        }
-      });
+    if (!dataParam) {
+      setInitialFetchDone(true);
       return;
     }
 
-    // 2. Fallback to existing logic (local repo)
+    import('@/lib/shareLink').then(({ decodeInvoiceData }) => {
+      const decoded = decodeInvoiceData(dataParam);
+      if (decoded) {
+        const { invoice: rawInv, items: rawItems, client, brandKit: sharedBrand } = decoded;
+        const hydrated = {
+          ...rawInv,
+          client: client || rawInv.client,
+        } as Invoice;
+
+        setStatelessInvoice(hydrated);
+        setStatelessItems(rawItems);
+        setStatelessBrand(sharedBrand || undefined);
+      }
+      setInitialFetchDone(true);
+    });
+  }, []);
+
+  // Fetch live data once on mount (short-link path: /public/invoice/:invoiceId, no ?data=).
+  useEffect(() => {
+    if (usingStatelessData) return;
     if (!invoiceId || invoiceId === 'shared') {
-      setLoading(false);
+      setInitialFetchDone(true);
       return;
     }
 
     let cancelled = false;
     (async () => {
-      setLoading(true);
       try {
-        await refreshInvoices();
-        await refreshInvoiceItems();
-        const inv = getInvoiceById(invoiceId);
-        if (!inv) {
-          if (!cancelled) setInvoice(null);
-          return;
-        }
-
-        const q = inv.quotation_id ? quotations.find((x) => x.id === inv.quotation_id) : undefined;
-        const clientId = inv.client_id || q?.client_id || null;
-        const client = clientId ? clients.find((c) => c.id === clientId) : undefined;
-        const hydrated = {
-          ...inv,
-          client_id: clientId,
-          client: inv.client || q?.client || client,
-          quotation: inv.quotation || q,
-        } as Invoice;
-
-        if (!cancelled) setInvoice(hydrated);
+        await Promise.all([refreshInvoices(), refreshInvoiceItems()]);
       } finally {
-        if (!cancelled) setLoading(false);
+        if (!cancelled) setInitialFetchDone(true);
       }
     })();
     return () => {
       cancelled = true;
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [invoiceId]);
+  }, [invoiceId, usingStatelessData]);
 
-  const [statelessItems, setStatelessItems] = useState<InvoiceItem[]>([]);
-  const [statelessBrand, setStatelessBrand] = useState<BrandKit | undefined>(undefined);
+  // Derive invoice reactively from context — no stale closure.
+  const liveInvoice = useMemo<Invoice | null>(() => {
+    if (usingStatelessData) return null;
+    if (!invoiceId || invoiceId === 'shared') return null;
+
+    const inv = getInvoiceById(invoiceId);
+    if (!inv) return null;
+
+    const q = inv.quotation_id ? quotations.find((x) => x.id === inv.quotation_id) : undefined;
+    const clientId = inv.client_id || q?.client_id || null;
+    const client = clientId ? clients.find((c) => c.id === clientId) : undefined;
+
+    return {
+      ...inv,
+      client_id: clientId,
+      client: inv.client || q?.client || client,
+      quotation: inv.quotation || q,
+    } as Invoice;
+  }, [invoiceId, usingStatelessData, getInvoiceById, quotations, clients]);
+
+  const invoice = usingStatelessData ? statelessInvoice : liveInvoice;
+
+  // Grace period before showing "not found" — give context a moment to catch up
+  // after the initial fetch, since state updates can lag one render behind.
+  useEffect(() => {
+    if (invoice) {
+      setNotFoundGraceExpired(false);
+      return;
+    }
+    if (!initialFetchDone) return;
+    const t = setTimeout(() => setNotFoundGraceExpired(true), 1500);
+    return () => clearTimeout(t);
+  }, [invoice, initialFetchDone]);
 
   const items = useMemo(() => {
     if (statelessItems) return statelessItems;
@@ -116,17 +127,14 @@ export default function PublicInvoice() {
 
   if (!invoiceId) return null;
 
-  if (loading) {
-    return (
-      <div className="min-h-[40vh] flex items-center justify-center">
-        <div className="animate-pulse">
-          <div className="w-12 h-12 rounded-full bg-primary/20" />
-        </div>
-      </div>
-    );
-  }
-
   if (!invoice) {
+    if (!notFoundGraceExpired) {
+      return (
+        <div className="min-h-[40vh] flex items-center justify-center">
+          <p className="text-sm text-muted-foreground">Loading invoice…</p>
+        </div>
+      );
+    }
     return (
       <div className="max-w-3xl mx-auto p-6">
         <Card className="glass-card">

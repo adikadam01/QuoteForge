@@ -620,18 +620,9 @@ export default function InvoiceView() {
                     await setInvoiceStatus('sent');
                   }
 
-                  const { encodeInvoiceData } = await import('@/lib/shareLink');
-                  const shareData = {
-                    v: 1,
-                    invoice: { ...invoice, client: undefined, quotation: undefined }, // strip circular/heavy refs if any, keep raw data
-                    items,
-                    client: invoice.client || (invoice.client_id ? clients.find(c => c.id === invoice.client_id) : undefined),
-                    brandKit: brandKit || null,
-                    senderName: "Triple S Production"
-                  };
-
-                  const encoded = encodeInvoiceData(shareData);
-                  const publicUrl = `${window.location.origin}/public/invoice/shared?data=${encoded}`;
+                  // Short link: the public page fetches invoice data by ID from the API,
+                  // so we don't need to encode the entire invoice into the URL.
+                  const publicUrl = `${window.location.origin}/public/invoice/${invoice.id}`;
 
                   const fallbackCopy = (text: string) => {
                     const ta = document.createElement('textarea');
