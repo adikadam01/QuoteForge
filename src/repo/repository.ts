@@ -1,4 +1,4 @@
-import type { BrandKit, Client, Contract, Invoice, InvoiceItem, PaymentReceipt, Quotation, Service, WorkflowInvoice } from "@/lib/types";
+import type { BrandKit, Client, Contract, Invoice, InvoiceItem, PaymentReceipt, Quotation, Service, WorkflowInvoice, Notification } from "@/lib/types";
 import type { QuotationPointTemplateRow, RepoSnapshot } from "@/repo/types";
 
 export interface Repository {
@@ -41,6 +41,8 @@ export interface Repository {
   listInvoiceItems(): Promise<InvoiceItem[]>;
   listInvoiceItemsByInvoice(invoiceId: string): Promise<InvoiceItem[]>;
   upsertInvoiceItemsForInvoice(invoiceId: string, items: InvoiceItem[]): Promise<void>;
+
+  listNotifications(): Promise<Notification[]>;
 
   // Phase 4 workflow entities
   listContracts(): Promise<Contract[]>;

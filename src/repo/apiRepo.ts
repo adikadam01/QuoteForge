@@ -8,6 +8,7 @@ import type {
     InvoiceItem,
     Receipt,
     ClientOptions,
+    Notification,
 } from "@/lib/types";
 import type { RepoSnapshot, QuotationPointTemplateRow } from "./types";
 
@@ -21,37 +22,6 @@ import type { RepoSnapshot, QuotationPointTemplateRow } from "./types";
  */
 
 const API_BASE = "https://quoteforge-f20w.onrender.com/api";
-
-// async function request<T>(path: string, options?: RequestInit): Promise<T> {
-//     const res = await fetch(`${API_BASE}${path}`, {
-//         ...options,
-//         headers: {
-//             "Content-Type": "application/json",
-//             ...options?.headers,
-//         },
-//     });
-
-//     if (!res.ok) {
-//         throw new Error(`API Error: ${res.status} ${res.statusText}`);
-//     }
-
-//     // Handle void responses (204)
-//     if (res.status === 204) return {} as T;
-
-//     // return res.json();
-//     const text = await res.text();
-
-// // console.log("API RESPONSE:");
-// // console.log(text);
-
-// // return JSON.parse(text);
-// // }
-
-// const text = await response.text();
-
-// console.log("API RAW RESPONSE:", text);
-
-// return JSON.parse(text);
 
 async function request<T>(path: string, options?: RequestInit): Promise<T> {
     const res = await fetch(`${API_BASE}${path}`, {
@@ -102,8 +72,10 @@ export function createApiRepo(): Repository {
 
         // --- Services ---
         listServices: () => request<Service[]>("/services"),
+
         listTermsConditions: async () => {
             const response = await request<any[]>("/services/terms-conditions");
+
 
             // console.log("API TERMS:", response);
 
@@ -178,7 +150,8 @@ export function createApiRepo(): Repository {
         listContracts: () => request("/contracts"),
         createContract: (c) => request<void>("/contracts", { method: "POST", body: JSON.stringify(c) }),
         updateContract: (c) => request<void>(`/contracts/${c.id}`, { method: "PUT", body: JSON.stringify(c) }),
-
+        listNotifications: () =>
+            request<Notification[]>("/notifications"),
         listWorkflowInvoices: () => request("/workflow-invoices"),
         createWorkflowInvoice: (inv) => request<void>("/workflow-invoices", { method: "POST", body: JSON.stringify(inv) }),
         updateWorkflowInvoice: (inv) => request<void>(`/workflow-invoices/${inv.id}`, { method: "PUT", body: JSON.stringify(inv) }),

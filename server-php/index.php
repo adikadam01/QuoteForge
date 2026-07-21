@@ -79,6 +79,12 @@ if (preg_match('#^/quotations(/.*)?$#', $path)) {
     exit;
 }
 
+// Notifications
+if (preg_match('#^/notifications(/.*)?$#', $path)) {
+    require 'api/notifications.php';
+    exit;
+}
+
 // Invoices
 // Matches /invoices, /invoices/:id, /invoices/:id/items
 if (preg_match('#^/invoices(/.*)?$#', $path)) {

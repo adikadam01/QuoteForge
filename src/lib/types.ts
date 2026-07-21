@@ -258,6 +258,26 @@ export type InvoicePaymentType = 'full' | 'partial' | 'milestone' | 'monthly';
 export type InvoiceMilestoneStatus = 'pending' | 'invoiced' | 'paid';
 export type InvoiceMilestone = { label: string; amount: number; status: InvoiceMilestoneStatus };
 
+export interface Notification {
+
+  id: string;
+
+  quotation_id: string;
+
+  client_id: string | null;
+
+  type: "accepted" | "declined";
+
+  title: string;
+
+  message: string;
+
+  is_read: boolean;
+
+  created_at: string;
+
+}
+
 export interface Invoice {
   id: string;
   invoice_number: string;

@@ -381,6 +381,18 @@ $stmt = $pdo->prepare($sql);
 
 try {
 
+    $statusStmt = $pdo->prepare("
+    SELECT status
+    FROM quotations
+    WHERE id = ?
+");
+
+$statusStmt->execute([$id]);
+
+$oldQuotation = $statusStmt->fetch(PDO::FETCH_ASSOC);
+
+$oldStatus = $oldQuotation['status'] ?? null;
+
     $stmt->execute($values);
 
 } catch (PDOException $e) {
@@ -392,6 +404,77 @@ try {
         "input" => $input,
         "values" => $values
     ], 500);
+
+}
+$newStatus = $input['status'] ?? null;
+
+if ($oldStatus !== $newStatus) {
+
+if ($newStatus === "accepted") {
+
+    $notify = $pdo->prepare("
+        INSERT INTO notifications
+        (
+            id,
+            quotation_id,
+            type,
+            title,
+            message,
+            is_read
+        )
+        VALUES
+        (?, ?, ?, ?, ?, ?)
+    ");
+
+    $notify->execute([
+
+        bin2hex(random_bytes(16)),
+
+        $id,
+
+        "accepted",
+
+        "Quotation Accepted",
+
+        "A client has accepted quotation #".$input["quotation_number"],
+
+        false
+
+    ]);
+}
+
+if ($newStatus === "declined") {
+
+    $notify = $pdo->prepare("
+        INSERT INTO notifications
+        (
+            id,
+            quotation_id,
+            type,
+            title,
+            message,
+            is_read
+        )
+        VALUES
+        (?, ?, ?, ?, ?, ?)
+    ");
+
+    $notify->execute([
+
+        bin2hex(random_bytes(16)),
+
+        $id,
+
+        "declined",
+
+        "Quotation Declined",
+
+        "A client has declined quotation #".$input["quotation_number"],
+
+        false
+
+    ]);
+}
 
 }
 

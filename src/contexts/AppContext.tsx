@@ -9,6 +9,7 @@ import type {
   Currency,
   Invoice,
   InvoiceItem,
+  Notification,
   Quotation,
   Service,
 } from "@/lib/types";
@@ -16,6 +17,9 @@ import type { QuotationPointTemplateRow } from "@/repo/types";
 import { getRepo } from "@/repo";
 import { newId } from "@/lib/id";
 import { nowIso } from "@/lib/dates";
+
+
+const [notifications, setNotifications] = useState<Notification[]>([]);
 
 type AppContextType = {
   // Local preferences
@@ -72,6 +76,8 @@ type AppContextType = {
   setBrandKit: (kit: BrandKit) => Promise<void>;
   refreshBrandKit: () => Promise<void>;
 
+  notifications: Notification[];
+  refreshNotifications: () => Promise<void>;
   services: Service[];
   addService: (service: Omit<Service, "id" | "created_at">) => Promise<void>;
   termsConditions: any[];
@@ -100,6 +106,7 @@ type AppContextType = {
   invoiceItems: InvoiceItem[];
   refreshInvoices: () => Promise<void>;
   refreshInvoiceItems: () => Promise<void>;
+
   updateInvoice: (invoice: Invoice) => Promise<void>;
   listInvoiceItemsByInvoice: (invoiceId: string) => InvoiceItem[];
   getInvoiceById: (id: string) => Invoice | undefined;
@@ -207,6 +214,8 @@ export function AppProvider({ children }: { children: ReactNode }) {
   const [invoices, setInvoices] = useState<Invoice[]>([]);
   const [invoiceItems, setInvoiceItems] = useState<InvoiceItem[]>([]);
   const [receipts, setReceipts] = useState<import('@/lib/types').Receipt[]>([]);
+
+  const [notifications, setNotifications] = useState<Notification[]>([]);
 
   const [quotationPointTemplates, setQuotationPointTemplates] = useState<QuotationPointTemplateRow[]>([]);
 
@@ -626,6 +635,11 @@ export function AppProvider({ children }: { children: ReactNode }) {
     setReceipts(list);
   };
 
+  const refreshNotifications = async () => {
+    const list = await repo.listNotifications();
+    setNotifications(list);
+  };
+
   const createReceipt = async (receipt: import('@/lib/types').Receipt) => {
     await repo.createReceipt(receipt);
     await refreshReceipts();
@@ -634,6 +648,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
   const updateInvoice = async (invoice: Invoice) => {
     await repo.updateInvoice(invoice);
     await refreshInvoices();
+    await refreshNotifications();
   };
 
   const listInvoiceItemsByInvoice = (invoiceId: string) =>
@@ -706,6 +721,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
         refreshInvoiceItems(),
         refreshReceipts(),
         refreshQuotationPointTemplates(),
+        refreshNotifications(),
       ];
 
       const total = tasks.length;
@@ -793,6 +809,9 @@ export function AppProvider({ children }: { children: ReactNode }) {
         updateQuotationPointTemplate,
         updateQuotationPointTemplates,
         deleteQuotationPointTemplate,
+
+        notifications,
+        refreshNotifications,
       }}
     >
       {children}
