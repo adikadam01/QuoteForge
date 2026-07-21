@@ -41,9 +41,37 @@ export function MarkPaymentReceivedModal({ open, onOpenChange, invoice, onConfir
     setProgressLabel('Recording your payment...');
   }, [open, invoice.payment_method, invoice.payment_reference]);
 
-  const reportProgress: ProgressReporter = (pct, label) => {
-    setProgressPct(Math.max(0, Math.min(100, pct)));
+  useEffect(() => {
+    if (stage !== 'processing') return;
+
+    const interval = setInterval(() => {
+      setProgressPct((p) => {
+        // Creep toward 95% max, slowing down as it approaches — never claims 100% on its own.
+        if (p >= 95) return p;
+        const remaining = 95 - p;
+        return p + remaining * 0.03;
+      });
+    }, 200);
+
+    return () => clearInterval(interval);
+  }, [stage]);
+
+  const reportProgress: ProgressReporter = (targetPct, label) => {
     if (label) setProgressLabel(label);
+
+    // Animate smoothly from current value toward targetPct instead of jumping.
+    const start = performance.now();
+    const startPct = progressPct;
+    const duration = 600; // ms
+
+    const step = (now: number) => {
+      const elapsed = now - start;
+      const t = Math.min(1, elapsed / duration);
+      const eased = 1 - Math.pow(1 - t, 3); // ease-out cubic
+      setProgressPct(startPct + (targetPct - startPct) * eased);
+      if (t < 1) requestAnimationFrame(step);
+    };
+    requestAnimationFrame(step);
   };
 
   return (
