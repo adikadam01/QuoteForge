@@ -194,6 +194,11 @@ export default function PublicQuotation() {
             <CardTitle className="font-heading">Quotation Declined</CardTitle>
           </CardHeader>
           <CardContent className="space-y-3">
+            {declined ? (
+              <p className="text-sm font-semibold text-red-600">
+                Declined successfully.
+              </p>
+            ) : null}
             <p className="text-sm text-muted-foreground">
               You've declined this quotation. Our team has been notified.
             </p>
@@ -381,7 +386,6 @@ export default function PublicQuotation() {
 
                       try {
                         await updateQuotation(next);
-                        await refreshQuotations();
                       } catch (err) {
                         console.error("Quotation decline failed:", err);
                         alert("Failed to save quotation status.");
@@ -389,9 +393,14 @@ export default function PublicQuotation() {
                         return;
                       }
 
+                      // Show the result immediately — refresh the list in the
+                      // background instead of blocking on it.
                       setQuotation(next);
                       setDeclined(true);
                       setDeclineSaving(false);
+                      refreshQuotations().catch((err) => {
+                        console.error("Background quotations refresh failed", err);
+                      });
                     }}
                   >
                     Confirm Decline
