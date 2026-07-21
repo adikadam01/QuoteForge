@@ -43,6 +43,7 @@ export function GenerateInvoiceModal({
   selectedServiceId,
   onGenerated,
 }: Props) {
+  if (open) console.log(`[TIMING] GenerateInvoiceModal render start: ${performance.now().toFixed(1)}ms`);
   const [mode, setMode] = useState<Mode>('full');
   const [generating, setGenerating] = useState(false);
   const [genMessageIndex, setGenMessageIndex] = useState(0);
@@ -79,10 +80,12 @@ export function GenerateInvoiceModal({
     getQuotationServiceBlocks(quotation);
 
   const eligibilityMap = useMemo(() => {
+    const t0 = performance.now();
     const map: Record<string, ServiceInvoiceEligibility> = {};
     for (const s of serviceBlocks) {
       map[s.service_id] = getServiceInvoiceEligibility(quotation.id, s, invoices, invoiceItems);
     }
+    console.log(`[TIMING] eligibilityMap computed in ${(performance.now() - t0).toFixed(1)}ms | invoices=${invoices.length} items=${invoiceItems.length}`);
     return map;
   }, [serviceBlocks, quotation.id, invoices, invoiceItems]);
 

@@ -17,7 +17,7 @@ import {
 } from "@/lib/quotationServiceBlocks";
 
 import {
-  getServiceProgress,
+  getServiceInvoiceEligibility,
 } from "@/lib/phase4Invoicing";
 import ProfessionalQuotationPDF from "@/components/quotation/ProfessionalQuotationPDF";
 import ProfessionalQuotationLayout from "@/components/quotation/ProfessionalQuotationLayout";
@@ -26,7 +26,7 @@ export default function QuotationPreview() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const { toast } = useToast();
-  const { brandKit, loading: appLoading, updateQuotation, refreshQuotations, refreshInvoices, getQuotationById, invoices } = useApp();
+  const { brandKit, loading: appLoading, updateQuotation, refreshQuotations, refreshInvoices, refreshInvoiceItems, getQuotationById, invoices, invoiceItems } = useApp();
 
   const [loading, setLoading] = useState(true);
   const [quotation, setQuotation] = useState<Quotation | null>(null);
@@ -78,42 +78,56 @@ export default function QuotationPreview() {
 
     if (!quotation) return;
 
-    const currentQuotation = quotation;
+    const services = getQuotationServiceBlocks(quotation);
 
-    async function loadProgress() {
+    const map: typeof serviceProgress = {};
 
-      const services =
-        getQuotationServiceBlocks(currentQuotation);
+    for (const service of services) {
 
-      const map: Record<
-        string,
-        {
-          generated: number;
-          total: number;
-          completed: boolean;
-          next: number;
-          canGenerate: boolean;
-          reason: string | null;
-        }
-      > = {};
-      for (const service of services) {
+      const eligibility = getServiceInvoiceEligibility(
+        quotation.id,
+        service,
+        invoices,
+        invoiceItems
+      );
 
-        map[service.service_id] =
-          await getServiceProgress(
-            currentQuotation,
-            service
-          );
+      const serviceInvoiceCount = invoices.filter((inv) => {
+        if (inv.quotation_id !== quotation.id) return false;
+        return invoiceItems.some(
+          (item) => item.invoice_id === inv.id && item.service_id === service.service_id
+        );
+      }).length;
 
+      let total = 1;
+      switch (service.billing_type) {
+        case "monthly":
+          total = Number(service.duration_months ?? 1);
+          break;
+        case "milestone":
+          total = service.milestone_template?.length ?? 1;
+          break;
+        default:
+          total = 1;
       }
 
-      setServiceProgress(map);
-
+      map[service.service_id] = {
+        generated: serviceInvoiceCount,
+        total,
+        completed: eligibility.completed,
+        next: serviceInvoiceCount + 1,
+        canGenerate: eligibility.canGenerate,
+        reason:
+          eligibility.reason === "completed"
+            ? "Completed"
+            : eligibility.reason === "payment_pending"
+              ? "Previous invoice must be paid first"
+              : null,
+      };
     }
 
-    loadProgress();
+    setServiceProgress(map);
 
-  }, [quotation]);
-
+  }, [quotation, invoices, invoiceItems]);
 
   if (!id) {
     return (
@@ -195,36 +209,46 @@ export default function QuotationPreview() {
         }}
         quotation={quotation}
         selectedServiceId={selectedServiceId}
+        // onGenerated={async (invoiceId) => {
+
+        //   await refreshQuotations();
+        //   await refreshInvoices();
+
+        //   const updated =
+        //     getQuotationById(quotation.id);
+
+        //   if (updated) {
+
+        //     setQuotation(updated);
+
+        //     const services =
+        //       getQuotationServiceBlocks(updated);
+
+        //     const map: Record<string, any> = {};
+
+        //     for (const service of services) {
+
+        //       map[service.service_id] =
+        //         await getServiceProgress(
+        //           updated,
+        //           service
+        //         );
+
+        //     }
+
+        //     setServiceProgress(map);
+
+        //   }
+
+        //   setSelectedServiceId(null);
+
+        //   navigate(`/invoices/${invoiceId}`);
+
+        // }}
+
         onGenerated={async (invoiceId) => {
 
-          await refreshQuotations();
-          await refreshInvoices();
-
-          const updated =
-            getQuotationById(quotation.id);
-
-          if (updated) {
-
-            setQuotation(updated);
-
-            const services =
-              getQuotationServiceBlocks(updated);
-
-            const map: Record<string, any> = {};
-
-            for (const service of services) {
-
-              map[service.service_id] =
-                await getServiceProgress(
-                  updated,
-                  service
-                );
-
-            }
-
-            setServiceProgress(map);
-
-          }
+          await Promise.all([refreshQuotations(), refreshInvoices(), refreshInvoiceItems()]);
 
           setSelectedServiceId(null);
 
