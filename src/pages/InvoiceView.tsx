@@ -762,14 +762,14 @@ export default function InvoiceView() {
               open={payModalOpen}
               onOpenChange={setPayModalOpen}
               invoice={invoice}
-              onConfirm={async ({ method, reference }) => {
+              onConfirm={async ({ method, reference }, reportProgress) => {
                 if (!invoice) return;
 
-                const now = new Date().toISOString();
+                reportProgress(10, "Preparing payment record...");
 
+                const now = new Date().toISOString();
                 const paidAmount = Number(invoice.amount_due || invoice.total || 0);
 
-                // For milestone invoices, mark the current milestone as paid.
                 const nextMilestones = invoice.type === 'milestone' && Array.isArray(invoice.milestones)
                   ? invoice.milestones.map((m, idx) => {
                     if (idx === (invoice.milestone_index ?? 0) && m.status !== 'paid') return { ...m, status: 'paid' as const };
@@ -777,42 +777,52 @@ export default function InvoiceView() {
                   })
                   : invoice.milestones;
 
-                // Update invoice
-                await updateInvoice({
-                  ...invoice,
-                  invoice_status: 'paid',
-                  status: 'paid',
-                  paid_at: invoice.paid_at || now,
-                  payment_method: method,
-                  payment_reference: reference || null,
-                  payment_received_at: now,
-                  amount_paid: paidAmount,
-                  amount_due: 0,
-                  milestones: nextMilestones,
-                });
-
-                // Create receipt (idempotent by invoice_id)
                 const existing = receipts.find((r) => r.invoice_id === invoice.id);
-                if (!existing) {
-                  await createReceipt({
-                    id: invoice.id,
-                    receipt_number: `RCPT-${invoice.invoice_number}`,
-                    // receipt_number: `RCPT-${new Date().toISOString().slice(2, 10).replace(/-/g, '')}-${invoice.invoice_number}`,
-                    invoice_id: invoice.id,
-                    client_id: invoice.client_id,
-                    currency: invoice.currency,
-                    amount: paidAmount,
+
+                reportProgress(30, "Updating invoice and generating receipt...");
+
+                // These two writes don't depend on each other's result — run in parallel.
+                const writes: Promise<unknown>[] = [
+                  updateInvoice({
+                    ...invoice,
+                    invoice_status: 'paid',
+                    status: 'paid',
+                    paid_at: invoice.paid_at || now,
                     payment_method: method,
                     payment_reference: reference || null,
-                    payment_date: now,
-                    notes: null,
-                    share_token: null,
-                    created_at: now,
-                  });
+                    payment_received_at: now,
+                    amount_paid: paidAmount,
+                    amount_due: 0,
+                    milestones: nextMilestones,
+                  }),
+                ];
+
+                if (!existing) {
+                  writes.push(
+                    createReceipt({
+                      id: invoice.id,
+                      receipt_number: `RCPT-${invoice.invoice_number}`,
+                      invoice_id: invoice.id,
+                      client_id: invoice.client_id,
+                      currency: invoice.currency,
+                      amount: paidAmount,
+                      payment_method: method,
+                      payment_reference: reference || null,
+                      payment_date: now,
+                      notes: null,
+                      share_token: null,
+                      created_at: now,
+                    })
+                  );
                 }
 
-                await refreshInvoices();
-                await refreshReceipts();
+                await Promise.all(writes);
+
+                reportProgress(75, "Refreshing invoice data...");
+
+                await Promise.all([refreshInvoices(), refreshReceipts()]);
+
+                reportProgress(100, "Done!");
               }}
             />
 

@@ -8,20 +8,19 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { CheckCircle2, ReceiptText, Sparkles } from 'lucide-react';
 import type { Invoice } from '@/lib/types';
 
+type ProgressReporter = (pct: number, label?: string) => void;
+
 type Props = {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   invoice: Invoice;
-  onConfirm: (payload: { method: string; reference?: string | null }) => Promise<void>;
+  onConfirm: (
+    payload: { method: string; reference?: string | null },
+    reportProgress: ProgressReporter
+  ) => Promise<void>;
 };
 
 const METHODS = ['Cash', 'Online', 'Bank Transfer', 'UPI', 'Card', 'Cheque', 'Other'] as const;
-
-const PAYMENT_LOADING_MESSAGES = [
-  "Recording your payment...",
-  "Generating receipt...",
-  "Updating invoice status...",
-];
 
 type Stage = 'idle' | 'processing' | 'success';
 
@@ -30,26 +29,22 @@ export function MarkPaymentReceivedModal({ open, onOpenChange, invoice, onConfir
   const [reference, setReference] = useState<string>(invoice.payment_reference || '');
   const [busy, setBusy] = useState(false);
   const [stage, setStage] = useState<Stage>('idle');
-  const [msgIndex, setMsgIndex] = useState(0);
+  const [progressPct, setProgressPct] = useState(0);
+  const [progressLabel, setProgressLabel] = useState('Recording your payment...');
 
   useEffect(() => {
     if (!open) return;
-    // Reset fields whenever the modal opens so the Select is always in sync.
     setMethod(invoice.payment_method || 'Cash');
     setReference(invoice.payment_reference || '');
     setStage('idle');
+    setProgressPct(0);
+    setProgressLabel('Recording your payment...');
   }, [open, invoice.payment_method, invoice.payment_reference]);
 
-  useEffect(() => {
-    if (stage !== 'processing') {
-      setMsgIndex(0);
-      return;
-    }
-    const interval = setInterval(() => {
-      setMsgIndex((i) => (i + 1) % PAYMENT_LOADING_MESSAGES.length);
-    }, 1100);
-    return () => clearInterval(interval);
-  }, [stage]);
+  const reportProgress: ProgressReporter = (pct, label) => {
+    setProgressPct(Math.max(0, Math.min(100, pct)));
+    if (label) setProgressLabel(label);
+  };
 
   return (
     <Dialog open={open} onOpenChange={busy ? undefined : onOpenChange}>
@@ -94,26 +89,19 @@ export function MarkPaymentReceivedModal({ open, onOpenChange, invoice, onConfir
                 onClick={async () => {
                   setBusy(true);
                   setStage('processing');
+                  setProgressPct(0);
+                  setProgressLabel('Recording your payment...');
                   try {
-                    await onConfirm({ method, reference: reference.trim() ? reference.trim() : null });
+                    await onConfirm(
+                      { method, reference: reference.trim() ? reference.trim() : null },
+                      reportProgress
+                    );
+                    setProgressPct(100);
                     setStage('success');
-                    // Let the success checkmark breathe for a moment before closing.
-                    //   await new Promise((r) => setTimeout(r, 900));
-                    //   onOpenChange(false);
-                    // } finally {
-                    //   setBusy(false);
-                    //   setStage('idle');
-                    // }
-
-                    await new Promise((r) => setTimeout(r, 900));
+                    await new Promise((r) => setTimeout(r, 700));
                     onOpenChange(false);
                   } finally {
                     setBusy(false);
-                    // Don't reset stage here — the dialog is still animating
-                    // closed at this point, and flipping stage back to 'idle'
-                    // mid-animation flashes the payment form before it fully
-                    // closes. The `open` effect above already resets stage to
-                    // 'idle' the next time the modal opens.
                   }
                 }}
               >
@@ -134,7 +122,7 @@ export function MarkPaymentReceivedModal({ open, onOpenChange, invoice, onConfir
                 className="absolute w-40 h-40 rounded-full bg-emerald-500/20 blur-2xl animate-pulse"
                 style={{ animationDuration: "1.8s" }}
               />
-              <svg className="absolute inset-2 -rotate-90 animate-spin" style={{ animationDuration: "1.3s" }} viewBox="0 0 100 100">
+              <svg className="absolute inset-2 -rotate-90" viewBox="0 0 100 100">
                 <defs>
                   <linearGradient id="paymentLoaderGradient" x1="0%" y1="0%" x2="100%" y2="100%">
                     <stop offset="0%" stopColor="#10b981" stopOpacity="0.3" />
@@ -151,31 +139,33 @@ export function MarkPaymentReceivedModal({ open, onOpenChange, invoice, onConfir
                   strokeWidth="6"
                   strokeLinecap="round"
                   strokeDasharray={2 * Math.PI * 45}
-                  strokeDashoffset={2 * Math.PI * 45 * 0.72}
-                  style={{ filter: "drop-shadow(0 0 6px rgba(16,185,129,0.5))" }}
+                  strokeDashoffset={2 * Math.PI * 45 * (1 - progressPct / 100)}
+                  style={{
+                    filter: "drop-shadow(0 0 6px rgba(16,185,129,0.5))",
+                    transition: "stroke-dashoffset 0.4s ease-out",
+                  }}
                 />
               </svg>
-              <ReceiptText className="relative w-8 h-8 text-emerald-600 animate-pulse" strokeWidth={2} />
+              <span className="relative text-lg font-heading font-bold text-emerald-700">
+                {Math.round(progressPct)}%
+              </span>
               <Sparkles className="absolute top-2 right-4 w-4 h-4 text-emerald-400 animate-ping" style={{ animationDuration: "1.6s" }} />
             </div>
 
             <div className="mt-8 h-5 relative overflow-hidden">
               <p
-                key={msgIndex}
-                className="text-sm text-muted-foreground animate-in fade-in slide-in-from-bottom-2 duration-500"
+                key={progressLabel}
+                className="text-sm text-muted-foreground animate-in fade-in slide-in-from-bottom-2 duration-300"
               >
-                {PAYMENT_LOADING_MESSAGES[msgIndex]}
+                {progressLabel}
               </p>
             </div>
 
-            <div className="flex gap-1.5 mt-4">
-              {PAYMENT_LOADING_MESSAGES.map((_, i) => (
-                <span
-                  key={i}
-                  className={`w-1.5 h-1.5 rounded-full transition-colors duration-300 ${i === msgIndex ? "bg-emerald-500" : "bg-emerald-500/20"
-                    }`}
-                />
-              ))}
+            <div className="mt-4 w-48 h-1.5 rounded-full bg-emerald-500/10 overflow-hidden">
+              <div
+                className="h-full bg-emerald-500 rounded-full"
+                style={{ width: `${progressPct}%`, transition: "width 0.4s ease-out" }}
+              />
             </div>
           </div>
         )}
