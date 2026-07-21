@@ -368,8 +368,9 @@ export default function PublicQuotation() {
 
                 <div className="flex gap-3">
                   <Button
+                    variant="destructive"
                     className="rounded-xl"
-                    disabled={!agree || !acceptedBy.trim() || saving}
+                    disabled={declineSaving}
                     onClick={async () => {
                       setDeclineSaving(true);
                       const next: Quotation = {
