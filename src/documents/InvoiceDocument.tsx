@@ -544,7 +544,7 @@ const styles = StyleSheet.create({
   page: {
     fontFamily: "Helvetica",
     fontSize: 10,
-    color: "#1F2937",
+    color: "#000000ff",
     backgroundColor: "#ffffff",
     paddingTop: 0,
     paddingBottom: 70,
@@ -582,7 +582,7 @@ const styles = StyleSheet.create({
   companyName: {
     fontSize: 15,
     fontFamily: "Helvetica-Bold",
-    color: "#111827",
+    color: "#000000ff",
     marginBottom: 4,
   },
   companyDetail: {
@@ -599,7 +599,7 @@ const styles = StyleSheet.create({
     fontSize: 22,
     fontFamily: "Helvetica-Bold",
     letterSpacing: 3,
-    color: "#111827",
+    color: "#000000ff",
     marginBottom: 10,
   },
   metaBox: {
@@ -627,7 +627,7 @@ const styles = StyleSheet.create({
   },
   metaValue: {
     fontSize: 9.5,
-    color: "#111827",
+    color: "#000000ff",
     fontFamily: "Helvetica-Bold",
   },
 
@@ -672,7 +672,7 @@ const styles = StyleSheet.create({
   billToName: {
     fontSize: 12,
     fontFamily: "Helvetica-Bold",
-    color: "#111827",
+    color: "#000000ff",
     marginBottom: 3,
   },
   billToDetail: {
@@ -692,7 +692,7 @@ const styles = StyleSheet.create({
   },
   tableHeader: {
     flexDirection: "row",
-    backgroundColor: "#111827",
+    backgroundColor: "#000000ff",
     paddingVertical: 9,
     paddingHorizontal: 12,
   },
@@ -722,7 +722,7 @@ const styles = StyleSheet.create({
   },
   tableBodyText: {
     fontSize: 10,
-    color: "#1F2937",
+    color: "#000000ff",
   },
   tableBodySubText: {
     fontSize: 8.5,
@@ -750,7 +750,7 @@ const styles = StyleSheet.create({
   },
   totalsValue: {
     fontSize: 9.5,
-    color: "#1F2937",
+    color: "#000000ff",
   },
   totalsDivider: {
     borderTopWidth: 1,
@@ -765,12 +765,12 @@ const styles = StyleSheet.create({
   totalLabel: {
     fontSize: 11.5,
     fontFamily: "Helvetica-Bold",
-    color: "#111827",
+    color: "#000000ff",
   },
   totalValue: {
     fontSize: 11.5,
     fontFamily: "Helvetica-Bold",
-    color: "#111827",
+    color: "#000000ff",
   },
   amountDueRow: {
     flexDirection: "row",
@@ -824,7 +824,7 @@ const styles = StyleSheet.create({
   thankYouText: {
     fontSize: 10,
     fontFamily: "Helvetica-Bold",
-    color: "#111827",
+    color: "#000000ff",
     letterSpacing: 0.5,
   },
   thankYouSubText: {
