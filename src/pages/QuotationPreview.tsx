@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
-import { ArrowLeft, Download, Send, CreditCard } from "lucide-react";
+import { ArrowLeft, Download, Send, CreditCard, FileText } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { useApp } from "@/contexts/AppContext";
@@ -140,10 +140,40 @@ export default function QuotationPreview() {
 
   if (appLoading || loading) {
     return (
-      <div className="min-h-[40vh] flex items-center justify-center">
-        <div className="animate-pulse">
-          <div className="w-12 h-12 rounded-full bg-primary/20"></div>
+      <div className="min-h-[60vh] flex flex-col items-center justify-center">
+        <div className="relative w-32 h-32 flex items-center justify-center">
+          <div
+            className="absolute inset-0 rounded-full border-2 border-dashed border-primary/25 animate-spin"
+            style={{ animationDuration: "5s" }}
+          />
+          <div
+            className="absolute w-40 h-40 rounded-full bg-primary/20 blur-2xl animate-pulse"
+            style={{ animationDuration: "2s" }}
+          />
+          <svg className="absolute inset-2 -rotate-90 animate-spin" style={{ animationDuration: "1.4s" }} viewBox="0 0 100 100">
+            <defs>
+              <linearGradient id="quotationLoaderGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+                <stop offset="0%" stopColor="hsl(var(--primary))" stopOpacity="0.3" />
+                <stop offset="100%" stopColor="hsl(var(--primary))" stopOpacity="1" />
+              </linearGradient>
+            </defs>
+            <circle cx="50" cy="50" r="45" fill="none" stroke="currentColor" strokeWidth="6" className="text-primary/10" />
+            <circle
+              cx="50"
+              cy="50"
+              r="45"
+              fill="none"
+              stroke="url(#quotationLoaderGradient)"
+              strokeWidth="6"
+              strokeLinecap="round"
+              strokeDasharray={2 * Math.PI * 45}
+              strokeDashoffset={2 * Math.PI * 45 * 0.75}
+              style={{ filter: "drop-shadow(0 0 6px hsl(var(--primary) / 0.5))" }}
+            />
+          </svg>
+          <FileText className="relative w-8 h-8 text-primary" strokeWidth={2} />
         </div>
+        <p className="mt-8 text-sm text-muted-foreground">Loading quotation...</p>
       </div>
     );
   }
