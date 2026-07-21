@@ -98,11 +98,22 @@ export function MarkPaymentReceivedModal({ open, onOpenChange, invoice, onConfir
                     await onConfirm({ method, reference: reference.trim() ? reference.trim() : null });
                     setStage('success');
                     // Let the success checkmark breathe for a moment before closing.
+                    //   await new Promise((r) => setTimeout(r, 900));
+                    //   onOpenChange(false);
+                    // } finally {
+                    //   setBusy(false);
+                    //   setStage('idle');
+                    // }
+
                     await new Promise((r) => setTimeout(r, 900));
                     onOpenChange(false);
                   } finally {
                     setBusy(false);
-                    setStage('idle');
+                    // Don't reset stage here — the dialog is still animating
+                    // closed at this point, and flipping stage back to 'idle'
+                    // mid-animation flashes the payment form before it fully
+                    // closes. The `open` effect above already resets stage to
+                    // 'idle' the next time the modal opens.
                   }
                 }}
               >
@@ -161,9 +172,8 @@ export function MarkPaymentReceivedModal({ open, onOpenChange, invoice, onConfir
               {PAYMENT_LOADING_MESSAGES.map((_, i) => (
                 <span
                   key={i}
-                  className={`w-1.5 h-1.5 rounded-full transition-colors duration-300 ${
-                    i === msgIndex ? "bg-emerald-500" : "bg-emerald-500/20"
-                  }`}
+                  className={`w-1.5 h-1.5 rounded-full transition-colors duration-300 ${i === msgIndex ? "bg-emerald-500" : "bg-emerald-500/20"
+                    }`}
                 />
               ))}
             </div>
