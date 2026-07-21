@@ -1644,7 +1644,7 @@ export default function QuotationBuilder() {
                     <div className="flex flex-col items-center justify-center text-center py-12 px-6 animate-in fade-in-20 duration-200">
                       <div className="w-24 h-24 mb-3 rounded-full bg-gray-100 flex items-center justify-center animate-in [animation-duration:5s] shadow-sm">
                         <img
-                          src="/public/office-man.png"
+                          src="/office-man.png"
                           alt="Person"
                           className="w-18 h-18 object-contain opacity-70 select-none pointer-events-none"
                           draggable={false}
