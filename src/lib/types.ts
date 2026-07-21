@@ -200,6 +200,7 @@ export interface Quotation {
   sent_at: string | null; // ISO timestamp
   accepted_at: string | null; // ISO timestamp
   accepted_by?: string | null;
+  declined_reason?: string | null;
   invoiced_at?: string | null; // ISO timestamp (locked from edits once invoiced)
   is_template: boolean;
   template_name: string | null;

@@ -31,6 +31,11 @@ export default function PublicQuotation() {
   const [saving, setSaving] = useState(false);
   const [acceptedModalOpen, setAcceptedModalOpen] = useState(false);
 
+  const [declining, setDeclining] = useState(false);
+  const [declineReason, setDeclineReason] = useState('');
+  const [declineSaving, setDeclineSaving] = useState(false);
+  const [declined, setDeclined] = useState(false);
+
   useEffect(() => {
     if ((quotation?.status || 'draft') === 'accepted') {
       setAcceptedModalOpen(true);
@@ -124,6 +129,7 @@ export default function PublicQuotation() {
   const displayBrand = statelessBrand !== undefined ? statelessBrand : brandKit;
 
   const isAlreadyAccepted = quotation?.status === 'accepted';
+  const isAlreadyDeclined = quotation?.status === 'declined';
 
 
   const handleDownloadPdf = async () => {
@@ -176,6 +182,36 @@ export default function PublicQuotation() {
             <p className="text-muted-foreground">Quotation not found.</p>
           </CardContent>
         </Card>
+      </div>
+    );
+  }
+
+  if (declined || isAlreadyDeclined) {
+    return (
+      <div className="quotation-preview-page max-w-[1100px] mx-auto p-4 md:p-6 space-y-6" style={{ background: '#ffffff' }}>
+        <Card className="glass-card no-print">
+          <CardHeader>
+            <CardTitle className="font-heading">Quotation Declined</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-3">
+            <p className="text-sm text-muted-foreground">
+              You've declined this quotation. Our team has been notified.
+            </p>
+            {quotation?.declined_reason ? (
+              <div className="rounded-xl border border-border/50 p-3 bg-secondary/30">
+                <p className="text-xs uppercase tracking-wider text-muted-foreground mb-1">Your note</p>
+                <p className="text-sm text-foreground whitespace-pre-wrap">{quotation.declined_reason}</p>
+              </div>
+            ) : null}
+          </CardContent>
+        </Card>
+
+        <div className="quotation-card p-6 md:p-10 mb-8 border border-gray-100 shadow-sm">
+          <ProfessionalQuotationLayout
+            quotation={quotation}
+            brandKit={displayBrand}
+          />
+        </div>
       </div>
     );
   }
@@ -252,63 +288,129 @@ export default function PublicQuotation() {
       />
 
       {/* Acceptance section (bottom only) */}
+      {/* Acceptance section (bottom only) */}
       {quotation.status === 'sent' || quotation.status === 'draft' ? (
         <Card className="glass-card">
           <CardHeader>
             <CardTitle className="font-heading text-lg">Acceptance</CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
-            <div className="flex items-center gap-2">
-              <Checkbox checked={agree} onCheckedChange={(v) => setAgree(Boolean(v))} />
-              <span className="text-sm text-foreground">I accept this quotation</span>
-            </div>
+            {!declining ? (
+              <>
+                <div className="flex items-center gap-2">
+                  <Checkbox checked={agree} onCheckedChange={(v) => setAgree(Boolean(v))} />
+                  <span className="text-sm text-foreground">I accept this quotation</span>
+                </div>
 
-            <div className="space-y-2">
-              {/* <Label>Accepted by (name)</Label> */}
-              <Label>Digital Signature(Name)</Label>
-              <Input
-                value={acceptedBy}
-                onChange={(e) => setAcceptedBy(e.target.value)}
-                className="rounded-xl"
-                placeholder="Enter your full name"
-              />
-            </div>
+                <div className="space-y-2">
+                  <Label>Digital Signature(Name)</Label>
+                  <Input
+                    value={acceptedBy}
+                    onChange={(e) => setAcceptedBy(e.target.value)}
+                    className="rounded-xl"
+                    placeholder="Enter your full name"
+                  />
+                </div>
 
-            <Button
-              className="rounded-xl"
-              disabled={!agree || !acceptedBy.trim() || saving}
-              onClick={async () => {
-                setSaving(true);
-                const now = new Date().toISOString();
-                const next: Quotation = {
-                  ...quotation,
-                  status: "accepted",
-                  accepted_at: quotation.accepted_at || now,
+                <div className="flex flex-col sm:flex-row gap-3">
+                  <Button
+                    className="rounded-xl flex-1"
+                    disabled={!agree || !acceptedBy.trim() || saving}
+                    onClick={async () => {
+                      setSaving(true);
+                      const now = new Date().toISOString();
+                      const next: Quotation = {
+                        ...quotation,
+                        status: "accepted",
+                        accepted_at: quotation.accepted_at || now,
+                        accepted_by: acceptedBy.trim(),
+                      };
 
-                  accepted_by: acceptedBy.trim(),
-                };
+                      try {
+                        await updateQuotation(next);
+                        await refreshQuotations();
+                      } catch (err) {
+                        console.error("Quotation update failed:", err);
+                        alert("Failed to save quotation status.");
+                        return;
+                      }
 
-                // Try to persist, but don't block UI if it fails (external user)
-                try {
-                  await updateQuotation(next);
+                      setQuotation(next);
+                      setAccepted(true);
+                      setAcceptedModalOpen(true);
+                      setSaving(false);
+                    }}
+                  >
+                    Accept Quotation
+                  </Button>
 
-                  // Refresh quotations in AppContext
-                  await refreshQuotations();
+                  <Button
+                    variant="outline"
+                    className="rounded-xl flex-1"
+                    disabled={saving}
+                    onClick={() => setDeclining(true)}
+                  >
+                    Decline Quotation
+                  </Button>
+                </div>
+              </>
+            ) : (
+              <>
+                <div className="space-y-2">
+                  <Label>Let us know why (optional but helpful)</Label>
+                  <textarea
+                    value={declineReason}
+                    onChange={(e) => setDeclineReason(e.target.value)}
+                    className="w-full min-h-[100px] rounded-xl border border-input bg-background px-3 py-2 text-sm resize-none"
+                    placeholder="e.g. Budget doesn't fit, chose another vendor, need more time..."
+                  />
+                </div>
 
-                } catch (err) {
-                  console.error("Quotation update failed:", err);
-                  alert("Failed to save quotation status.");
-                  return;
-                }
+                <div className="flex flex-col sm:flex-row gap-3">
+                  <Button
+                    variant="destructive"
+                    className="rounded-xl flex-1"
+                    disabled={declineSaving}
+                    onClick={async () => {
+                      setDeclineSaving(true);
+                      const next: Quotation = {
+                        ...quotation,
+                        status: "declined",
+                        declined_reason: declineReason.trim() || null,
+                      };
 
-                setQuotation(next);
-                setAccepted(true);
-                setAcceptedModalOpen(true);
-                setSaving(false);
-              }}
-            >
-              Accept Quotation
-            </Button>
+                      try {
+                        await updateQuotation(next);
+                        await refreshQuotations();
+                      } catch (err) {
+                        console.error("Quotation decline failed:", err);
+                        alert("Failed to save quotation status.");
+                        setDeclineSaving(false);
+                        return;
+                      }
+
+                      setQuotation(next);
+                      setDeclined(true);
+                      setDeclineSaving(false);
+                    }}
+                  >
+                    Confirm Decline
+                  </Button>
+
+                  <Button
+                    variant="outline"
+                    className="rounded-xl flex-1"
+                    disabled={declineSaving}
+                    onClick={() => {
+                      setDeclining(false);
+                      setDeclineReason('');
+                    }}
+                  >
+                    Back
+                  </Button>
+                </div>
+              </>
+            )}
           </CardContent>
         </Card>
       ) : null}

@@ -22,11 +22,13 @@ import {
   XCircle,
   FilePlus2,
   History,
+  MessageSquareText,
 } from 'lucide-react';
 
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import {
@@ -117,6 +119,9 @@ export default function Quotations() {
 
   const [historyModalOpen, setHistoryModalOpen] = useState(false);
   const [historyQuotation, setHistoryQuotation] = useState<Quotation | null>(null);
+
+  const [declineNoteOpen, setDeclineNoteOpen] = useState(false);
+  const [declineNoteQuotation, setDeclineNoteQuotation] = useState<Quotation | null>(null);
 
   const duplicateInProgressRef = useRef(false);
   const handleDuplicate = async (quotation: Quotation) => {
@@ -478,7 +483,28 @@ export default function Quotations() {
                           </Tooltip>
                         );
                       })()}
-                      
+
+                      {quotation.status === 'declined' && (
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <span className="inline-flex">
+                              <Button
+                                size="icon"
+                                variant="outline"
+                                className="h-7 w-7 rounded-full border-red-300 text-red-600 hover:bg-red-50"
+                                onClick={() => {
+                                  setDeclineNoteQuotation(quotation);
+                                  setDeclineNoteOpen(true);
+                                }}
+                              >
+                                <MessageSquareText className="h-4 w-4" />
+                              </Button>
+                            </span>
+                          </TooltipTrigger>
+                          <TooltipContent>View decline reason</TooltipContent>
+                        </Tooltip>
+                      )}
+
                       {(quotation.status === 'accepted' || quotation.status === 'invoiced') && (() => {
                         const hasAnyInvoice = Boolean(getLatestInvoiceForQuotation(quotation.id));
 
@@ -739,6 +765,30 @@ export default function Quotations() {
         }}
         quotation={historyQuotation}
       />
+
+      <Dialog
+        open={declineNoteOpen}
+        onOpenChange={(open) => {
+          setDeclineNoteOpen(open);
+          if (!open) setDeclineNoteQuotation(null);
+        }}
+      >
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>Decline Reason</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-2">
+            <p className="text-sm text-muted-foreground">
+              {declineNoteQuotation?.client?.business_name || declineNoteQuotation?.client?.name || 'Client'} declined this quotation.
+            </p>
+            <div className="rounded-xl border border-border/50 p-3 bg-secondary/30">
+              <p className="text-sm text-foreground whitespace-pre-wrap">
+                {declineNoteQuotation?.declined_reason?.trim() || 'No reason was provided.'}
+              </p>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div >
   );
 }
