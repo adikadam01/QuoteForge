@@ -112,16 +112,29 @@ export default function PublicInvoice() {
   const handleDownloadPdf = async () => {
     if (!invoice) return;
     try {
-      const { printDocument } = await import('@/lib/printer');
+      const { pdf } = await import('@react-pdf/renderer');
       const { default: InvoiceDocument } = await import('@/documents/InvoiceDocument');
-      const safe = invoice.invoice_number.replace(/[^a-zA-Z0-9-_]/g, "_");
 
-      await printDocument(
-        <InvoiceDocument invoice={invoice} items={items} brandKit={displayBrand} />,
-        { title: `Invoice_${safe}` }
-      );
+      const safe = invoice.invoice_number.replace(/[^a-zA-Z0-9-_]/g, "_");
+      const clientName = invoice.client?.business_name || invoice.client?.name || "Client";
+      const safeClientName = clientName.replace(/[^a-zA-Z0-9-_ ]/g, "").trim();
+
+      const blob = await pdf(
+        <InvoiceDocument invoice={invoice} items={items} brandKit={displayBrand} />
+      ).toBlob();
+
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `${safeClientName} - ${safe}.pdf`;
+
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+
+      URL.revokeObjectURL(url);
     } catch (err) {
-      console.error('Print failed', err);
+      console.error('PDF generation failed', err);
     }
   };
 
