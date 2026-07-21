@@ -8,6 +8,12 @@ import { useToast } from "@/hooks/use-toast";
 import type { Quotation } from "@/lib/types";
 import { QuotationLayout } from "@/components/quotation/QuotationLayout";
 
+const QUOTATION_LOADING_MESSAGES = [
+  "Loading quotation...",
+  "Fetching client details...",
+  "Preparing document...",
+];
+
 import { pdf } from "@react-pdf/renderer";
 
 import { GenerateInvoiceModal } from "@/components/invoices/GenerateInvoiceModal";
@@ -30,6 +36,18 @@ export default function QuotationPreview() {
 
   const [loading, setLoading] = useState(true);
   const [quotation, setQuotation] = useState<Quotation | null>(null);
+  const [loadMsgIndex, setLoadMsgIndex] = useState(0);
+
+  useEffect(() => {
+    if (!(appLoading || loading)) {
+      setLoadMsgIndex(0);
+      return;
+    }
+    const interval = setInterval(() => {
+      setLoadMsgIndex((i) => (i + 1) % QUOTATION_LOADING_MESSAGES.length);
+    }, 1300);
+    return () => clearInterval(interval);
+  }, [appLoading, loading]);
   // const [creatingInvoice, setCreatingInvoice] = useState(false);
   const [invoiceModalOpen, setInvoiceModalOpen] = useState(false);
 
@@ -173,11 +191,29 @@ export default function QuotationPreview() {
           </svg>
           <FileText className="relative w-8 h-8 text-primary" strokeWidth={2} />
         </div>
-        <p className="mt-8 text-sm text-muted-foreground">Loading quotation...</p>
+
+        <div className="mt-8 h-5 relative overflow-hidden">
+          <p
+            key={loadMsgIndex}
+            className="text-sm text-muted-foreground animate-in fade-in slide-in-from-bottom-2 duration-500"
+          >
+            {QUOTATION_LOADING_MESSAGES[loadMsgIndex]}
+          </p>
+        </div>
+
+        <div className="flex gap-1.5 mt-4">
+          {QUOTATION_LOADING_MESSAGES.map((_, i) => (
+            <span
+              key={i}
+              className={`w-1.5 h-1.5 rounded-full transition-colors duration-300 ${i === loadMsgIndex ? "bg-primary" : "bg-primary/20"
+                }`}
+            />
+          ))}
+        </div>
       </div>
     );
   }
-
+  
   if (!quotation) {
     return (
       <div className="space-y-4">
