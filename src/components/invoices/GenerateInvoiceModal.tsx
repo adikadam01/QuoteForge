@@ -1,9 +1,11 @@
 //GenerateInvoiceModal
 
 import type { Quotation } from "@/lib/types";
-import type { GenerateInvoicePlan } from "@/lib/phase4Invoicing";
+import type { GenerateInvoicePlan, ServiceInvoiceEligibility } from "@/lib/phase4Invoicing";
+import { getServiceInvoiceEligibility } from "@/lib/phase4Invoicing";
 import { getRepo } from '@/repo';
 import { getQuotationServiceBlocks } from "@/lib/quotationServiceBlocks";
+import { useApp } from "@/contexts/AppContext";
 
 import { useEffect, useMemo, useState } from 'react';
 
@@ -71,8 +73,18 @@ export function GenerateInvoiceModal({
 
   const [selectedServiceIds, setSelectedServiceIds] = useState<string[]>([]);
 
+  const { invoices, invoiceItems } = useApp();
+
   const serviceBlocks =
     getQuotationServiceBlocks(quotation);
+
+  const eligibilityMap = useMemo(() => {
+    const map: Record<string, ServiceInvoiceEligibility> = {};
+    for (const s of serviceBlocks) {
+      map[s.service_id] = getServiceInvoiceEligibility(quotation.id, s, invoices, invoiceItems);
+    }
+    return map;
+  }, [serviceBlocks, quotation.id, invoices, invoiceItems]);
 
   const filteredServiceBlocks =
     selectedServiceIds.length === 0
@@ -227,6 +239,7 @@ export function GenerateInvoiceModal({
                 serviceBlocks={serviceBlocks}
                 selectedIds={selectedServiceIds}
                 onSelectionChange={setSelectedServiceIds}
+                eligibilityMap={eligibilityMap}
               />
 
             ) : (

@@ -1,23 +1,26 @@
 
-
 import { useMemo } from "react";
 
 import { Card, CardContent } from "@/components/ui/card";
 import { Checkbox } from "@/components/ui/checkbox";
 
 import type { QuotationServiceBlock } from "@/lib/quotationServiceBlocks";
+import type { ServiceInvoiceEligibility } from "@/lib/phase4Invoicing";
 
 type Props = {
     serviceBlocks: QuotationServiceBlock[];
     selectedIds: string[];
     onSelectionChange: (ids: string[]) => void;
+    eligibilityMap: Record<string, ServiceInvoiceEligibility>;
 };
 
 export default function InvoiceServiceSelector({
     serviceBlocks,
     selectedIds,
     onSelectionChange,
+    eligibilityMap,
 }: Props) {
+
 
     const toggleService = (id: string) => {
         if (selectedIds.includes(id)) {
@@ -52,10 +55,10 @@ export default function InvoiceServiceSelector({
 
                     const selected = selectedIds.includes(service.service_id);
 
-                    const completed =
-                        service.invoice_progress?.completed ?? false;
-
-                    const disabled = completed;
+                    const eligibility = eligibilityMap[service.service_id];
+                    const completed = eligibility?.completed ?? false;
+                    const paymentPending = eligibility?.reason === "payment_pending";
+                    const disabled = completed || paymentPending;
 
                     return (
                         <Card
@@ -88,8 +91,13 @@ export default function InvoiceServiceSelector({
                                             </span>
                                         )}
 
-                                    </div>
+                                        {paymentPending && (
+                                            <span className="text-xs px-2 py-1 rounded-full bg-amber-100 text-amber-700">
+                                                Payment Pending
+                                            </span>
+                                        )}
 
+                                    </div>
                                     <p className="text-sm text-muted-foreground mt-1 capitalize">
                                         Billing : {service.billing_type?.replace("_", " ")}
                                     </p>

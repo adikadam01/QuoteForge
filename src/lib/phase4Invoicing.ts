@@ -161,6 +161,64 @@ export async function getServiceProgress(
   };
 }
 
+/**
+ * Synchronous, per-service invoice eligibility check.
+ * Uses already-loaded `invoices`/`invoiceItems` from context (no extra fetches),
+ * so it's safe to call for every service block on every quotation in a list render.
+ */
+export type ServiceInvoiceEligibility = {
+  completed: boolean;
+  canGenerate: boolean;
+  reason: "completed" | "payment_pending" | null;
+};
+
+export function getServiceInvoiceEligibility(
+  quotationId: string,
+  service: QuotationServiceBlock,
+  invoices: Invoice[],
+  invoiceItems: InvoiceItem[]
+): ServiceInvoiceEligibility {
+  const serviceInvoices = invoices.filter((inv) => {
+    if (inv.quotation_id !== quotationId) return false;
+    return invoiceItems.some(
+      (item) => item.invoice_id === inv.id && item.service_id === service.service_id
+    );
+  });
+
+  const generated = serviceInvoices.length;
+
+  let total = 1;
+  switch (service.billing_type) {
+    case "monthly":
+      total = Number(service.duration_months ?? 1);
+      break;
+    case "milestone":
+      total = service.milestone_template?.length ?? 1;
+      break;
+    default:
+      total = 1;
+  }
+
+  // Prefer the persisted invoice_progress (kept in sync by updateServiceProgress)
+  // but fall back to a live count in case it's stale/missing.
+  const completed = service.invoice_progress?.completed ?? generated >= total;
+
+  const latestInvoice =
+    serviceInvoices.length > 0
+      ? serviceInvoices
+        .slice()
+        .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())[0]
+      : null;
+
+  const previousInvoicePaid = !latestInvoice || latestInvoice.invoice_status === "paid";
+
+  return {
+    completed,
+    canGenerate: !completed && previousInvoicePaid,
+    reason: completed ? "completed" : !previousInvoicePaid ? "payment_pending" : null,
+  };
+}
+
 export type GenerateInvoicePlan =
   | {
     type: "full";

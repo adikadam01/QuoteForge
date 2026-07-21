@@ -46,6 +46,7 @@ import {
 import { useApp } from '@/contexts/AppContext';
 import { useToast } from '@/hooks/use-toast';
 import { Quotation } from '@/lib/types';
+import { getServiceInvoiceEligibility } from '@/lib/phase4Invoicing';
 import { string } from 'zod';
 
 const statusConfig = {
@@ -59,7 +60,7 @@ const statusConfig = {
 
 export default function Quotations() {
   const navigate = useNavigate();
-  const { quotations, deleteQuotation, addQuotation, updateQuotation, currency, refreshQuotations, refreshInvoices, refreshInvoiceItems, invoices } = useApp();
+  const { quotations, deleteQuotation, addQuotation, updateQuotation, currency, refreshQuotations, refreshInvoices, refreshInvoiceItems, invoices, invoiceItems } = useApp();
   const { toast } = useToast();
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('all');
@@ -435,21 +436,19 @@ export default function Quotations() {
                       )}
 
                       {(quotation.status === 'accepted' || quotation.status === 'invoiced') && (() => {
-                        const latestInvoice = getLatestInvoiceForQuotation(quotation.id);
-                        const hasAnyInvoice = Boolean(latestInvoice);
+                        const serviceBlocks = quotation.service_blocks ?? [];
 
+                        const eligibilities = serviceBlocks.map((s) =>
+                          getServiceInvoiceEligibility(quotation.id, s, invoices, invoiceItems)
+                        );
+
+                        // Frozen once EVERY service on this quotation is fully invoiced.
                         const allServicesFullyInvoiced =
-                          (quotation.service_blocks?.length ?? 0) > 0 &&
-                          (quotation.service_blocks ?? []).every(
-                            (b) => b.invoice_progress?.completed
-                          );
+                          serviceBlocks.length > 0 && eligibilities.every((e) => e.completed);
 
-                        // No invoice yet -> first invoice, always allowed.
-                        // Latest invoice must be 'paid' to unlock the next one.
-                        // Frozen once every service on this quotation is fully invoiced.
-                        const canGenerate =
-                          !allServicesFullyInvoiced &&
-                          (!latestInvoice || latestInvoice.invoice_status === 'paid');
+                        // Enabled as long as AT LEAST ONE remaining (not-yet-completed) service
+                        // is eligible right now (i.e. its previous invoice, if any, is paid).
+                        const canGenerate = eligibilities.some((e) => e.canGenerate);
 
                         const tooltipLabel = allServicesFullyInvoiced
                           ? 'No invoice to generate'
@@ -479,7 +478,7 @@ export default function Quotations() {
                           </Tooltip>
                         );
                       })()}
-
+                      
                       {(quotation.status === 'accepted' || quotation.status === 'invoiced') && (() => {
                         const hasAnyInvoice = Boolean(getLatestInvoiceForQuotation(quotation.id));
 
