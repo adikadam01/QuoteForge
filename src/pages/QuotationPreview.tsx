@@ -36,18 +36,35 @@ export default function QuotationPreview() {
 
   const [loading, setLoading] = useState(true);
   const [quotation, setQuotation] = useState<Quotation | null>(null);
+  const [loadingProgress, setLoadingProgress] = useState(0);
   const [loadMsgIndex, setLoadMsgIndex] = useState(0);
 
+  const isPageLoading = appLoading || loading;
+
+  // Simulated progress: climbs toward 90% while waiting, snaps to 100% on completion.
   useEffect(() => {
-    if (!(appLoading || loading)) {
+    if (!isPageLoading) {
+      setLoadingProgress(100);
+      const reset = setTimeout(() => setLoadingProgress(0), 400);
+      return () => clearTimeout(reset);
+    }
+    setLoadingProgress(0);
+    const interval = setInterval(() => {
+      setLoadingProgress((p) => (p >= 90 ? 90 : p + Math.max(1, (90 - p) * 0.1)));
+    }, 150);
+    return () => clearInterval(interval);
+  }, [isPageLoading]);
+
+  useEffect(() => {
+    if (!isPageLoading) {
       setLoadMsgIndex(0);
       return;
     }
     const interval = setInterval(() => {
       setLoadMsgIndex((i) => (i + 1) % QUOTATION_LOADING_MESSAGES.length);
-    }, 1300);
+    }, 1400);
     return () => clearInterval(interval);
-  }, [appLoading, loading]);
+  }, [isPageLoading]);
   // const [creatingInvoice, setCreatingInvoice] = useState(false);
   const [invoiceModalOpen, setInvoiceModalOpen] = useState(false);
 
@@ -156,22 +173,25 @@ export default function QuotationPreview() {
     );
   }
 
-  if (appLoading || loading) {
+  if (isPageLoading) {
+    const circumference = 2 * Math.PI * 45;
     return (
-      <div className="min-h-[60vh] flex flex-col items-center justify-center">
-        <div className="relative w-32 h-32 flex items-center justify-center">
+      <div className="min-h-[60vh] flex flex-col items-center justify-center relative overflow-hidden">
+        <div
+          className="absolute w-72 h-72 rounded-full bg-primary/20 blur-3xl animate-pulse"
+          style={{ animationDuration: "2.4s" }}
+        />
+
+        <div className="relative w-36 h-36 flex items-center justify-center">
           <div
             className="absolute inset-0 rounded-full border-2 border-dashed border-primary/25 animate-spin"
-            style={{ animationDuration: "5s" }}
+            style={{ animationDuration: "6s" }}
           />
-          <div
-            className="absolute w-40 h-40 rounded-full bg-primary/20 blur-2xl animate-pulse"
-            style={{ animationDuration: "2s" }}
-          />
-          <svg className="absolute inset-2 -rotate-90 animate-spin" style={{ animationDuration: "1.4s" }} viewBox="0 0 100 100">
+
+          <svg className="absolute inset-2 -rotate-90" viewBox="0 0 100 100">
             <defs>
               <linearGradient id="quotationLoaderGradient" x1="0%" y1="0%" x2="100%" y2="100%">
-                <stop offset="0%" stopColor="hsl(var(--primary))" stopOpacity="0.3" />
+                <stop offset="0%" stopColor="hsl(var(--primary))" stopOpacity="0.5" />
                 <stop offset="100%" stopColor="hsl(var(--primary))" stopOpacity="1" />
               </linearGradient>
             </defs>
@@ -184,12 +204,17 @@ export default function QuotationPreview() {
               stroke="url(#quotationLoaderGradient)"
               strokeWidth="6"
               strokeLinecap="round"
-              strokeDasharray={2 * Math.PI * 45}
-              strokeDashoffset={2 * Math.PI * 45 * 0.75}
+              className="transition-all duration-500 ease-out"
+              strokeDasharray={circumference}
+              strokeDashoffset={circumference * (1 - loadingProgress / 100)}
               style={{ filter: "drop-shadow(0 0 6px hsl(var(--primary) / 0.5))" }}
             />
           </svg>
-          <FileText className="relative w-8 h-8 text-primary" strokeWidth={2} />
+
+          <span className="relative font-heading font-bold text-3xl text-foreground tabular-nums transition-all duration-300">
+            {Math.round(loadingProgress)}
+            <span className="text-lg text-muted-foreground">%</span>
+          </span>
         </div>
 
         <div className="mt-8 h-5 relative overflow-hidden">
