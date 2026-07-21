@@ -209,7 +209,7 @@ export default function InvoiceView() {
       const safeInvoiceNumber = invoice.invoice_number
         .replace(/[^a-zA-Z0-9-_]/g, "_");
 
-      const fileName = `${safeClientName}_${safeInvoiceNumber.slice(-6)}-Invoice.pdf`;
+      const fileName = `${safeClientName}_${safeInvoiceNumber.slice(-6)}.pdf`;
 
       // Acquire the save handle FIRST, immediately on click, while the user
       // gesture is still active — do this before any slow async PDF work,
