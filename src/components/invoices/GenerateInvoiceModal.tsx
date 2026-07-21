@@ -24,7 +24,7 @@ type Props = {
   onOpenChange: (open: boolean) => void;
   quotation: Quotation;
   selectedServiceId?: string | null;
-  onGenerated: (invoiceId: string) => void;
+  onGenerated: (invoiceId: string) => void | Promise<void>;
 };
 
 type Mode = 'full' | 'partial' | 'milestone' | 'monthly';
@@ -652,7 +652,10 @@ export function GenerateInvoiceModal({
 
                           );
 
-                        onGenerated(invoiceId);
+                        // Wait for onGenerated (refresh + navigate) to fully complete
+                        // before closing the modal — otherwise the underlying page
+                        // flashes for a moment between modal-close and navigation.
+                        await onGenerated(invoiceId);
                         onOpenChange(false);
                       } finally {
                         setBusy(false);
