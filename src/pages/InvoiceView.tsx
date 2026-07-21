@@ -197,10 +197,6 @@ export default function InvoiceView() {
     if (!invoice) return;
 
     try {
-      const { pdf } = await import("@react-pdf/renderer");
-      const InvoiceDocument =
-        (await import("@/documents/InvoiceDocument")).default;
-
       const clientName =
         invoice.client?.business_name ||
         invoice.client?.name ||
@@ -215,6 +211,35 @@ export default function InvoiceView() {
 
       const fileName = `${safeClientName}_${safeInvoiceNumber}.pdf`;
 
+      // Acquire the save handle FIRST, immediately on click, while the user
+      // gesture is still active — do this before any slow async PDF work,
+      // otherwise Chrome throws "Must be handling a user gesture".
+      let handle: any = null;
+      if ("showSaveFilePicker" in window) {
+        try {
+          handle = await (window as any).showSaveFilePicker({
+            suggestedName: fileName,
+            types: [
+              {
+                description: "PDF Document",
+                accept: {
+                  "application/pdf": [".pdf"],
+                },
+              },
+            ],
+          });
+        } catch (pickerErr: any) {
+          // User cancelled the picker — stop here, don't fall through to download.
+          if (pickerErr?.name === "AbortError") return;
+          // Any other picker error — fall back to the anchor-download method below.
+          handle = null;
+        }
+      }
+
+      const { pdf } = await import("@react-pdf/renderer");
+      const InvoiceDocument =
+        (await import("@/documents/InvoiceDocument")).default;
+
       const blob = await pdf(
         <InvoiceDocument
           invoice={invoice}
@@ -223,53 +248,28 @@ export default function InvoiceView() {
         />
       ).toBlob();
 
-      // -----------------------------
-      // Modern browsers (Save As dialog)
-      // -----------------------------
-
-      console.log("Secure Context:", window.isSecureContext);
-      console.log("showSaveFilePicker:", "showSaveFilePicker" in window);
-
-      if ("showSaveFilePicker" in window) {
-        const handle = await (window as any).showSaveFilePicker({
-          suggestedName: fileName,
-          types: [
-            {
-              description: "PDF Document",
-              accept: {
-                "application/pdf": [".pdf"],
-              },
-            },
-          ],
-        });
-
+      if (handle) {
         const writable = await handle.createWritable();
         await writable.write(blob);
         await writable.close();
-
         return;
       }
 
-      // -----------------------------
-      // Fallback for unsupported browsers
-      // -----------------------------
+      // Fallback for browsers without showSaveFilePicker
       const url = URL.createObjectURL(blob);
-
       const a = document.createElement("a");
       a.href = url;
       a.download = fileName;
-
       document.body.appendChild(a);
       a.click();
       document.body.removeChild(a);
-
       URL.revokeObjectURL(url);
 
     } catch (err) {
       console.error("PDF generation failed", err);
     }
   };
-
+  
   const setInvoiceStatus = async (next: InvoiceStatus) => {
     if (!invoice) return;
 
