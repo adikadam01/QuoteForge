@@ -875,7 +875,7 @@ function getStatusColor(status: string | null | undefined): string {
 
 const InvoiceDocument: React.FC<Props> = ({ invoice, brandKit, items: passedItems }) => {
   const currency = invoice.currency ?? "INR";
-  const primaryColor = brandKit?.primary_color ?? "#111827";
+  const primaryColor = brandKit?.primary_color ?? "#000000ff";
   const displayStatus = invoice.invoice_status ?? invoice.status ?? "draft";
   const isMilestone =
     invoice.type === "milestone" &&
