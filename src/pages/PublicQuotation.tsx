@@ -346,7 +346,7 @@ export default function PublicQuotation() {
 
                   <Button
                     variant="outline"
-                    className="rounded-xl flex-1"
+                    className="rounded-xl border-black text-foreground hover:text-red-600 hover:bg-transparent"
                     disabled={saving}
                     onClick={() => setDeclining(true)}
                   >
@@ -366,11 +366,10 @@ export default function PublicQuotation() {
                   />
                 </div>
 
-                <div className="flex flex-col sm:flex-row gap-3">
+                <div className="flex gap-3">
                   <Button
-                    variant="destructive"
-                    className="rounded-xl flex-1"
-                    disabled={declineSaving}
+                    className="rounded-xl"
+                    disabled={!agree || !acceptedBy.trim() || saving}
                     onClick={async () => {
                       setDeclineSaving(true);
                       const next: Quotation = {
@@ -399,7 +398,7 @@ export default function PublicQuotation() {
 
                   <Button
                     variant="outline"
-                    className="rounded-xl flex-1"
+                    className="rounded-xl"
                     disabled={declineSaving}
                     onClick={() => {
                       setDeclining(false);
