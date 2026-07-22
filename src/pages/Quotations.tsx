@@ -31,6 +31,7 @@ import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
+import { NotificationBell } from "@/components/NotificationBell";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -297,13 +298,15 @@ export default function Quotations() {
           <h1 className="text-3xl font-heading font-bold text-foreground">Quotations</h1>
           <p className="text-muted-foreground mt-1">Create and manage client quotations.</p>
         </div>
-        <Link to="/quotations/new">
-          <Button className="bg-accent text-accent-foreground hover:bg-accent/90 gap-2">
-            <Plus className="w-4 h-4" /> New Quotation
-          </Button>
-        </Link>
+        <div className="flex items-center gap-3">
+          <NotificationBell />
+          <Link to="/quotations/new">
+            <Button className="bg-accent text-accent-foreground hover:bg-accent/90 gap-2">
+              <Plus className="w-4 h-4" /> New Quotation
+            </Button>
+          </Link>
+        </div>
       </div>
-
       {/* Filters & Sorting */}
       <div className="flex flex-col xl:flex-row gap-4 items-center justify-between">
         <div className="relative w-full xl:w-72">

@@ -16,6 +16,7 @@ import { Badge } from '@/components/ui/badge';
 import { useApp } from '@/contexts/AppContext';
 import { formatCurrency } from '@/lib/types';
 import { format } from 'date-fns';
+import { NotificationBell } from "@/components/NotificationBell";
 
 export default function Dashboard() {
   const { quotations, invoices } = useApp();
@@ -88,6 +89,7 @@ export default function Dashboard() {
     expired: 'bg-muted text-muted-foreground',
   };
 
+
   return (
     <div className="space-y-8 animate-fade-in">
       {/* Header */}
@@ -96,12 +98,15 @@ export default function Dashboard() {
           <h1 className="text-3xl font-heading font-bold text-foreground">Dashboard</h1>
           <p className="text-muted-foreground mt-1">Welcome back! Here's your quotation overview.</p>
         </div>
-        <Link to="/quotations/new">
-          <Button className="font-heading gap-2 rounded-xl">
-            <Plus className="w-4 h-4" />
-            Create Quotation
-          </Button>
-        </Link>
+        <div className="flex items-center gap-3">
+          <NotificationBell />
+          <Link to="/quotations/new">
+            <Button className="font-heading gap-2 rounded-xl">
+              <Plus className="w-4 h-4" />
+              Create Quotation
+            </Button>
+          </Link>
+        </div>
       </div>
 
       {/* Stats Grid */}

@@ -43,6 +43,7 @@ export interface Repository {
   upsertInvoiceItemsForInvoice(invoiceId: string, items: InvoiceItem[]): Promise<void>;
 
   listNotifications(): Promise<Notification[]>;
+  markNotificationRead(id: string): Promise<void>;   // ← add this line right after listNotifications
 
   // Phase 4 workflow entities
   listContracts(): Promise<Contract[]>;

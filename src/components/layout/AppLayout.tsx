@@ -17,6 +17,7 @@ import {
 import { cn } from '@/lib/utils';
 import { useApp } from '@/contexts/AppContext';
 import { Button } from '@/components/ui/button';
+import { NotificationBell } from "@/components/NotificationBell";
 
 interface NavItem {
   label: string;
@@ -267,6 +268,8 @@ export function AppLayout({ children }: { children: ReactNode }) {
           </button>
         </div>
       </aside>
+
+      {/* Main Content */}
 
       {/* Main Content */}
       <main className="flex-1 ml-64">

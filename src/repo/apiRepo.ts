@@ -152,6 +152,8 @@ export function createApiRepo(): Repository {
         updateContract: (c) => request<void>(`/contracts/${c.id}`, { method: "PUT", body: JSON.stringify(c) }),
         listNotifications: () =>
             request<Notification[]>("/notifications"),
+        markNotificationRead: (id: string) =>
+            request<void>(`/notifications/${id}/read`, { method: "PUT" }),
         listWorkflowInvoices: () => request("/workflow-invoices"),
         createWorkflowInvoice: (inv) => request<void>("/workflow-invoices", { method: "POST", body: JSON.stringify(inv) }),
         updateWorkflowInvoice: (inv) => request<void>(`/workflow-invoices/${inv.id}`, { method: "PUT", body: JSON.stringify(inv) }),

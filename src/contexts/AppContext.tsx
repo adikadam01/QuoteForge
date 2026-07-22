@@ -18,9 +18,6 @@ import { getRepo } from "@/repo";
 import { newId } from "@/lib/id";
 import { nowIso } from "@/lib/dates";
 
-
-const [notifications, setNotifications] = useState<Notification[]>([]);
-
 type AppContextType = {
   // Local preferences
   invoiceAutoFromQuotation: boolean;
@@ -78,6 +75,7 @@ type AppContextType = {
 
   notifications: Notification[];
   refreshNotifications: () => Promise<void>;
+  markNotificationAsRead: (id: string) => Promise<void>;   // ← add this line
   services: Service[];
   addService: (service: Omit<Service, "id" | "created_at">) => Promise<void>;
   termsConditions: any[];
@@ -640,6 +638,21 @@ export function AppProvider({ children }: { children: ReactNode }) {
     setNotifications(list);
   };
 
+  const markNotificationAsRead = async (id: string) => {
+    // Optimistic update — flip it locally immediately, so the badge/UI
+    // responds instantly instead of waiting on a round trip.
+    setNotifications((prev) =>
+      prev.map((n) => (n.id === id ? { ...n, is_read: true } : n))
+    );
+    try {
+      await repo.markNotificationRead(id);
+    } catch (err) {
+      if (import.meta.env.DEV) console.error("Failed to mark notification as read", err);
+      // Roll back on failure so the badge doesn't lie about state.
+      await refreshNotifications();
+    }
+  };
+
   const createReceipt = async (receipt: import('@/lib/types').Receipt) => {
     await repo.createReceipt(receipt);
     await refreshReceipts();
@@ -812,6 +825,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
 
         notifications,
         refreshNotifications,
+        markNotificationAsRead,
       }}
     >
       {children}
