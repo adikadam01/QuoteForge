@@ -96,17 +96,7 @@ export function InvoiceLayout({ invoice, items, brandKit, mode = "screen" }: Pro
         <CardContent className="doc-pad">
           <div className="doc-header__top">
             <div className="doc-header__brand">
-              {brandKit?.logo_url ? (
-                <img
-                  src={invoiceLogo}
-                  alt="Invoice Logo"
-                  className="doc-logo"
-                />
-              ) : (
-                <div className="doc-logoFallback" aria-hidden>
-                  <span className="doc-logoFallbackText">{firstChar(brandKit?.company_name)}</span>
-                </div>
-              )}
+
               <div className="doc-header__brand">
                 <img
                   src={invoiceLogo}
