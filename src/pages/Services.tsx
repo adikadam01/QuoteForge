@@ -1181,7 +1181,7 @@ import {
 } from '@/components/ui/dialog';
 import { useApp } from '@/contexts/AppContext';
 import { useToast } from '@/hooks/use-toast';
-import { Service, PRICING_MODEL_LABELS, PricingModel } from '@/lib/types';
+import { Service, PricingModel } from '@/lib/types';
 import { RichEditor, RichTextDisplay } from '@/components/ui/RichText';
 
 type TimelineUnit = 'Days' | 'Weeks' | 'Months';
@@ -1305,10 +1305,7 @@ const DEFAULT_CATEGORY_SUBCATEGORY: Record<string, string[]> = {
 // Every service card carries one of these four signals — icon, label, and
 // accent color — so the billing model is readable at a glance without
 // reading the fine print.
-const BILLING_TYPE_META: Record
-string,
-  { label: string; icon: typeof Zap; accent: string; accentBg: string; accentText: string }
-  > = {
+const BILLING_TYPE_META: Record<string, { label: string; icon: typeof Zap; accent: string; accentBg: string; accentText: string }> = {
   one_time: { label: 'One-time', icon: Zap, accent: '#111827', accentBg: 'bg-zinc-100', accentText: 'text-zinc-700' },
   monthly: { label: 'Monthly', icon: Repeat, accent: '#2563eb', accentBg: 'bg-blue-50', accentText: 'text-blue-700' },
   retainer: { label: 'Retainer', icon: ShieldCheck, accent: '#7c3aed', accentBg: 'bg-violet-50', accentText: 'text-violet-700' },
@@ -1695,7 +1692,7 @@ export default function Services() {
       {/* Services Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         {filteredServices.map((service) => {
-          const meta = getBillingMeta(service.billing_type);
+          const meta = getBillingMeta(viewingService.billing_type || 'one_time');
           const BillingIcon = meta.icon;
           const total = getServiceTotalValue(service);
 
