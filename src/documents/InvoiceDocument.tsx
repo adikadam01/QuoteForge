@@ -265,12 +265,13 @@ const styles = StyleSheet.create({
   signature: {
     flexDirection: "column",
     alignItems: "flex-start",
+    marginTop: 6,
   },
   signLine: {
     borderBottomWidth: 1,
     borderBottomColor: "#9CA3AF",
     width: 150,
-    marginTop: 40,
+    marginTop: 2,
   },
 
   // ---------- Page footer ----------
@@ -290,11 +291,11 @@ const styles = StyleSheet.create({
     color: "#9CA3AF",
   },
   signatureImage: {
-    width: 120,
-    height: 45,
+    width: 90,
+    height: 32,
     objectFit: "contain",
-    marginTop: 30, // pushes it down like the old blank space before the line did
-    marginBottom: -8, // pulls the line up slightly so the image sits just above it
+    marginTop: 4,
+    marginBottom: 4,
   },
 });
 
