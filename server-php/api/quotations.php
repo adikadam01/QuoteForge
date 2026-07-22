@@ -434,14 +434,14 @@ if ($oldStatus !== $newStatus && ($newStatus === "accepted" || $newStatus === "d
             VALUES (?, ?, ?, ?, ?, ?)
         ");
 
-        $notify->execute([
-            bin2hex(random_bytes(16)),
-            $id,
-            $type,
-            $title,
-            $message,
-            false,
-        ]);
+$notify->execute([
+    bin2hex(random_bytes(16)),
+    $id,
+    $type,
+    $title,
+    $message,
+    'false',   // ← PostgreSQL boolean literal as a string, matching the is_template workaround elsewhere in this file
+]);
 
     } catch (PDOException $e) {
 

@@ -23,11 +23,11 @@ if (
 
     $id = $matches[1];
 
-    $stmt = $pdo->prepare("
-        UPDATE notifications
-        SET is_read = true
-        WHERE id = ?
-    ");
+$stmt = $pdo->prepare("
+    UPDATE notifications
+    SET is_read = true
+    WHERE id = ?
+");
 
     $stmt->execute([$id]);
 
