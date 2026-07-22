@@ -448,7 +448,7 @@ export default function Services() {
                     <Eye className="w-4 h-4 text-black" />
                   </Button>
                   <Button variant="ghost" size="icon" className="h-8 w-8 hover:bg-zinc-100" onClick={() => handleOpenDialog(service)}>
-                    <Eye className="w-4 h-4 text-black" />
+                    <Edit2 className="w-4 h-4 text-black" />
                   </Button>
                   <Button variant="ghost" size="icon" className="h-8 w-8 hover:bg-zinc-100 hover:text-red-600" onClick={() => handleDelete(service.id)}>
                     <Trash2 className="w-3.5 h-3.5" />
