@@ -37,11 +37,31 @@ export function NotificationBell() {
     }, [open]);
 
     // Light polling so new notifications show up without a manual refresh.
+    // Background polling — checks for new notifications every 8s so the bell
+    // updates on its own without the user ever pressing refresh.
     useEffect(() => {
         const interval = setInterval(() => {
             refreshNotifications().catch(() => { });
-        }, 30000);
+        }, 8000);
         return () => clearInterval(interval);
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, []);
+
+    // Also refresh immediately whenever the tab regains focus/visibility —
+    // covers the common case of switching away, client accepting, then
+    // coming back to this tab.
+    useEffect(() => {
+        const handleVisibility = () => {
+            if (document.visibilityState === "visible") {
+                refreshNotifications().catch(() => { });
+            }
+        };
+        document.addEventListener("visibilitychange", handleVisibility);
+        window.addEventListener("focus", handleVisibility);
+        return () => {
+            document.removeEventListener("visibilitychange", handleVisibility);
+            window.removeEventListener("focus", handleVisibility);
+        };
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []);
 
