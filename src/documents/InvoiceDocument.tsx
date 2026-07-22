@@ -134,7 +134,7 @@ const styles = StyleSheet.create({
   colBillTo: {
     width: "45%",
     alignItems: "flex-start",
-    marginLeft: "10%",
+    marginLeft: "18%",
   },
   sectionTitle: {
     fontSize: 8.5,
