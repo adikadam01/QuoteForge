@@ -408,76 +408,49 @@ $oldStatus = $oldQuotation['status'] ?? null;
 }
 $newStatus = $input['status'] ?? null;
 
-if ($oldStatus !== $newStatus) {
+if ($oldStatus !== $newStatus && ($newStatus === "accepted" || $newStatus === "declined")) {
 
-if ($newStatus === "accepted") {
+    try {
 
-    $notify = $pdo->prepare("
-        INSERT INTO notifications
-        (
-            id,
-            quotation_id,
-            type,
-            title,
-            message,
-            is_read
-        )
-        VALUES
-        (?, ?, ?, ?, ?, ?)
-    ");
+        // quotation_number may not be present in every PUT payload —
+        // fall back to a DB lookup so the message never silently fails
+        // due to a missing/undefined array key.
+        $quotationNumber = $input["quotation_number"] ?? null;
 
-    $notify->execute([
+        if ($quotationNumber === null) {
+            $numStmt = $pdo->prepare("SELECT quotation_number FROM quotations WHERE id = ?");
+            $numStmt->execute([$id]);
+            $quotationNumber = $numStmt->fetchColumn() ?: $id;
+        }
 
-        bin2hex(random_bytes(16)),
+        $type = $newStatus === "accepted" ? "accepted" : "declined";
+        $title = $newStatus === "accepted" ? "Quotation Accepted" : "Quotation Declined";
+        $verb = $newStatus === "accepted" ? "accepted" : "declined";
+        $message = "A client has {$verb} quotation #{$quotationNumber}";
 
-        $id,
+        $notify = $pdo->prepare("
+            INSERT INTO notifications
+            (id, quotation_id, type, title, message, is_read)
+            VALUES (?, ?, ?, ?, ?, ?)
+        ");
 
-        "accepted",
+        $notify->execute([
+            bin2hex(random_bytes(16)),
+            $id,
+            $type,
+            $title,
+            $message,
+            false,
+        ]);
 
-        "Quotation Accepted",
+    } catch (PDOException $e) {
 
-        "A client has accepted quotation #".$input["quotation_number"],
-
-        false
-
-    ]);
+        // Never let a notification failure block the quotation update
+        // response that already succeeded — but log it clearly so it's
+        // visible in Render's logs instead of failing silently.
+        error_log("NOTIFICATION INSERT FAILED: " . $e->getMessage());
+    }
 }
-
-if ($newStatus === "declined") {
-
-    $notify = $pdo->prepare("
-        INSERT INTO notifications
-        (
-            id,
-            quotation_id,
-            type,
-            title,
-            message,
-            is_read
-        )
-        VALUES
-        (?, ?, ?, ?, ?, ?)
-    ");
-
-    $notify->execute([
-
-        bin2hex(random_bytes(16)),
-
-        $id,
-
-        "declined",
-
-        "Quotation Declined",
-
-        "A client has declined quotation #".$input["quotation_number"],
-
-        false
-
-    ]);
-}
-
-}
-
 $input['id'] = $id;
 
 jsonResponse($input);
