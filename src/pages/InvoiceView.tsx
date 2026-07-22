@@ -437,7 +437,7 @@ export default function InvoiceView() {
                     <div>
                       <div className="doc-sectionTitle">From</div>
                       <div className="doc-block">
-                        {/* <div className="doc-strong">Triple S Production</div> */}
+                        <div className="doc-strong">Triple S Production</div>
 
                         {brandKit?.address ? <div className="doc-meta whitespace-pre-wrap">{brandKit.address}</div> : null}
                         <div className="doc-meta">
