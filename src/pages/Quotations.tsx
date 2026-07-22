@@ -504,7 +504,7 @@ export default function Quotations() {
                               </Button>
                             </span>
                           </TooltipTrigger>
-                          <TooltipContent className="text-green-700">View decline reason</TooltipContent>
+                          <TooltipContent className="text-red-700">View decline reason</TooltipContent>
                         </Tooltip>
                       )}
 
