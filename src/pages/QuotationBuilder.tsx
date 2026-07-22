@@ -122,9 +122,12 @@ export default function QuotationBuilder() {
     currency,
     brandKit,
   } = useApp();
-
-
   const serviceLibraryById = useMemo(() => new Map(services.map((s) => [s.id, s])), [services]);
+
+  const categoriesInUse = useMemo(
+    () => Array.from(new Set(services.map((s) => s.category).filter(Boolean))) as string[],
+    [services]
+  );
 
   const today = new Date().toISOString().split("T")[0];
   const defaultValidUntil = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split("T")[0];
@@ -465,12 +468,6 @@ export default function QuotationBuilder() {
         getQuotationServiceBlocks(q).map((b) => {
 
           const lib = serviceLibraryById.get(b.service_id);
-          const categoriesInUse = useMemo(
-            () => Array.from(new Set(services.map((s) => s.category).filter(Boolean))) as string[],
-            [services]
-          );
-
-          console.log("Selected Service:", lib);
 
           return {
 
