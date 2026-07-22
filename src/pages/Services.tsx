@@ -1692,7 +1692,7 @@ export default function Services() {
       {/* Services Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         {filteredServices.map((service) => {
-          const meta = getBillingMeta(viewingService.billing_type || 'one_time');
+          const meta = getBillingMeta(service.billing_type || 'one_time');
           const BillingIcon = meta.icon;
           const total = getServiceTotalValue(service);
 
@@ -2272,7 +2272,7 @@ export default function Services() {
                 <div className="p-3 bg-secondary/20 rounded-lg">
                   <span className="text-xs text-muted-foreground uppercase tracking-wide">Pricing Model</span>
                   <p className="font-medium mt-1 capitalize">
-                    {viewingService.billing_type.replace("_", " ")}
+                    {(viewingService.billing_type || "one_time").replace("_", " ")}
                   </p>
                 </div>
                 <div className="p-3 bg-secondary/20 rounded-lg">
