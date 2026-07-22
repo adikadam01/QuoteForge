@@ -501,12 +501,16 @@ export default function Services() {
                   </span>
                 </div>
 
-                <Badge
-                  variant="secondary"
-                  className="text-[10px] uppercase tracking-wider font-semibold bg-zinc-100 text-zinc-600"
+                <Button
+                  size="sm"
+                  className="bg-black text-white hover:bg-zinc-800 rounded-xl px-5"
+                  onClick={() => {
+                    setViewingService(service);
+                    setIsViewDialogOpen(true);
+                  }}
                 >
-                  {PRICING_MODEL_LABELS[service.pricing_model as PricingModel] || service.pricing_model}
-                </Badge>
+                  View
+                </Button>
               </div>
               {service.addons && service.addons.length > 0 && (
                 <div className="mt-4 pt-3 border-t border-border/40">
