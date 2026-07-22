@@ -494,7 +494,7 @@ export default function Quotations() {
                               <Button
                                 size="icon"
                                 variant="outline"
-                                className="h-7 w-7 rounded-full border-red-300 text-red-600 hover:bg-red-50"
+                                className="h-7 w-7 rounded-full border-red-300 text-red-600 hover:bg-red-50 hover:text-red-600"
                                 onClick={() => {
                                   setDeclineNoteQuotation(quotation);
                                   setDeclineNoteOpen(true);
@@ -504,7 +504,7 @@ export default function Quotations() {
                               </Button>
                             </span>
                           </TooltipTrigger>
-                          <TooltipContent>View decline reason</TooltipContent>
+                          <TooltipContent className="text-green-700">View decline reason</TooltipContent>
                         </Tooltip>
                       )}
 
