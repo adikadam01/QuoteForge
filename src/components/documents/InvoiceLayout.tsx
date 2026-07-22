@@ -107,9 +107,12 @@ export function InvoiceLayout({ invoice, items, brandKit, mode = "screen" }: Pro
                   <span className="doc-logoFallbackText">{firstChar(brandKit?.company_name)}</span>
                 </div>
               )}
-              <div className="min-w-0">
-                <div className="doc-company">{brandKit?.company_name || "Your Company"}</div>
-                <div className="doc-meta">{brandKit?.website || brandKit?.email || brandKit?.phone || ""}</div>
+              <div className="doc-header__brand">
+                <img
+                  src={invoiceLogo}
+                  alt="Invoice Logo"
+                  className="doc-logo doc-logo--invoice"
+                />
               </div>
             </div>
 
