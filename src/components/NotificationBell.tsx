@@ -5,7 +5,14 @@ import { useApp } from "@/contexts/AppContext";
 import { cn } from "@/lib/utils";
 
 function timeAgo(dateStr: string): string {
-    const diffMs = Date.now() - new Date(dateStr).getTime();
+    // Postgres often returns naive timestamps with no timezone marker (e.g.
+    // "2026-07-22 04:10:27.18287"). JS's Date parser then wrongly assumes
+    // local time instead of UTC, causing a several-hour offset. Force UTC
+    // interpretation by appending "Z" if no timezone info is already present.
+    const hasTimezone = /Z$|[+-]\d{2}:?\d{2}$/.test(dateStr);
+    const isoSafe = hasTimezone ? dateStr : `${dateStr.replace(" ", "T")}Z`;
+
+    const diffMs = Date.now() - new Date(isoSafe).getTime();
     const mins = Math.floor(diffMs / 60000);
     if (mins < 1) return "just now";
     if (mins < 60) return `${mins} minute${mins === 1 ? "" : "s"} ago`;
@@ -13,9 +20,8 @@ function timeAgo(dateStr: string): string {
     if (hrs < 24) return `${hrs} hour${hrs === 1 ? "" : "s"} ago`;
     const days = Math.floor(hrs / 24);
     if (days < 7) return `${days} day${days === 1 ? "" : "s"} ago`;
-    return new Date(dateStr).toLocaleDateString("en-IN", { day: "2-digit", month: "short" });
+    return new Date(isoSafe).toLocaleDateString("en-IN", { day: "2-digit", month: "short" });
 }
-
 export function NotificationBell() {
     const { notifications, refreshNotifications, markNotificationAsRead } = useApp();
     const [open, setOpen] = useState(false);
