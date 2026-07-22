@@ -192,9 +192,14 @@ export default function Analytics() {
   return (
     <div className="space-y-8 animate-fade-in">
       {/* Header */}
-      <div>
-        <h1 className="text-3xl font-heading font-bold text-foreground">Analytics</h1>
-        <p className="text-muted-foreground mt-1">Performance insights and metrics</p>
+      <div className="flex items-center gap-4">
+        <div className="w-12 h-12 rounded-2xl bg-black flex items-center justify-center shrink-0 shadow-sm">
+          <BarChart3 className="w-6 h-6 text-white" strokeWidth={2} />
+        </div>
+        <div>
+          <h1 className="text-3xl font-heading font-bold text-foreground">Analytics</h1>
+          <p className="text-muted-foreground mt-1">Performance insights and metrics</p>
+        </div>
       </div>
 
       {/* KPI Cards */}

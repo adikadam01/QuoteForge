@@ -53,14 +53,18 @@ export default function Receipts() {
 
             {/* Header */}
 
-            <div>
-                <h1 className="text-3xl font-heading font-bold">
-                    Receipts
-                </h1>
-
-                <p className="text-muted-foreground mt-1">
-                    View and manage payment receipts.
-                </p>
+            <div className="flex items-center gap-4">
+                <div className="w-12 h-12 rounded-2xl bg-black flex items-center justify-center shrink-0 shadow-sm">
+                    <ReceiptText className="w-6 h-6 text-white" strokeWidth={2} />
+                </div>
+                <div>
+                    <h1 className="text-3xl font-heading font-bold">
+                        Receipts
+                    </h1>
+                    <p className="text-muted-foreground mt-1">
+                        View and manage payment receipts.
+                    </p>
+                </div>
             </div>
 
             {/* Search */}

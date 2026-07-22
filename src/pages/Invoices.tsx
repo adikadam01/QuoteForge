@@ -7,6 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { useApp } from "@/contexts/AppContext";
 import type { PaymentStatus } from "@/lib/types";
+
 import { formatCurrency } from "@/lib/types";
 
 const statusConfig = {
@@ -60,9 +61,16 @@ export default function Invoices() {
     <div className="space-y-8 animate-fade-in">
       {/* Header */}
       <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-3xl font-heading font-bold text-foreground">Invoices</h1>
-          <p className="text-muted-foreground mt-1">View and manage invoices.</p>
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-4">
+            <div className="w-12 h-12 rounded-2xl bg-black flex items-center justify-center shrink-0 shadow-sm">
+              <Receipt className="w-6 h-6 text-white" strokeWidth={2} />
+            </div>
+            <div>
+              <h1 className="text-3xl font-heading font-bold text-foreground">Invoices</h1>
+              <p className="text-muted-foreground mt-1">View and manage invoices.</p>
+            </div>
+          </div>
         </div>
       </div>
 

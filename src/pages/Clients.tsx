@@ -177,9 +177,14 @@ export default function Clients() {
     <div className="space-y-8 animate-fade-in">
       {/* Header */}
       <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-3xl font-heading font-bold text-foreground">Clients</h1>
-          <p className="text-muted-foreground mt-1">Manage your client database.</p>
+        <div className="flex items-center gap-4">
+          <div className="w-12 h-12 rounded-2xl bg-black flex items-center justify-center shrink-0 shadow-sm">
+            <Users className="w-6 h-6 text-white" strokeWidth={2} />
+          </div>
+          <div>
+            <h1 className="text-3xl font-heading font-bold text-foreground">Clients</h1>
+            <p className="text-muted-foreground mt-1">Manage your client database.</p>
+          </div>
         </div>
         <Button onClick={() => handleOpenDialog()} className="bg-accent text-accent-foreground hover:bg-accent/90 gap-2">
           <Plus className="w-4 h-4" /> Add Client

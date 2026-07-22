@@ -8,6 +8,7 @@ import {
   Send,
   CheckCircle,
   Calendar,
+  LayoutDashboard,
   Receipt
 } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -94,9 +95,14 @@ export default function Dashboard() {
     <div className="space-y-8 animate-fade-in">
       {/* Header */}
       <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-3xl font-heading font-bold text-foreground">Dashboard</h1>
-          <p className="text-muted-foreground mt-1">Welcome back! Here's your quotation overview.</p>
+        <div className="flex items-center gap-4">
+          <div className="w-12 h-12 rounded-2xl bg-black flex items-center justify-center shrink-0 shadow-sm">
+            <LayoutDashboard className="w-6 h-6 text-white" strokeWidth={2} />
+          </div>
+          <div>
+            <h1 className="text-3xl font-heading font-bold text-foreground">Dashboard</h1>
+            <p className="text-muted-foreground mt-1">Welcome back! Here's your quotation overview.</p>
+          </div>
         </div>
         <div className="flex items-center gap-3">
           <NotificationBell />
