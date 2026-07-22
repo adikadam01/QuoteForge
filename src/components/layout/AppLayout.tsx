@@ -66,7 +66,7 @@ export function AppLayout({ children }: { children: ReactNode }) {
 
   // Keep favicon in sync with the configured company logo.
   useEffect(() => {
-    const href = brandKit?.logo_url || "/triplesimage.png";
+    const href = brandKit?.logo_url || "/Logo.jpg.jpeg";
     const head = document.head;
 
     const ensureLink = (rel: string) => {
