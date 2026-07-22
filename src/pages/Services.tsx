@@ -441,12 +441,6 @@ export default function Services() {
                   {service.category}
                 </Badge>
                 <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                  <Button variant="ghost" size="icon" className="h-8 w-8 hover:bg-zinc-100" onClick={() => {
-                    setViewingService(service);
-                    setIsViewDialogOpen(true);
-                  }}>
-                    <Eye className="w-4 h-4 text-black" />
-                  </Button>
                   <Button variant="ghost" size="icon" className="h-8 w-8 hover:bg-zinc-100" onClick={() => handleOpenDialog(service)}>
                     <Edit2 className="w-4 h-4 text-black" />
                   </Button>
@@ -459,7 +453,7 @@ export default function Services() {
             </CardHeader>
             <CardContent className="pb-5 px-5">
               <p className="text-sm text-zinc-500 line-clamp-2 mb-5 font-medium">{service.description}</p>
-              <div className="flex items-center justify-between pt-4 border-t border-zinc-100 mt-auto">
+              {/* <div className="flex items-center justify-between pt-4 border-t border-zinc-100 mt-auto">
                 <div className="flex items-center gap-2">
                   <span className="font-heading font-bold text-xl text-primary">
                     {(currency === 'INR' ? '₹' : '$')}
@@ -481,6 +475,36 @@ export default function Services() {
                   </span>
                 </div>
                 <Badge variant="secondary" className="text-[10px] uppercase tracking-wider font-semibold bg-zinc-100 text-zinc-600">
+                  {PRICING_MODEL_LABELS[service.pricing_model as PricingModel] || service.pricing_model}
+                </Badge>
+              </div> */}
+
+              <div className="flex items-center justify-between pt-4 border-t border-zinc-100 mt-auto">
+                <div className="flex items-center gap-2">
+                  <span className="font-heading font-bold text-xl text-primary">
+                    {(currency === 'INR' ? '₹' : '$')}
+                    {(
+                      service.billing_type === 'monthly'
+                        ? service.base_price * Math.max(1, Number(service.duration_months || 1))
+                        : service.billing_type === 'milestone'
+                          ? (
+                            Array.isArray(service.milestone_template) &&
+                            service.milestone_template.length > 0
+                          )
+                            ? service.milestone_template.reduce(
+                              (sum, milestone) => sum + Number(milestone.amount || 0),
+                              0
+                            )
+                            : service.base_price
+                          : service.base_price
+                    ).toLocaleString()}
+                  </span>
+                </div>
+
+                <Badge
+                  variant="secondary"
+                  className="text-[10px] uppercase tracking-wider font-semibold bg-zinc-100 text-zinc-600"
+                >
                   {PRICING_MODEL_LABELS[service.pricing_model as PricingModel] || service.pricing_model}
                 </Badge>
               </div>
