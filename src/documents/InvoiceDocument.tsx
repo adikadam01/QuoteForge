@@ -441,15 +441,30 @@ const InvoiceDocument: React.FC<Props> = ({ invoice, brandKit, items: passedItem
                 <Text style={[styles.tableHeaderText, styles.colMStatus]}>Status</Text>
                 <Text style={[styles.tableHeaderText, styles.colMAmount]}>Amount</Text>
               </View>
-              {(invoice.milestones as InvoiceMilestone[]).map((milestone, index) => (
-                <View key={index} style={styles.tableRow}>
-                  <Text style={[styles.cellText, styles.colMilestone]}>{milestone.label}</Text>
-                  <Text style={[styles.cellText, styles.colMStatus]}>{milestone.status}</Text>
-                  <Text style={[styles.cellText, styles.colMAmount]}>
-                    {formatCurrency(milestone.amount, currency)}
-                  </Text>
-                </View>
-              ))}
+              {(() => {
+                const allMilestones = invoice.milestones as InvoiceMilestone[];
+                const currentIndex = invoice.milestone_index ?? 0;
+                const currentMilestone = allMilestones[currentIndex];
+
+                // This document is for ONE invoice, which bills exactly one milestone.
+                // The invoice's own paid/sent/draft status is the source of truth for
+                // that milestone's payment state on this document — not the plan-wide
+                // "pending" status of milestones that simply haven't been invoiced yet.
+                const displayStatus =
+                  invoice.invoice_status === "paid" ? "paid" : (currentMilestone?.status ?? "pending");
+
+                if (!currentMilestone) return null;
+
+                return (
+                  <View style={styles.tableRow}>
+                    <Text style={[styles.cellText, styles.colMilestone]}>{currentMilestone.label}</Text>
+                    <Text style={[styles.cellText, styles.colMStatus]}>{displayStatus}</Text>
+                    <Text style={[styles.cellText, styles.colMAmount]}>
+                      {formatCurrency(currentMilestone.amount, currency)}
+                    </Text>
+                  </View>
+                );
+              })()}
             </View>
           ) : (
             <View style={styles.table}>
