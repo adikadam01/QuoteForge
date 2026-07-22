@@ -408,7 +408,7 @@ export default function InvoiceView() {
                   </div>
                   <div className="doc-header__metaBox">
                     <div className="doc-kv">
-                      <span className="doc-k">Invoice #</span>
+                      <span className="doc-k">Invoice</span>
                       <span className="doc-v">INV-{invoice.invoice_number?.slice(-4)}</span>
                     </div>
                     <div className="doc-kv">
