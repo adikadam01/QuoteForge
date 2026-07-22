@@ -866,7 +866,7 @@ export default function QuotationBuilder() {
             : Number(lib.base_price);
 
         return [
-          ...prev,
+
           {
             service_id: lib.id,
             service_name: lib.name,
@@ -922,6 +922,7 @@ export default function QuotationBuilder() {
                 ? rawTemplate.length
                 : undefined,
           },
+          ...prev,
         ];
       }
       return prev.filter((b) => b.service_id !== serviceId);
