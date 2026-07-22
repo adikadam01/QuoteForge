@@ -706,9 +706,9 @@ export default function Quotations() {
                         <DropdownMenuItem onClick={() => handleDuplicate(quotation)} className="gap-2">
                           <Copy className="w-4 h-4" /> Duplicate
                         </DropdownMenuItem>
-                        <DropdownMenuItem onClick={() => handleSaveAsTemplate(quotation)} className="gap-2">
+                        {/* <DropdownMenuItem onClick={() => handleSaveAsTemplate(quotation)} className="gap-2">
                           <FileText className="w-4 h-4" /> Save as Template
-                        </DropdownMenuItem>
+                        </DropdownMenuItem> */}
                         <DropdownMenuSeparator />
                         <DropdownMenuItem onClick={() => handleDelete(quotation.id)} className="gap-2 text-destructive">
                           <Trash2 className="w-4 h-4" /> Delete
