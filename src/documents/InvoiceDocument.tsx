@@ -1,5 +1,3 @@
-
-
 import React from "react";
 import {
   Document,
@@ -94,7 +92,7 @@ const styles = StyleSheet.create({
   kvRow: {
     flexDirection: "row",
     justifyContent: "space-between",
-    marginBottom: 6,
+    marginBottom: 3,
   },
   kLabel: {
     fontSize: 9,
@@ -131,7 +129,12 @@ const styles = StyleSheet.create({
     justifyContent: "space-between",
   },
   col: {
-    width: "48%",
+    width: "45%",
+  },
+  colBillTo: {
+    width: "45%",
+    alignItems: "flex-start",
+    marginLeft: "10%",
   },
   sectionTitle: {
     fontSize: 8.5,
@@ -274,6 +277,34 @@ const styles = StyleSheet.create({
     marginTop: 2,
   },
 
+  // ---------- Details card (narrower) ----------
+  detailsCard: {
+    borderWidth: 1,
+    borderColor: "#E5E7EB",
+    borderRadius: 8,
+    padding: 18,
+    marginBottom: 16,
+    width: "48%",
+  },
+
+  // ---------- Thank you strip ----------
+  thankYouRow: {
+    alignItems: "center",
+    marginTop: 10,
+    marginBottom: 4,
+  },
+  thankYouText: {
+    fontSize: 10,
+    fontFamily: "Helvetica-Bold",
+    color: "#111827",
+    letterSpacing: 0.5,
+  },
+  thankYouSubText: {
+    fontSize: 8.5,
+    color: "#9CA3AF",
+    marginTop: 3,
+  },
+
   // ---------- Page footer ----------
   pageFooter: {
     position: "absolute",
@@ -409,7 +440,7 @@ const InvoiceDocument: React.FC<Props> = ({ invoice, brandKit, items: passedItem
               </Text>
             </View>
 
-            <View style={styles.col}>
+            <View style={styles.colBillTo}>
               <Text style={styles.sectionTitle}>Bill To</Text>
               <Text style={styles.strong}>
                 {invoice.client?.business_name || invoice.client?.name || "—"}
@@ -497,25 +528,29 @@ const InvoiceDocument: React.FC<Props> = ({ invoice, brandKit, items: passedItem
           </View>
         </View>
 
-        {/* Payment info / Details (signature) */}
-        <View style={styles.card}>
-          <View style={styles.footerGrid}>
-            <View style={{ width: "48%" }}>
-              <Text style={styles.sectionTitle}>Details</Text>
-              <View style={styles.signature}>
-                {/* Signature image — replace src with your actual signature file path */}
-                <Image
-                  src="/signature.png"
-                  style={styles.signatureImage}
-                />
-                <View style={styles.signLine} />
-                <Text style={styles.meta}>Authorized signature</Text>
-              </View>
-              <Text style={styles.paragraph}>
-                {invoice.due_date ? `Payable by ${formatDate(invoice.due_date)}` : "—"}
-              </Text>
-            </View>
+        {/* Payment info / Details (signature) — narrower card */}
+        <View style={styles.detailsCard}>
+          <Text style={styles.sectionTitle}>Details</Text>
+          <View style={styles.signature}>
+            {/* Signature image — replace src with your actual signature file path */}
+            <Image
+              src="/signature.png"
+              style={styles.signatureImage}
+            />
+            <View style={styles.signLine} />
+            <Text style={styles.meta}>Authorized signature</Text>
           </View>
+          <Text style={styles.paragraph}>
+            {invoice.due_date ? `Payable by ${formatDate(invoice.due_date)}` : "—"}
+          </Text>
+        </View>
+
+        {/* Thank you */}
+        <View style={styles.thankYouRow}>
+          <Text style={styles.thankYouText}>Thank you for your business</Text>
+          <Text style={styles.thankYouSubText}>
+            We appreciate the opportunity to work with you.
+          </Text>
         </View>
 
       </Page>
