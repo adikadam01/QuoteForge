@@ -434,71 +434,37 @@ const InvoiceDocument: React.FC<Props> = ({ invoice, brandKit, items: passedItem
         <View style={styles.card}>
           <Text style={styles.sectionTitle}>Services</Text>
 
-          {isMilestone ? (
-            <View style={styles.table}>
-              <View style={styles.tableHeaderRow}>
-                <Text style={[styles.tableHeaderText, styles.colMilestone]}>Milestone</Text>
-                <Text style={[styles.tableHeaderText, styles.colMStatus]}>Status</Text>
-                <Text style={[styles.tableHeaderText, styles.colMAmount]}>Amount</Text>
-              </View>
-              {(() => {
-                const allMilestones = invoice.milestones as InvoiceMilestone[];
-                const currentIndex = invoice.milestone_index ?? 0;
-                const currentMilestone = allMilestones[currentIndex];
-
-                // This document is for ONE invoice, which bills exactly one milestone.
-                // The invoice's own paid/sent/draft status is the source of truth for
-                // that milestone's payment state on this document — not the plan-wide
-                // "pending" status of milestones that simply haven't been invoiced yet.
-                const displayStatus =
-                  invoice.invoice_status === "paid" ? "paid" : (currentMilestone?.status ?? "pending");
-
-                if (!currentMilestone) return null;
-
-                return (
-                  <View style={styles.tableRow}>
-                    <Text style={[styles.cellText, styles.colMilestone]}>{currentMilestone.label}</Text>
-                    <Text style={[styles.cellText, styles.colMStatus]}>{displayStatus}</Text>
-                    <Text style={[styles.cellText, styles.colMAmount]}>
-                      {formatCurrency(currentMilestone.amount, currency)}
-                    </Text>
-                  </View>
-                );
-              })()}
+          <View style={styles.table}>
+            <View style={styles.tableHeaderRow}>
+              <Text style={[styles.tableHeaderText, styles.colService]}>Service</Text>
+              <Text style={[styles.tableHeaderText, styles.colDescription]}>Description</Text>
+              <Text style={[styles.tableHeaderText, styles.colQty]}>Qty</Text>
+              <Text style={[styles.tableHeaderText, styles.colRate]}>Rate</Text>
+              <Text style={[styles.tableHeaderText, styles.colAmount]}>Amount</Text>
             </View>
-          ) : (
-            <View style={styles.table}>
-              <View style={styles.tableHeaderRow}>
-                <Text style={[styles.tableHeaderText, styles.colService]}>Service</Text>
-                <Text style={[styles.tableHeaderText, styles.colDescription]}>Description</Text>
-                <Text style={[styles.tableHeaderText, styles.colQty]}>Qty</Text>
-                <Text style={[styles.tableHeaderText, styles.colRate]}>Rate</Text>
-                <Text style={[styles.tableHeaderText, styles.colAmount]}>Amount</Text>
-              </View>
 
-              {items.length > 0 ? (
-                items.map((item, index) => (
-                  <View key={index} style={styles.tableRow}>
-                    <Text style={[styles.cellText, styles.colService]}>{item.name}</Text>
-                    <Text style={[styles.cellMuted, styles.colDescription]}>
-                      {item.description || "—"}
-                    </Text>
-                    <Text style={[styles.cellText, styles.colQty]}>{item.quantity}</Text>
-                    <Text style={[styles.cellText, styles.colRate]}>
-                      {formatCurrency(item.unit_price, currency)}
-                    </Text>
-                    <Text style={[styles.cellText, styles.colAmount]}>
-                      {formatCurrency(item.total, currency)}
-                    </Text>
-                  </View>
-                ))
-              ) : (
-                <View style={styles.tableRow}>
-                  <Text style={styles.cellMuted}>No items.</Text>
+            {items.length > 0 ? (
+              items.map((item, index) => (
+                <View key={index} style={styles.tableRow}>
+                  <Text style={[styles.cellText, styles.colService]}>{item.name}</Text>
+                  <Text style={[styles.cellMuted, styles.colDescription]}>
+                    {item.description || "—"}
+                  </Text>
+                  <Text style={[styles.cellText, styles.colQty]}>{item.quantity}</Text>
+                  <Text style={[styles.cellText, styles.colRate]}>
+                    {formatCurrency(item.unit_price, currency)}
+                  </Text>
+                  <Text style={[styles.cellText, styles.colAmount]}>
+                    {formatCurrency(item.total, currency)}
+                  </Text>
                 </View>
-              )}
-            </View>
-          )}
+              ))
+            ) : (
+              <View style={styles.tableRow}>
+                <Text style={styles.cellMuted}>No items.</Text>
+              </View>
+            )}
+          </View>
 
           {/* Totals */}
           <View style={styles.totalsWrap}>
