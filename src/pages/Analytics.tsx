@@ -200,7 +200,11 @@ export default function Analytics() {
       {/* KPI Cards */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-6">
         {kpis.map((kpi) => (
-          <Card key={kpi.label} className="glass-card">
+          // <Card key={kpi.label} className="glass-card">
+          <Card
+            key={kpi.label}
+            className="glass-card transition-all duration-300 hover:-translate-y-1 hover:shadow-[0_18px_45px_rgba(0,0,0,0.22)]"
+          >
             <CardContent className="p-6">
               <div className="flex items-center justify-between">
                 <div className="p-3 rounded-xl bg-secondary/50">
@@ -218,7 +222,7 @@ export default function Analytics() {
 
       {/* Charts */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <Card className="glass-card">
+        <Card className="glass-card transition-all duration-300 hover:-translate-y-1 hover:shadow-[0_18px_45px_rgba(0,0,0,0.22)]">
           <CardHeader>
             <CardTitle className="font-heading text-lg">Top Paying Clients</CardTitle>
           </CardHeader>
@@ -246,7 +250,7 @@ export default function Analytics() {
           </CardContent>
         </Card>
 
-        <Card className="glass-card">
+        <Card className="glass-card transition-all duration-300 hover:-translate-y-1 hover:shadow-[0_18px_45px_rgba(0,0,0,0.22)]">
           <CardHeader>
             <CardTitle className="font-heading text-lg">6-Month Trend</CardTitle>
           </CardHeader>
@@ -264,7 +268,7 @@ export default function Analytics() {
           </CardContent>
         </Card>
 
-        <Card className="glass-card">
+        <Card className="glass-card transition-all duration-300 hover:-translate-y-1 hover:shadow-[0_18px_45px_rgba(0,0,0,0.22)]">
           <CardHeader className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
             <CardTitle className="font-heading text-lg">Top Services (Revenue)</CardTitle>
             <div className="w-full sm:w-56">
