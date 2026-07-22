@@ -428,7 +428,7 @@ export default function Services() {
       {/* Services Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         {filteredServices.map((service) => (
-          <Card key={service.id} className="border-border/40 shadow-sm hover:shadow-md transition-all group hover:border-black/20">
+          <Card key={service.id} className="border-border-black-40 shadow-sm hover:shadow-md transition-all group hover:border-black/20">
             <CardHeader className="pb-4 pt-5 px-5">
               <div className="flex items-start justify-between">
                 <Badge variant="outline" className="font-medium text-xs
