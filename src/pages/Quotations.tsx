@@ -776,7 +776,7 @@ export default function Quotations() {
           if (!open) setDeclineNoteQuotation(null);
         }}
       >
-        <DialogContent className="max-w-md">
+        <DialogContent className="max-w-md text-red">
           <DialogHeader>
             <DialogTitle>Decline Reason</DialogTitle>
           </DialogHeader>
