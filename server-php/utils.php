@@ -102,8 +102,32 @@ function verifyToken($token) {
 // }
 
 
-function requireAuth(){
-    return;
+function requireAuth() {
+    $path = parse_url($_SERVER['REQUEST_URI'], PHP_URL_PATH);
+    $method = $_SERVER['REQUEST_METHOD'];
+
+    // Public routes — no login required
+    if (strpos($path, '/auth/login') !== false) return;
+    if (strpos($path, '/health') !== false) return;
+
+    // Public quotation share links (view + client accept/decline)
+    if (preg_match('#/api/quotations/[\w\-]+$#', $path) && ($method === 'GET' || $method === 'PUT')) return;
+
+    // Public invoice share links (view only)
+    if (preg_match('#/api/invoices/[\w\-]+$#', $path) && $method === 'GET') return;
+    if (preg_match('#/api/invoices/[\w\-]+/items$#', $path) && $method === 'GET') return;
+
+    $headers = getallheaders();
+    $authHeader = $headers['Authorization'] ?? $headers['authorization'] ?? '';
+
+    if (empty($authHeader) || !preg_match('/Bearer\s(\S+)/', $authHeader, $matches)) {
+        jsonResponse(['error' => 'Unauthorized'], 401);
+    }
+
+    $token = $matches[1];
+    if (!verifyToken($token)) {
+        jsonResponse(['error' => 'Invalid token'], 403);
+    }
 }
 
 // Polyfill for getallheaders if running on FPM/Nginx where it might be missing

@@ -21,6 +21,8 @@ import type { RepoSnapshot, QuotationPointTemplateRow } from "./types";
  * This replaces local IndexedDB calls when running in production/hybrid mode.
  */
 
+import { getAuthToken, clearAuthToken } from "@/lib/auth";
+
 const API_BASE = "https://quoteforge-f20w.onrender.com/api";
 
 async function request<T>(path: string, options?: RequestInit): Promise<T> {
@@ -29,15 +31,24 @@ async function request<T>(path: string, options?: RequestInit): Promise<T> {
     const separator = path.includes("?") ? "&" : "?";
     const bustedPath = `${path}${separator}_t=${Date.now()}`;
 
+    const token = getAuthToken();
+
     const res = await fetch(`${API_BASE}${bustedPath}`, {
         ...options,
         cache: "no-store",
         headers: {
             "Content-Type": "application/json",
             "Cache-Control": "no-cache",
+            ...(token ? { Authorization: `Bearer ${token}` } : {}),
             ...options?.headers,
         },
     });
+
+    if (res.status === 401 || res.status === 403) {
+        clearAuthToken();
+        window.location.href = "/auth";
+        throw new Error("Session expired. Please log in again.");
+    }
 
     if (!res.ok) {
         const errorText = await res.text();
@@ -45,7 +56,7 @@ async function request<T>(path: string, options?: RequestInit): Promise<T> {
 
         throw new Error(`API Error: ${res.status} ${res.statusText}`);
     }
-
+    
     if (res.status === 204 || res.status === 304) {
         return {} as T;
     }

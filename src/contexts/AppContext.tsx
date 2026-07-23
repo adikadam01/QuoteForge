@@ -17,6 +17,7 @@ import type { QuotationPointTemplateRow } from "@/repo/types";
 import { getRepo } from "@/repo";
 import { newId } from "@/lib/id";
 import { nowIso } from "@/lib/dates";
+import { getAuthToken, setAuthToken, clearAuthToken, loginWithPassword } from "@/lib/auth";
 
 type AppContextType = {
   // Local preferences
@@ -121,10 +122,11 @@ const AppContext = createContext<AppContextType | undefined>(undefined);
 
 export function AppProvider({ children }: { children: ReactNode }) {
   const repo = useMemo(() => getRepo(), []);
-
-  // Local single-user session stub
-  const [user] = useState<AppContextType["user"]>({ id: "local-user", email: "local@user" });
-  const [session] = useState<AppContextType["session"]>({ user: { id: "local-user", email: "local@user" } });
+  const [user, setUser] = useState<AppContextType["user"]>(() => {
+    const token = getAuthToken();
+    return token ? { id: "admin", email: undefined } : null;
+  });
+  const session = user ? { user } : null;
 
   const [loading, setLoading] = useState(true);
   const [loadingProgress, setLoadingProgress] = useState(0);
@@ -716,12 +718,31 @@ export function AppProvider({ children }: { children: ReactNode }) {
     await refreshQuotationPointTemplates();
   };
 
-  // Auth stubs
-  const signIn = async () => ({ error: null });
-  const signUp = async () => ({ error: null });
-  const signOut = async () => { };
+  const signIn: AppContextType["signIn"] = async (email, password) => {
+    const result = await loginWithPassword(password);
+    if ("error" in result) {
+      return { error: new Error(result.error) };
+    }
+    setAuthToken(result.token);
+    setUser({ id: "admin", email: email || undefined });
+    return { error: null };
+  };
+
+  const signUp: AppContextType["signUp"] = async () => {
+    return { error: new Error("Self sign-up is not available. Please contact your administrator.") };
+  };
+
+  const signOut = async () => {
+    clearAuthToken();
+    setUser(null);
+  };
 
   useEffect(() => {
+    if (!user) {
+      setLoading(false);
+      return;
+    }
+
     (async () => {
       const tasks = [
         refreshBrandKit(),
@@ -759,7 +780,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
         setLoading(false);
       }
     })();
-  }, []);
+  }, [user]);
 
   // Background polling — keeps quotations (and their statuses) fresh even
   // when changes happen elsewhere (e.g. a client accepting/declining via

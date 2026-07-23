@@ -8,13 +8,10 @@ import { toast } from 'sonner';
 import { Eye, EyeOff, LogIn } from 'lucide-react';
 
 export default function Auth() {
-  const [isLogin, setIsLogin] = useState(true);
-  const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [fullName, setFullName] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
-  const { signIn, signUp } = useApp();
+  const { signIn } = useApp();
   const navigate = useNavigate();
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -22,22 +19,12 @@ export default function Auth() {
     setLoading(true);
 
     try {
-      if (isLogin) {
-        const { error } = await signIn(email, password);
-        if (error) {
-          toast.error(error.message || 'Invalid credentials');
-        } else {
-          toast.success('Welcome back!');
-          navigate('/');
-        }
+      const { error } = await signIn('', password);
+      if (error) {
+        toast.error(error.message || 'Invalid password');
       } else {
-        const { error } = await signUp(email, password, fullName);
-        if (error) {
-          toast.error(error.message || 'Failed to create account');
-        } else {
-          toast.success('Account created successfully!');
-          navigate('/');
-        }
+        toast.success('Welcome back!');
+        navigate('/');
       }
     } catch (error: unknown) {
       const message = error instanceof Error ? error.message : 'An error occurred';
@@ -50,7 +37,6 @@ export default function Auth() {
   return (
     <div className="min-h-screen flex items-center justify-center bg-background p-4">
       <div className="w-full max-w-md">
-        {/* Logo */}
         <div className="text-center mb-8">
           <div className="w-16 h-16 rounded-2xl bg-primary mx-auto flex items-center justify-center mb-4">
             <span className="text-primary-foreground font-heading font-bold text-2xl">Q</span>
@@ -59,40 +45,12 @@ export default function Auth() {
           <p className="text-muted-foreground mt-2">Professional Quotation Generator</p>
         </div>
 
-        {/* Auth Card */}
         <div className="glass-card p-8">
           <h2 className="text-xl font-heading font-semibold text-foreground mb-6">
-            {isLogin ? 'Sign in to your account' : 'Create your account'}
+            Sign in
           </h2>
 
           <form onSubmit={handleSubmit} className="space-y-4">
-            {!isLogin && (
-              <div className="space-y-2">
-                <Label htmlFor="fullName">Full Name</Label>
-                <Input
-                  id="fullName"
-                  type="text"
-                  value={fullName}
-                  onChange={(e) => setFullName(e.target.value)}
-                  placeholder="John Doe"
-                  className="rounded-xl"
-                />
-              </div>
-            )}
-
-            <div className="space-y-2">
-              <Label htmlFor="email">Email</Label>
-              <Input
-                id="email"
-                type="email"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                placeholder="you@example.com"
-                required
-                className="rounded-xl"
-              />
-            </div>
-
             <div className="space-y-2">
               <Label htmlFor="password">Password</Label>
               <div className="relative">
@@ -103,8 +61,8 @@ export default function Auth() {
                   onChange={(e) => setPassword(e.target.value)}
                   placeholder="••••••••"
                   required
-                  minLength={6}
                   className="rounded-xl pr-10"
+                  autoFocus
                 />
                 <button
                   type="button"
@@ -126,22 +84,11 @@ export default function Auth() {
               ) : (
                 <>
                   <LogIn className="w-4 h-4" />
-                  {isLogin ? 'Sign In' : 'Create Account'}
+                  Sign In
                 </>
               )}
             </Button>
           </form>
-
-          <div className="mt-6 text-center">
-            <button
-              type="button"
-              onClick={() => setIsLogin(!isLogin)}
-              className="text-muted-foreground hover:text-foreground transition-colors"
-            >
-              {isLogin ? "Don't have an account? " : 'Already have an account? '}
-              <span className="font-medium text-foreground">{isLogin ? 'Sign up' : 'Sign in'}</span>
-            </button>
-          </div>
         </div>
       </div>
     </div>
