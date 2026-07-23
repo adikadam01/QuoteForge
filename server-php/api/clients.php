@@ -88,25 +88,10 @@ if ($path === '/clients' && $method === 'POST') {
 
     // Only allow columns that actually exist in the clients table
     $allowedColumns = [
-    'id',
-    'name',
-    'business_name',
-    'email',
-    'phone',
-    'address',
-    'location',
-    'gst_number',
-    'business_type',
-    'industry',
-    'size',
-    'custom_industry',
-    'source',
-    'website',
-    'notes',
-    'created_at',
-    'updated_at',
-    'is_deleted',
-    'deleted_at'
+    'id', 'name', 'business_name', 'email', 'phone', 'address',
+    'location', 'gst_number', 'business_type', 'custom_business_type',
+    'industry', 'size', 'custom_industry', 'source', 'website', 'notes',
+    'created_at', 'updated_at', 'is_deleted', 'deleted_at', 'whatsapp'
 ];
 
     // Remove frontend-only fields
@@ -246,8 +231,9 @@ unset($input['updated_at']);
 
 $allowedColumns = [
     'id', 'name', 'business_name', 'email', 'phone', 'address',
-    'location', 'gst_number', 'business_type', 'industry', 'size',
-    'custom_industry', 'source', 'website', 'notes', 'is_deleted', 'deleted_at'
+    'location', 'gst_number', 'business_type', 'custom_business_type',
+    'industry', 'size', 'custom_industry', 'source', 'website', 'notes',
+    'is_deleted', 'deleted_at', 'whatsapp'
 ];
 $input = array_intersect_key($input, array_flip($allowedColumns));
 
