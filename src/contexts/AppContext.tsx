@@ -122,10 +122,16 @@ const AppContext = createContext<AppContextType | undefined>(undefined);
 
 export function AppProvider({ children }: { children: ReactNode }) {
   const repo = useMemo(() => getRepo(), []);
-  const [user, setUser] = useState<AppContextType["user"]>(() => {
-    const token = getAuthToken();
-    return token ? { id: "admin", email: undefined } : null;
-  });
+  // const [user, setUser] = useState<AppContextType["user"]>(() => {
+  //   const token = getAuthToken();
+  //   return token ? { id: "admin", email: undefined } : null;
+  // });
+  const [user, setUser] = useState<AppContextType["user"]>(null);
+
+  useEffect(() => {
+    clearAuthToken();
+  }, []);
+
   const session = user ? { user } : null;
 
   const [loading, setLoading] = useState(true);
@@ -809,7 +815,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
       window.removeEventListener("focus", handleVisibility);
     };
   }, [user]);                              // ← depend on user
-  
+
   return (
     <AppContext.Provider
       value={{
