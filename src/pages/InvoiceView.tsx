@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState, type CSSProperties } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
-import { ArrowLeft, Download, Send, CreditCard, ListChecks, ReceiptText } from "lucide-react";
+import { ArrowLeft, Download, Send, CreditCard, ListChecks, ReceiptText, Loader2 } from "lucide-react";
 import { DatePicker } from "@/pages/DatePicker";
 
 import { Button } from "@/components/ui/button";
@@ -28,6 +28,7 @@ export default function InvoiceView() {
   const [payModalOpen, setPayModalOpen] = useState(false);
   const [generatingNext, setGeneratingNext] = useState(false);
   const [notFoundGraceExpired, setNotFoundGraceExpired] = useState(false);
+  const [sharingInvoice, setSharingInvoice] = useState(false);
 
   // Derive invoice reactively from context — no local refetch, no stale closure.
   const invoice = useMemo<Invoice | null>(() => {
@@ -621,58 +622,68 @@ export default function InvoiceView() {
               <Button
                 variant="outline"
                 className="w-full gap-2 rounded-xl  border border-black"
-                disabled={quotationIsDraft}
+                disabled={quotationIsDraft || sharingInvoice}
                 onClick={async () => {
-                  // Keep existing status behavior, but never block link sharing.
-                  if (invoice.invoice_status === 'draft') {
-                    await setInvoiceStatus('sent');
-                  }
-
-                  // Short link: the public page fetches invoice data by ID from the API,
-                  // so we don't need to encode the entire invoice into the URL.
-                  const publicUrl = `${window.location.origin}/public/invoice/${invoice.id}`;
-
-                  const fallbackCopy = (text: string) => {
-                    const ta = document.createElement('textarea');
-                    ta.value = text;
-                    ta.style.position = 'fixed';
-                    ta.style.top = '0';
-                    ta.style.left = '0';
-                    ta.style.opacity = '0';
-                    document.body.appendChild(ta);
-                    ta.focus();
-                    ta.select();
-                    let ok = false;
-                    try {
-                      ok = document.execCommand('copy');
-                    } catch {
-                      ok = false;
-                    } finally {
-                      document.body.removeChild(ta);
-                    }
-                    return ok;
-                  };
-
-                  let copied = false;
+                  setSharingInvoice(true);
                   try {
-                    await navigator.clipboard.writeText(publicUrl);
-                    copied = true;
-                  } catch {
-                    copied = false;
-                  }
+                    // Keep existing status behavior, but never block link sharing.
+                    if (invoice.invoice_status === 'draft') {
+                      await setInvoiceStatus('sent');
+                    }
 
-                  if (!copied) {
-                    copied = fallbackCopy(publicUrl);
-                  }
+                    // Short link: the public page fetches invoice data by ID from the API,
+                    // so we don't need to encode the entire invoice into the URL.
+                    const publicUrl = `${window.location.origin}/public/invoice/${invoice.id}`;
 
-                  if (copied) {
-                    toast({ title: 'Link copied', description: 'Public share link copied to clipboard. Anyone with this link can view the invoice.' });
-                  } else {
-                    toast({ title: 'Copy blocked', description: 'Could not copy link.' });
+                    const fallbackCopy = (text: string) => {
+                      const ta = document.createElement('textarea');
+                      ta.value = text;
+                      ta.style.position = 'fixed';
+                      ta.style.top = '0';
+                      ta.style.left = '0';
+                      ta.style.opacity = '0';
+                      document.body.appendChild(ta);
+                      ta.focus();
+                      ta.select();
+                      let ok = false;
+                      try {
+                        ok = document.execCommand('copy');
+                      } catch {
+                        ok = false;
+                      } finally {
+                        document.body.removeChild(ta);
+                      }
+                      return ok;
+                    };
+
+                    let copied = false;
+                    try {
+                      await navigator.clipboard.writeText(publicUrl);
+                      copied = true;
+                    } catch {
+                      copied = false;
+                    }
+
+                    if (!copied) {
+                      copied = fallbackCopy(publicUrl);
+                    }
+
+                    if (copied) {
+                      toast({ title: 'Link copied', description: 'Public share link copied to clipboard. Anyone with this link can view the invoice.' });
+                    } else {
+                      toast({ title: 'Copy blocked', description: 'Could not copy link.' });
+                    }
+                  } finally {
+                    setSharingInvoice(false);
                   }
                 }}
               >
-                <Send className="w-4 h-4" /> Share Invoice Link
+                {sharingInvoice ? (
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                ) : (
+                  <Send className="w-4 h-4" />
+                )}
+                {sharingInvoice ? "Copying link..." : "Share Invoice Link"}
               </Button>
 
               {invoice.invoice_status !== "paid" ? (
