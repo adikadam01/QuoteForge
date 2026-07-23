@@ -396,7 +396,7 @@
 import { useState } from 'react';
 import ClientForm from '@/components/clients/ClientForm';
 import { useClientOptions } from '@/components/clients/useClientOptions';
-import { Plus, Edit2, Trash2, Users, Search, Building, Mail } from 'lucide-react';
+import { Plus, Edit2, Trash2, Users, Search, Building, Mail, Eye, Phone, MessageCircle, MapPin, Tag, FileText, Calendar } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -423,6 +423,8 @@ export default function Clients() {
   const [searchQuery, setSearchQuery] = useState('');
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingClient, setEditingClient] = useState<Client | null>(null);
+  const [viewingClient, setViewingClient] = useState<Client | null>(null);
+  const [isViewDialogOpen, setIsViewDialogOpen] = useState(false);
 
   // Filters (optional)
   const [sortBy, setSortBy] = useState<'default' | 'revenue_desc' | 'recently_active' | 'quotations_desc'>('default');
@@ -488,6 +490,11 @@ export default function Clients() {
       setEditingClient(null);
     }
     setIsDialogOpen(true);
+  };
+
+  const handleOpenViewDialog = (client: Client) => {
+    setViewingClient(client);
+    setIsViewDialogOpen(true);
   };
 
   const handleSubmitClient = async (payload: import('@/components/clients/ClientForm').ClientFormSubmitPayload) => {
@@ -692,6 +699,14 @@ export default function Clients() {
                       variant="ghost"
                       size="icon"
                       className="h-8 w-8 rounded-lg hover:bg-black hover:text-white"
+                      onClick={() => handleOpenViewDialog(client)}
+                    >
+                      <Eye className="w-3.5 h-3.5" />
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="h-8 w-8 rounded-lg hover:bg-black hover:text-white"
                       onClick={() => handleOpenDialog(client)}
                     >
                       <Edit2 className="w-3.5 h-3.5" />
@@ -809,6 +824,145 @@ export default function Clients() {
               onSubmit={handleSubmitClient}
             />
           </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* View Client Dialog */}
+      <Dialog open={isViewDialogOpen} onOpenChange={setIsViewDialogOpen}>
+        <DialogContent className="max-w-2xl max-h-[85vh] overflow-y-auto scrollbar-modern rounded-2xl">
+          <DialogHeader>
+            <div className="flex items-center gap-3">
+              {viewingClient && (
+                <div className="w-12 h-12 rounded-xl bg-black text-white flex items-center justify-center text-base font-heading font-bold shrink-0">
+                  {viewingClient.name.split(' ').map(n => n[0]).join('').slice(0, 2)}
+                </div>
+              )}
+              <div>
+                <DialogTitle className="font-heading text-xl">
+                  {viewingClient?.name || 'Client Profile'}
+                </DialogTitle>
+                {viewingClient?.business_name && (
+                  <DialogDescription className="mt-0.5">
+                    {viewingClient.business_name}
+                  </DialogDescription>
+                )}
+              </div>
+            </div>
+          </DialogHeader>
+
+          {viewingClient && (
+            <div className="space-y-6 py-2">
+              {(viewingClient.business_type || viewingClient.industry) && (
+                <div className="flex flex-wrap gap-2">
+                  {viewingClient.business_type && (
+                    <Badge variant="secondary" className="font-normal rounded-full px-3">
+                      <Tag className="w-3 h-3 mr-1.5" />
+                      {viewingClient.business_type}
+                    </Badge>
+                  )}
+                  {viewingClient.industry && (
+                    <Badge variant="outline" className="font-normal rounded-full px-3 border-border/70">
+                      {viewingClient.industry}
+                    </Badge>
+                  )}
+                </div>
+              )}
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                {viewingClient.email && (
+                  <div className="flex items-start gap-3 p-3 rounded-xl bg-secondary/30">
+                    <Mail className="w-4 h-4 text-muted-foreground shrink-0 mt-0.5" />
+                    <div className="min-w-0">
+                      <p className="text-xs text-muted-foreground uppercase tracking-wide">Email</p>
+                      <p className="text-sm font-medium truncate">{viewingClient.email}</p>
+                    </div>
+                  </div>
+                )}
+                {viewingClient.phone && (
+                  <div className="flex items-start gap-3 p-3 rounded-xl bg-secondary/30">
+                    <Phone className="w-4 h-4 text-muted-foreground shrink-0 mt-0.5" />
+                    <div className="min-w-0">
+                      <p className="text-xs text-muted-foreground uppercase tracking-wide">Phone</p>
+                      <p className="text-sm font-medium truncate">{viewingClient.phone}</p>
+                    </div>
+                  </div>
+                )}
+                {viewingClient.whatsapp && (
+                  <div className="flex items-start gap-3 p-3 rounded-xl bg-secondary/30">
+                    <MessageCircle className="w-4 h-4 text-muted-foreground shrink-0 mt-0.5" />
+                    <div className="min-w-0">
+                      <p className="text-xs text-muted-foreground uppercase tracking-wide">WhatsApp</p>
+                      <p className="text-sm font-medium truncate">{viewingClient.whatsapp}</p>
+                    </div>
+                  </div>
+                )}
+                {(viewingClient.location || viewingClient.address) && (
+                  <div className="flex items-start gap-3 p-3 rounded-xl bg-secondary/30">
+                    <MapPin className="w-4 h-4 text-muted-foreground shrink-0 mt-0.5" />
+                    <div className="min-w-0">
+                      <p className="text-xs text-muted-foreground uppercase tracking-wide">Location</p>
+                      <p className="text-sm font-medium truncate">{viewingClient.address || viewingClient.location}</p>
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              {viewingClient.notes && (
+                <div>
+                  <div className="flex items-center gap-2 mb-2">
+                    <FileText className="w-3.5 h-3.5 text-muted-foreground" />
+                    <p className="text-xs uppercase tracking-wide text-muted-foreground font-semibold">Notes</p>
+                  </div>
+                  <div className="rounded-xl border border-border/60 p-3 bg-secondary/20">
+                    <p className="text-sm text-foreground whitespace-pre-wrap">{viewingClient.notes}</p>
+                  </div>
+                </div>
+              )}
+
+              <div className="grid grid-cols-2 gap-4 pt-4 border-t border-border/50">
+                <div>
+                  <p className="text-[10px] uppercase tracking-wider text-muted-foreground font-medium mb-0.5">Quotations</p>
+                  <p className="text-lg font-heading font-bold text-foreground tabular-nums">
+                    {getClientQuotations(viewingClient.id).length}
+                  </p>
+                </div>
+                <div className="text-right">
+                  <p className="text-[10px] uppercase tracking-wider text-muted-foreground font-medium mb-0.5">Total Value</p>
+                  <p className="text-lg font-heading font-bold text-foreground tabular-nums">
+                    {(currency === 'INR' ? '₹' : '$')}
+                    {getClientQuotations(viewingClient.id).reduce((sum, q) => sum + q.total, 0).toLocaleString()}
+                  </p>
+                </div>
+              </div>
+
+              <div className="flex items-center gap-2 text-xs text-muted-foreground pt-2 border-t border-border/50">
+                <Calendar className="w-3.5 h-3.5" />
+                <span>
+                  Added{' '}
+                  {viewingClient.created_at
+                    ? new Date(viewingClient.created_at).toLocaleDateString('en-IN', {
+                      day: '2-digit',
+                      month: 'short',
+                      year: 'numeric',
+                    })
+                    : '—'}
+                </span>
+              </div>
+
+              <div className="flex justify-end gap-2 pt-2">
+                <Button
+                  variant="outline"
+                  className="rounded-xl"
+                  onClick={() => {
+                    setIsViewDialogOpen(false);
+                    handleOpenDialog(viewingClient);
+                  }}
+                >
+                  <Edit2 className="w-4 h-4 mr-2" /> Edit Client
+                </Button>
+              </div>
+            </div>
+          )}
         </DialogContent>
       </Dialog>
     </div>
