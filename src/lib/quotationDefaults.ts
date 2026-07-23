@@ -12,8 +12,8 @@ export const DEFAULT_PAYMENT_TERMS = `• Advance payment requirement (e.g. 50% 
 • Mode of payment
 • Late payment policy
 
-An advance payment of {{X}}% is required to initiate the project.
-The remaining balance must be cleared within {{Y}} days of delivery.
+An advance payment of the agreed percentage is required to initiate the project.
+The remaining balance must be cleared within the agreed number of days of delivery.
 Delayed payments may result in work being paused until dues are cleared.`;
 
 export const DEFAULT_TERMS_CONDITIONS = `• Revisions policy
