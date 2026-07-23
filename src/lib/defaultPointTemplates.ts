@@ -118,17 +118,17 @@ export function makeDefaultPointTemplates(): QuotationPointTemplateRow[] {
     ),
 
     mk(
-      'terms_conditions',
-      'tac.revisions',
-      'Revisions Policy',
-      'The quotation includes {{number}} rounds of revisions.\n Additional revisions will be charged separately.',
+      'payment_terms',
+      'pay.advance',
+      'Advance Payment',
+      'An advance payment as mutually agreed is required\n before commencement of work.',
       1,
     ),
     mk(
-      'terms_conditions',
-      'tac.ownership',
-      'Ownership of Work',
-      'All creative assets remain the property of the agency\n until full payment is received.',
+      'payment_terms',
+      'pay.balance',
+      'Balance Payment',
+      'The remaining balance must be cleared within the mutually\n agreed number of days from the date of invoice or delivery.',
       2,
     ),
     mk(
