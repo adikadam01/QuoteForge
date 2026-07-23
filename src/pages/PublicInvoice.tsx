@@ -325,6 +325,7 @@ export default function PublicInvoice() {
   }
 
   return (
+
     <div className="quotation-preview-page max-w-[1100px] mx-auto p-4 md:p-6 space-y-6" style={{ background: '#ffffff' }}>
       <div className="no-print">
         <Button className="rounded-xl" onClick={handleDownloadPdf}>
@@ -341,4 +342,7 @@ export default function PublicInvoice() {
       </div>
     </div>
   );
+  console.log("brandKit from context:", brandKit);
+  console.log("directBrand:", directBrand);
+  console.log("displayBrand:", displayBrand);
 }
