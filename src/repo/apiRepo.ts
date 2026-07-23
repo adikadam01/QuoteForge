@@ -148,7 +148,9 @@ export function createApiRepo(): Repository {
         deleteQuotation: (id) => request<void>(`/quotations/${id}`, { method: "DELETE" }),
 
         // --- Invoices & Items ---
+        // --- Invoices & Items ---
         listInvoices: () => request<Invoice[]>("/invoices"),
+        getInvoice: (id) => request<Invoice | null>(`/invoices/${id}`),
         createInvoice: (inv) => request<void>("/invoices", { method: "POST", body: JSON.stringify(inv) }),
         updateInvoice: (inv) => request<void>(`/invoices/${inv.id}`, { method: "PUT", body: JSON.stringify(inv) }),
         deleteInvoice: (id) => request<void>(`/invoices/${id}`, { method: "DELETE" }),

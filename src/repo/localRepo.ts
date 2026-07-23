@@ -10,6 +10,7 @@ import type {
   Contract,
   Invoice,
   InvoiceItem,
+  Notification,
   PaymentReceipt,
   Quotation,
   Service,
@@ -28,6 +29,7 @@ const KEY = {
   quotations: "quotations",
   invoices: "invoices",
   invoiceItems: "invoiceItems",
+  notifications: "notifications",
 
   // Phase 4 workflow entities
   contracts: "contracts",
@@ -147,6 +149,10 @@ export function createLocalRepo(): Repository {
       return await getArray<Service>(KEY.services);
     },
 
+    async listTermsConditions() {
+      return [];
+    },
+
     async createService(service: Service) {
       return withLock(async () => {
         const list = await getArray<Service>(KEY.services);
@@ -200,6 +206,11 @@ export function createLocalRepo(): Repository {
 
     async listInvoices() {
       return await getArray<Invoice>(KEY.invoices);
+    },
+
+    async getInvoice(id: string) {
+      const all = await getArray<Invoice>(KEY.invoices);
+      return all.find((i) => i.id === id) || null;
     },
 
     async createInvoice(inv: Invoice) {
@@ -299,6 +310,20 @@ export function createLocalRepo(): Repository {
       return withLock(async () => {
         const list = await getArray<import('@/lib/types').Receipt>(KEY.receipts);
         await setArray(KEY.receipts, [receipt, ...list]);
+      });
+    },
+
+    async listNotifications() {
+      return await getArray<Notification>(KEY.notifications);
+    },
+
+    async markNotificationRead(id: string) {
+      return withLock(async () => {
+        const list = await getArray<Notification>(KEY.notifications);
+        await setArray(
+          KEY.notifications,
+          list.map((n) => (n.id === id ? { ...n, is_read: true } : n))
+        );
       });
     },
 

@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useParams } from 'react-router-dom';
-
+import { getRepo } from '@/repo';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { useApp } from '@/contexts/AppContext';
@@ -54,6 +54,13 @@ export default function PublicInvoice() {
   }, []);
 
   // Fetch live data once on mount (short-link path: /public/invoice/:invoiceId, no ?data=).
+  const [directInvoice, setDirectInvoice] = useState<Invoice | null>(null);
+  const [directItems, setDirectItems] = useState<InvoiceItem[] | null>(null);
+
+  // Fetch live data once on mount (short-link path: /public/invoice/:invoiceId, no ?data=).
+  // Uses the repo directly (getInvoice is a public GET route) instead of the
+  // protected listInvoices()/listInvoiceItems() used elsewhere in the app —
+  // those require auth, which a public visitor never has.
   useEffect(() => {
     if (usingStatelessData) return;
     if (!invoiceId || invoiceId === 'shared') {
@@ -64,7 +71,20 @@ export default function PublicInvoice() {
     let cancelled = false;
     (async () => {
       try {
-        await Promise.all([refreshInvoices(), refreshInvoiceItems()]);
+        const repo = getRepo();
+        const inv = await repo.getInvoice(invoiceId);
+        if (cancelled) return;
+
+        if (inv) {
+          setDirectInvoice(inv);
+          const its = await repo.listInvoiceItemsByInvoice(invoiceId);
+          if (!cancelled) setDirectItems(its);
+        } else {
+          setDirectInvoice(null);
+        }
+      } catch (err) {
+        console.error('Failed to load public invoice', err);
+        if (!cancelled) setDirectInvoice(null);
       } finally {
         if (!cancelled) setInitialFetchDone(true);
       }
@@ -75,25 +95,28 @@ export default function PublicInvoice() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [invoiceId, usingStatelessData]);
 
+
   // Derive invoice reactively from context — no stale closure.
+  // Derive invoice from the direct fetch — client/quotation data usually
+  // comes embedded in the backend response already, but fall back to
+  // context lists if a signed-in viewer happens to have them loaded.
   const liveInvoice = useMemo<Invoice | null>(() => {
     if (usingStatelessData) return null;
     if (!invoiceId || invoiceId === 'shared') return null;
+    if (!directInvoice) return null;
 
-    const inv = getInvoiceById(invoiceId);
-    if (!inv) return null;
-
-    const q = inv.quotation_id ? quotations.find((x) => x.id === inv.quotation_id) : undefined;
+    const inv = directInvoice;
+    const q = inv.quotation || (inv.quotation_id ? quotations.find((x) => x.id === inv.quotation_id) : undefined);
     const clientId = inv.client_id || q?.client_id || null;
-    const client = clientId ? clients.find((c) => c.id === clientId) : undefined;
+    const client = inv.client || (clientId ? clients.find((c) => c.id === clientId) : undefined);
 
     return {
       ...inv,
       client_id: clientId,
-      client: inv.client || q?.client || client,
-      quotation: inv.quotation || q,
+      client,
+      quotation: q,
     } as Invoice;
-  }, [invoiceId, usingStatelessData, getInvoiceById, quotations, clients]);
+  }, [invoiceId, usingStatelessData, directInvoice, quotations, clients]);
 
   const invoice = usingStatelessData ? statelessInvoice : liveInvoice;
 
@@ -116,17 +139,27 @@ export default function PublicInvoice() {
     if (!retryAttempted) {
       const t = setTimeout(() => {
         setRetryAttempted(true);
-        Promise.all([refreshInvoices(), refreshInvoiceItems()]).catch(() => {
-          // If the retry itself fails, the grace timer below will still
-          // eventually surface "not found" once it runs.
-        });
+        (async () => {
+          try {
+            const repo = getRepo();
+            const inv = await repo.getInvoice(invoiceId!);
+            if (inv) {
+              setDirectInvoice(inv);
+              const its = await repo.listInvoiceItemsByInvoice(invoiceId!);
+              setDirectItems(its);
+            }
+          } catch {
+            // If the retry itself fails, the grace timer below will still
+            // eventually surface "not found" once it runs.
+          }
+        })();
       }, 3000);
       return () => clearTimeout(t);
     }
 
     const t = setTimeout(() => setNotFoundGraceExpired(true), 4000);
     return () => clearTimeout(t);
-  }, [invoice, initialFetchDone, retryAttempted, usingStatelessData, refreshInvoices, refreshInvoiceItems]);
+  }, [invoice, initialFetchDone, retryAttempted, usingStatelessData, invoiceId]);
 
   const isPageLoading = !invoice && !notFoundGraceExpired;
 
@@ -158,8 +191,9 @@ export default function PublicInvoice() {
 
   const items = useMemo(() => {
     if (statelessItems) return statelessItems;
+    if (directItems) return directItems;
     return invoice ? listInvoiceItemsByInvoice(invoice.id) : [];
-  }, [invoice, listInvoiceItemsByInvoice, statelessItems]);
+  }, [invoice, listInvoiceItemsByInvoice, statelessItems, directItems]);
 
   // Use stateless brand if available, else from context
   const displayBrand = statelessBrand !== undefined ? statelessBrand : brandKit;

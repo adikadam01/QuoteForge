@@ -33,6 +33,7 @@ export interface Repository {
 
   // invoices
   listInvoices(): Promise<Invoice[]>;
+  getInvoice(id: string): Promise<Invoice | null>;
   createInvoice(inv: Invoice): Promise<void>;
   updateInvoice(inv: Invoice): Promise<void>;
   deleteInvoice(id: string): Promise<void>;
