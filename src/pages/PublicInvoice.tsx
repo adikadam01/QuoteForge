@@ -24,6 +24,8 @@ export default function PublicInvoice() {
   const [statelessInvoice, setStatelessInvoice] = useState<Invoice | null>(null);
   const [statelessItems, setStatelessItems] = useState<InvoiceItem[] | null>(null);
   const [statelessBrand, setStatelessBrand] = useState<BrandKit | undefined>(undefined);
+  const [directBrand, setDirectBrand] =
+    useState<BrandKit | null>(null);
 
   const usingStatelessData = statelessInvoice !== null;
 
@@ -35,6 +37,29 @@ export default function PublicInvoice() {
       setInitialFetchDone(true);
       return;
     }
+
+    useEffect(() => {
+      if (statelessBrand !== undefined) return;
+
+      let cancelled = false;
+
+      (async () => {
+        try {
+          const repo = getRepo();
+          const kit = await repo.getBrandKit();
+
+          if (!cancelled) {
+            setDirectBrand(kit);
+          }
+        } catch (err) {
+          console.error("Failed to load brand kit", err);
+        }
+      })();
+
+      return () => {
+        cancelled = true;
+      };
+    }, [statelessBrand]);
 
     import('@/lib/shareLink').then(({ decodeInvoiceData }) => {
       const decoded = decodeInvoiceData(dataParam);
@@ -196,7 +221,10 @@ export default function PublicInvoice() {
   }, [invoice, listInvoiceItemsByInvoice, statelessItems, directItems]);
 
   // Use stateless brand if available, else from context
-  const displayBrand = statelessBrand !== undefined ? statelessBrand : brandKit;
+  const displayBrand =
+    statelessBrand !== undefined
+      ? statelessBrand
+      : (directBrand || brandKit);
 
   const handleDownloadPdf = async () => {
     if (!invoice) return;
