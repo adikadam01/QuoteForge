@@ -39,7 +39,9 @@ function getJsonInput() {
 // --- Authentication ---
 // Secret should be loaded from env
 $JWT_SECRET = getenv('JWT_SECRET') ?: 'super-secret-key-change-in-prod';
-$ADMIN_PASSWORD = getenv('ADMIN_PASSWORD') ?: 'admin';
+// $ADMIN_PASSWORD = getenv('ADMIN_PASSWORD') ?: 'admin';
+// Hardcoded for now — replace with env var later for production
+$ADMIN_PASSWORD = 'admin123';
 
 function generateToken($role = 'admin') {
     global $JWT_SECRET;
