@@ -94,17 +94,25 @@ export default function QuotationPreview() {
     (async () => {
       setLoading(true);
       try {
-        // First attempt.
-        await refreshQuotations();
-        let q = getQuotationById(id);
+        // The backend can genuinely take several seconds to respond (observed
+        // 2.5-3s for the quotations fetch alone), so a single quick retry
+        // isn't enough — keep trying for a real window before declaring
+        // "not found". The loader stays visible the whole time.
+        const MAX_ATTEMPTS = 6;
+        const RETRY_DELAY_MS = 800;
 
-        // If not found yet, the context state may just not have caught up
-        // to this render — retry once before giving up. This is the same
-        // race that causes a flash of "not found" right after a hard refresh.
-        if (!q && !cancelled) {
-          await new Promise((r) => setTimeout(r, 400));
+        let q: ReturnType<typeof getQuotationById> | undefined;
+
+        for (let attempt = 0; attempt < MAX_ATTEMPTS; attempt++) {
+          if (cancelled) return;
+
           await refreshQuotations();
           q = getQuotationById(id);
+
+          if (q) break;
+          if (attempt < MAX_ATTEMPTS - 1) {
+            await new Promise((r) => setTimeout(r, RETRY_DELAY_MS));
+          }
         }
 
         if (cancelled) return;
