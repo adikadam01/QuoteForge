@@ -85,14 +85,14 @@ export function makeDefaultPointTemplates(): QuotationPointTemplateRow[] {
       'payment_terms',
       'pay.advance',
       'Advance Payment',
-      'An advance payment of {{percentage / amount}} is required\n before commencement of work.',
+      'An advance payment as mutually agreed is required\n before commencement of work.',
       1,
     ),
     mk(
       'payment_terms',
       'pay.balance',
       'Balance Payment',
-      'The remaining balance must be cleared within {{X}} days\n from the date of invoice or delivery.',
+      'The remaining balance must be cleared within the mutually\n agreed number of days from the date of invoice or delivery.',
       2,
     ),
     mk(
