@@ -24,7 +24,12 @@ import type { RepoSnapshot, QuotationPointTemplateRow } from "./types";
 const API_BASE = "https://quoteforge-f20w.onrender.com/api";
 
 async function request<T>(path: string, options?: RequestInit): Promise<T> {
-    const res = await fetch(`${API_BASE}${path}`, {
+    // Cache-bust so the browser never has anything to conditionally-revalidate
+    // against (which was causing 304 Not Modified responses with empty bodies).
+    const separator = path.includes("?") ? "&" : "?";
+    const bustedPath = `${path}${separator}_t=${Date.now()}`;
+
+    const res = await fetch(`${API_BASE}${bustedPath}`, {
         ...options,
         cache: "no-store",
         headers: {
@@ -41,11 +46,15 @@ async function request<T>(path: string, options?: RequestInit): Promise<T> {
         throw new Error(`API Error: ${res.status} ${res.statusText}`);
     }
 
-    if (res.status === 204) {
+    if (res.status === 204 || res.status === 304) {
         return {} as T;
     }
 
     const text = await res.text();
+
+    if (!text) {
+        return {} as T;
+    }
 
     return JSON.parse(text);
 }
