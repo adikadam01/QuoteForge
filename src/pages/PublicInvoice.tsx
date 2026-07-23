@@ -7,12 +7,20 @@ import { useApp } from '@/contexts/AppContext';
 import { type BrandKit, type Invoice, type InvoiceItem } from '@/lib/types';
 import { InvoiceLayout } from '@/components/documents/InvoiceLayout';
 
+const INVOICE_LOADING_MESSAGES = [
+  "Loading invoice...",
+  "Fetching client details...",
+  "Preparing document...",
+];
+
 export default function PublicInvoice() {
   const { invoiceId } = useParams<{ invoiceId: string }>();
   const { brandKit, currency, clients, quotations, refreshInvoices, refreshInvoiceItems, getInvoiceById, listInvoiceItemsByInvoice } = useApp();
 
   const [initialFetchDone, setInitialFetchDone] = useState(false);
   const [notFoundGraceExpired, setNotFoundGraceExpired] = useState(false);
+  const [loadingProgress, setLoadingProgress] = useState(0);
+  const [loadMsgIndex, setLoadMsgIndex] = useState(0);
   const [statelessInvoice, setStatelessInvoice] = useState<Invoice | null>(null);
   const [statelessItems, setStatelessItems] = useState<InvoiceItem[] | null>(null);
   const [statelessBrand, setStatelessBrand] = useState<BrandKit | undefined>(undefined);
@@ -91,15 +99,62 @@ export default function PublicInvoice() {
 
   // Grace period before showing "not found" — give context a moment to catch up
   // after the initial fetch, since state updates can lag one render behind.
+  const [retryAttempted, setRetryAttempted] = useState(false);
+
+  // Grace period before showing "not found" — give context a moment to catch up
+  // after the initial fetch, since state updates can lag one render behind and
+  // the backend can be genuinely slow. Retry once before ever declaring
+  // "not found", so a slow response never gets mistaken for a missing invoice.
   useEffect(() => {
     if (invoice) {
       setNotFoundGraceExpired(false);
       return;
     }
     if (!initialFetchDone) return;
-    const t = setTimeout(() => setNotFoundGraceExpired(true), 1500);
+    if (usingStatelessData) return;
+
+    if (!retryAttempted) {
+      const t = setTimeout(() => {
+        setRetryAttempted(true);
+        Promise.all([refreshInvoices(), refreshInvoiceItems()]).catch(() => {
+          // If the retry itself fails, the grace timer below will still
+          // eventually surface "not found" once it runs.
+        });
+      }, 3000);
+      return () => clearTimeout(t);
+    }
+
+    const t = setTimeout(() => setNotFoundGraceExpired(true), 4000);
     return () => clearTimeout(t);
-  }, [invoice, initialFetchDone]);
+  }, [invoice, initialFetchDone, retryAttempted, usingStatelessData, refreshInvoices, refreshInvoiceItems]);
+
+  const isPageLoading = !invoice && !notFoundGraceExpired;
+
+  // Simulated progress: climbs toward 90% while waiting, snaps to 100% once
+  // the invoice actually resolves.
+  useEffect(() => {
+    if (!isPageLoading) {
+      setLoadingProgress(100);
+      const reset = setTimeout(() => setLoadingProgress(0), 400);
+      return () => clearTimeout(reset);
+    }
+    setLoadingProgress(0);
+    const interval = setInterval(() => {
+      setLoadingProgress((p) => (p >= 90 ? 90 : p + Math.max(1, (90 - p) * 0.1)));
+    }, 150);
+    return () => clearInterval(interval);
+  }, [isPageLoading]);
+
+  useEffect(() => {
+    if (!isPageLoading) {
+      setLoadMsgIndex(0);
+      return;
+    }
+    const interval = setInterval(() => {
+      setLoadMsgIndex((i) => (i + 1) % INVOICE_LOADING_MESSAGES.length);
+    }, 1400);
+    return () => clearInterval(interval);
+  }, [isPageLoading]);
 
   const items = useMemo(() => {
     if (statelessItems) return statelessItems;
@@ -142,9 +197,57 @@ export default function PublicInvoice() {
 
   if (!invoice) {
     if (!notFoundGraceExpired) {
+      const circumference = 2 * Math.PI * 45;
       return (
-        <div className="min-h-[40vh] flex items-center justify-center">
-          <p className="text-sm text-muted-foreground">Loading invoice…</p>
+        <div className="min-h-[60vh] flex flex-col items-center justify-center relative overflow-hidden">
+          <div
+            className="absolute w-72 h-72 rounded-full bg-primary/20 blur-3xl animate-pulse"
+            style={{ animationDuration: "2.4s" }}
+          />
+
+          <div className="relative w-36 h-36 flex items-center justify-center">
+            <div
+              className="absolute inset-0 rounded-full border-2 border-dashed border-primary/25 animate-spin"
+              style={{ animationDuration: "6s" }}
+            />
+
+            <svg className="absolute inset-2 -rotate-90" viewBox="0 0 100 100">
+              <defs>
+                <linearGradient id="invoiceLoaderGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+                  <stop offset="0%" stopColor="hsl(var(--primary))" stopOpacity="0.5" />
+                  <stop offset="100%" stopColor="hsl(var(--primary))" stopOpacity="1" />
+                </linearGradient>
+              </defs>
+              <circle cx="50" cy="50" r="45" fill="none" stroke="currentColor" strokeWidth="6" className="text-primary/10" />
+              <circle
+                cx="50"
+                cy="50"
+                r="45"
+                fill="none"
+                stroke="url(#invoiceLoaderGradient)"
+                strokeWidth="6"
+                strokeLinecap="round"
+                className="transition-all duration-500 ease-out"
+                strokeDasharray={circumference}
+                strokeDashoffset={circumference * (1 - loadingProgress / 100)}
+                style={{ filter: "drop-shadow(0 0 6px hsl(var(--primary) / 0.5))" }}
+              />
+            </svg>
+
+            <span className="relative font-heading font-bold text-3xl text-foreground tabular-nums transition-all duration-300">
+              {Math.round(loadingProgress)}
+              <span className="text-lg text-muted-foreground">%</span>
+            </span>
+          </div>
+
+          <div className="mt-8 h-5 relative overflow-hidden">
+            <p
+              key={loadMsgIndex}
+              className="text-sm text-muted-foreground animate-in fade-in slide-in-from-bottom-2 duration-500"
+            >
+              {INVOICE_LOADING_MESSAGES[loadMsgIndex]}
+            </p>
+          </div>
         </div>
       );
     }
