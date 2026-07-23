@@ -1,10 +1,8 @@
 import { useMemo, type CSSProperties } from "react";
-
 import { Card, CardContent } from "@/components/ui/card";
 import { buildSectionsFromSnapshot } from "@/lib/quotationPointSnapshot";
 import { formatCurrency } from "@/lib/types";
 import type { BrandKit, Invoice, InvoiceItem } from "@/lib/types";
-import invoiceLogo from "/public/triplesimage.png";
 
 export type InvoiceLayoutMode = "screen" | "print";
 
@@ -98,11 +96,13 @@ export function InvoiceLayout({ invoice, items, brandKit, mode = "screen" }: Pro
             <div className="doc-header__brand">
 
               <div className="doc-header__brand">
-                <img
-                  src={invoiceLogo}
-                  alt="Invoice Logo"
-                  className="doc-logo doc-logo--invoice"
-                />
+                {brandKit?.logo_url ? (
+                  <img
+                    src={brandKit.logo_url}
+                    alt="Company Logo"
+                    className="doc-logo doc-logo--invoice"
+                  />
+                ) : null}
               </div>
             </div>
 

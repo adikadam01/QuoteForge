@@ -157,7 +157,6 @@ export default function PublicQuotation() {
     };
   }, [statelessBrand]);
 
-  const [directBrand, setDirectBrand] = useState<BrandKit | null>(null);
 
   // brandKit from context is only populated for signed-in users (AppContext's
   // startup effect skips refreshBrandKit() entirely when there's no user).
