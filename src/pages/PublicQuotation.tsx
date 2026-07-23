@@ -134,7 +134,54 @@ export default function PublicQuotation() {
   }, [quotationId]);
 
   const [statelessBrand, setStatelessBrand] = useState<BrandKit | undefined>(undefined);
-  const displayBrand = statelessBrand !== undefined ? statelessBrand : brandKit;
+  const [directBrand, setDirectBrand] = useState<BrandKit | null>(null);
+
+  // brandKit from context is only populated for signed-in users (AppContext's
+  // startup effect skips refreshBrandKit() entirely when there's no user).
+  // Public visitors need to fetch it directly — the backend already allows
+  // GET /brand-kit without auth.
+  useEffect(() => {
+    if (statelessBrand !== undefined) return;
+    let cancelled = false;
+    (async () => {
+      try {
+        const repo = getRepo();
+        const kit = await repo.getBrandKit();
+        if (!cancelled) setDirectBrand(kit);
+      } catch (err) {
+        console.error('Failed to load brand kit', err);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [statelessBrand]);
+
+  const [directBrand, setDirectBrand] = useState<BrandKit | null>(null);
+
+  // brandKit from context is only populated for signed-in users (AppContext's
+  // startup effect skips refreshBrandKit() entirely when there's no user).
+  // Public visitors need to fetch it directly — the backend already allows
+  // GET /brand-kit without auth.
+  useEffect(() => {
+    if (statelessBrand !== undefined) return;
+    let cancelled = false;
+    (async () => {
+      try {
+        const repo = getRepo();
+        const kit = await repo.getBrandKit();
+        if (!cancelled) setDirectBrand(kit);
+      } catch (err) {
+        console.error('Failed to load brand kit', err);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [statelessBrand]);
+
+  // Use stateless brand if available, else the direct fetch, else context
+  const displayBrand = statelessBrand !== undefined ? statelessBrand : (directBrand || brandKit);
 
   const isAlreadyAccepted = quotation?.status === 'accepted';
   const isAlreadyDeclined = quotation?.status === 'declined';
