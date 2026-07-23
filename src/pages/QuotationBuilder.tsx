@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Link, useSearchParams } from "react-router-dom";
-import { ArrowLeft, Download, Pencil, Save, Send, UserPlus, X, FileText, ListChecks, Package, Clock, Wallet, ScrollText, ChevronRight, Users, Calendar as CalendarIcon, Tag, ChevronDown } from "lucide-react";
+import { ArrowLeft, Download, Pencil, Save, Send, UserPlus, X, FileText, ListChecks, Package, Clock, Wallet, ScrollText, ChevronRight, Users, Calendar as CalendarIcon, Tag, ChevronDown, Loader2 } from "lucide-react";
 import { pdf } from "@react-pdf/renderer";
 
 
@@ -226,6 +226,7 @@ export default function QuotationBuilder() {
   const sectionToggles = DEFAULT_SECTION_TOGGLES;
 
   const [resuming, setResuming] = useState(false);
+  const [markingSent, setMarkingSent] = useState(false);
 
   // Draft conflict modal (preserve existing behavior)
   const [draftConflictOpen, setDraftConflictOpen] = useState(false);
@@ -1272,66 +1273,72 @@ export default function QuotationBuilder() {
 
     if (!validateStep1()) return;
 
-    let id = draftId;
-
-    if (!id) {
-
-      id = await handleSaveDraft("sent");
-
-      if (!id) return;
-
-    } else {
-
-      const now = new Date().toISOString();
-
-      await persistDraft(
-        {
-          status: "sent",
-          sent_at: now,
-          current_step: 5,
-        },
-        id
-      );
-    }
-
-    const publicUrl = `${window.location.origin}/public/quotation/${id}`;
+    setMarkingSent(true);
 
     try {
+      let id = draftId;
 
-      if (navigator.clipboard && window.isSecureContext) {
+      if (!id) {
 
-        await navigator.clipboard.writeText(publicUrl);
+        id = await handleSaveDraft("sent");
+
+        if (!id) return;
 
       } else {
 
-        const textArea = document.createElement("textarea");
-        textArea.value = publicUrl;
-        textArea.style.position = "fixed";
-        textArea.style.left = "-9999px";
+        const now = new Date().toISOString();
 
-        document.body.appendChild(textArea);
-        textArea.focus();
-        textArea.select();
-
-        document.execCommand("copy");
-
-        document.body.removeChild(textArea);
+        await persistDraft(
+          {
+            status: "sent",
+            sent_at: now,
+            current_step: 5,
+          },
+          id
+        );
       }
 
-      toast({
-        title: "Quotation link copied",
-        // description: publicUrl,
-      });
+      const publicUrl = `${window.location.origin}/public/quotation/${id}`;
 
-    } catch (err) {
+      try {
 
-      console.error(err);
+        if (navigator.clipboard && window.isSecureContext) {
 
-      window.prompt("Copy quotation link:", publicUrl);
+          await navigator.clipboard.writeText(publicUrl);
 
+        } else {
+
+          const textArea = document.createElement("textarea");
+          textArea.value = publicUrl;
+          textArea.style.position = "fixed";
+          textArea.style.left = "-9999px";
+
+          document.body.appendChild(textArea);
+          textArea.focus();
+          textArea.select();
+
+          document.execCommand("copy");
+
+          document.body.removeChild(textArea);
+        }
+
+        toast({
+          title: "Quotation link copied",
+          // description: publicUrl,
+        });
+
+      } catch (err) {
+
+        console.error(err);
+
+        window.prompt("Copy quotation link:", publicUrl);
+
+      }
+
+      localStorage.removeItem(DRAFT_LS_KEY);
+    } finally {
+      setMarkingSent(false);
     }
-
-    localStorage.removeItem(DRAFT_LS_KEY);
   };
 
   const handleDownloadPdf = async () => {
@@ -2586,60 +2593,34 @@ export default function QuotationBuilder() {
                       <Pencil className="w-4 h-4" /> Edit Quotation
                     </Button>
 
-                    {/* <Button
-                      className="w-full rounded-xl gap-2 bg-blue-600 hover:bg-blue-700 text-white"
-                      onClick={async () => {
-                        try {
-                          // Make sure the quotation exists
-                          if (!draftId) {
-                            const id = await handleSaveDraft();
-                            if (!id) return;
-                          }
-
-                          // Update the quotation status
-                          await persistDraft({
-                            status: "sent",
-                            sent_at: new Date().toISOString(),
-                            current_step: 5,
-                          });
-
-                          toast({
-                            title: "Quotation Sent",
-                            description: "Quotation has been marked as Sent.",
-                          });
-
-                          // Refresh the page data so the new status is shown
-                          window.location.reload();
-
-                        } catch (err) {
-                          console.error(err);
-
-                          toast({
-                            title: "Error",
-                            description: "Failed to mark quotation as Sent.",
-                            variant: "destructive",
-                          });
-                        }
-                      }}
-                    >
-                      <Send className="w-4 h-4" />
-                      Send to Client
-                    </Button>
-                     */}
-
                     <Button
                       className="w-full rounded-xl gap-2 bg-black border border-black"
                       onClick={handleMarkSent}
+                      disabled={markingSent}
                     >
-                      <Send className="w-4 h-4" />
+                      {markingSent ? (
+                        <Loader2 className="w-4 h-4 animate-spin" />
+                      ) : (
+                        <Send className="w-4 h-4" />
+                      )}
                       Mark as Sent
                     </Button>
                     <Button variant="outline" className="w-full gap-2 rounded-xl border border-black" onClick={() => handleSaveDraft("draft")}>
                       <Save className="w-4 h-4" /> Save Draft
                     </Button>
-                    <Button className="w-full rounded-xl gap-2 bg-black border border-black" onClick={handleMarkSent}>
-                      <Send className="w-4 h-4" /> Share Quotation Link
+                    <Button
+                      className="w-full rounded-xl gap-2 bg-black border border-black"
+                      onClick={handleMarkSent}
+                      disabled={markingSent}
+                    >
+                      {markingSent ? (
+                        <Loader2 className="w-4 h-4 animate-spin" />
+                      ) : (
+                        <Send className="w-4 h-4" />
+                      )}
+                      Share Quotation Link
                     </Button>
+
                     <Button variant="outline" className="w-full gap-2 rounded-xl border border-black" onClick={handleDownloadPdf}>
                       <Download className="w-4 h-4" /> Generate PDF
                     </Button>
