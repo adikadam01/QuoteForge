@@ -177,7 +177,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
-import { Search, Receipt } from "lucide-react";
+import { Search, Receipt, TrendingUp, Clock, CheckCircle2, FileStack } from "lucide-react";
 
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -234,6 +234,14 @@ export default function Invoices() {
       });
   }, [invoices, searchQuery, statusFilter]);
 
+  // ---------- Catalog-level stats (mirrors the Services page pattern) ----------
+  const totalInvoices = invoices.length;
+  const totalValue = invoices.reduce((sum, inv) => sum + Number(inv.total || 0), 0);
+  const totalPaid = invoices
+    .filter((inv) => inv.invoice_status === 'paid')
+    .reduce((sum, inv) => sum + Number(inv.total || 0), 0);
+  const totalOutstanding = invoices.reduce((sum, inv) => sum + Number(inv.amount_due || 0), 0);
+
   return (
     <div className="space-y-8 animate-fade-in">
       {/* Header */}
@@ -245,10 +253,69 @@ export default function Invoices() {
             </div>
             <div>
               <h1 className="text-3xl font-heading font-bold text-foreground tracking-tight">Invoices</h1>
-              <p className="text-muted-foreground mt-1">View and manage invoices.</p>
+              <p className="text-muted-foreground mt-1">
+                {totalInvoices} {totalInvoices === 1 ? 'invoice' : 'invoices'} in your records
+              </p>
             </div>
           </div>
         </div>
+      </div>
+
+      {/* Stats summary */}
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+        <Card className="border-border/60 shadow-sm">
+          <CardContent className="p-4 flex items-center gap-3">
+            <div className="w-10 h-10 rounded-xl bg-black flex items-center justify-center shrink-0">
+              <FileStack className="w-5 h-5 text-white" />
+            </div>
+            <div className="min-w-0">
+              <p className="text-xs text-muted-foreground uppercase tracking-wide">Total Invoices</p>
+              <p className="font-heading font-bold text-xl text-foreground tabular-nums">{totalInvoices}</p>
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card className="border-border/60 shadow-sm">
+          <CardContent className="p-4 flex items-center gap-3">
+            <div className="w-10 h-10 rounded-xl bg-black flex items-center justify-center shrink-0">
+              <TrendingUp className="w-5 h-5 text-white" />
+            </div>
+            <div className="min-w-0">
+              <p className="text-xs text-muted-foreground uppercase tracking-wide">Total Billed</p>
+              <p className="font-heading font-bold text-xl text-foreground tabular-nums truncate">
+                {formatCurrency(totalValue, currency)}
+              </p>
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card className="border-border/60 shadow-sm">
+          <CardContent className="p-4 flex items-center gap-3">
+            <div className="w-10 h-10 rounded-xl bg-black flex items-center justify-center shrink-0">
+              <CheckCircle2 className="w-5 h-5 text-white" />
+            </div>
+            <div className="min-w-0">
+              <p className="text-xs text-muted-foreground uppercase tracking-wide">Collected</p>
+              <p className="font-heading font-bold text-xl text-foreground tabular-nums truncate">
+                {formatCurrency(totalPaid, currency)}
+              </p>
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card className="border-border/60 shadow-sm">
+          <CardContent className="p-4 flex items-center gap-3">
+            <div className="w-10 h-10 rounded-xl bg-black flex items-center justify-center shrink-0">
+              <Clock className="w-5 h-5 text-white" />
+            </div>
+            <div className="min-w-0">
+              <p className="text-xs text-muted-foreground uppercase tracking-wide">Outstanding</p>
+              <p className="font-heading font-bold text-xl text-foreground tabular-nums truncate">
+                {formatCurrency(totalOutstanding, currency)}
+              </p>
+            </div>
+          </CardContent>
+        </Card>
       </div>
 
       {/* Search + filters */}
@@ -269,8 +336,8 @@ export default function Invoices() {
               key={s}
               onClick={() => setStatusFilter(s)}
               className={`px-4 h-10 rounded-xl border text-sm font-medium transition-all ${statusFilter === s
-                  ? 'bg-black text-white border-black shadow-sm'
-                  : 'bg-background border-border/70 text-muted-foreground hover:border-black/20 hover:text-foreground'
+                ? 'bg-black text-white border-black shadow-sm'
+                : 'bg-background border-border/70 text-muted-foreground hover:border-black/20 hover:text-foreground'
                 }`}
               type="button"
             >
@@ -296,18 +363,21 @@ export default function Invoices() {
           return (
             <Card
               key={invoice.id}
-              className="border border-border/60 hover:border-black/20 shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all duration-300 group overflow-hidden"
+              className="relative overflow-hidden border border-border/60 hover:border-black/20 shadow-sm hover:shadow-lg hover:-translate-y-0.5 transition-all duration-300 group"
             >
+              {/* Signature accent bar — echoes the billing-type accent used on the Services page */}
+              <div className="absolute left-0 top-0 h-full w-1 bg-black" />
+
               <CardContent className="p-0">
                 <Link to={`/invoices/${invoice.id}`} className="block">
-                  <div className="flex items-center justify-between p-5">
+                  <div className="flex items-center justify-between p-5 pl-6">
                     <div className="flex items-center gap-4 flex-1 min-w-0">
-                      <div className="w-12 h-12 rounded-xl bg-primary/10 flex items-center justify-center flex-shrink-0 group-hover:scale-105 transition-transform">
-                        <Receipt className="w-6 h-6 text-primary" />
+                      <div className="w-12 h-12 rounded-xl bg-primary/10 flex items-center justify-center flex-shrink-0 group-hover:scale-105 group-hover:bg-black transition-all duration-300">
+                        <Receipt className="w-6 h-6 text-primary group-hover:text-white transition-colors duration-300" />
                       </div>
                       <div className="min-w-0">
                         <div className="flex items-center gap-3 mb-1">
-                          <h3 className="font-heading font-semibold text-foreground truncate group-hover:text-primary transition-colors">
+                          <h3 className="font-heading font-semibold text-foreground truncate group-hover:text-black transition-colors">
                             {invoice.quotation?.title || invoice.invoice_number} Invoice
                           </h3>
                           <Badge className={`${cfg.color} rounded-full px-3 py-0.5 font-medium shrink-0`}>
@@ -324,11 +394,11 @@ export default function Invoices() {
                     </div>
 
                     <div className="text-right shrink-0 pl-4">
-                      <p className="text-xs text-muted-foreground">Total</p>
+                      <p className="text-xs text-muted-foreground uppercase tracking-wide">Total</p>
                       <p className="font-heading font-bold text-xl text-foreground tabular-nums">
                         {formatCurrency(Number(invoice.total), invCurrency)}
                       </p>
-                      <p className="text-xs text-muted-foreground tabular-nums">
+                      <p className="text-xs text-muted-foreground tabular-nums mt-0.5">
                         Due: {formatCurrency(Number(invoice.amount_due), invCurrency)}
                       </p>
                     </div>
@@ -344,7 +414,9 @@ export default function Invoices() {
             <div className="w-16 h-16 rounded-full bg-muted flex items-center justify-center mx-auto mb-4">
               <Receipt className="w-8 h-8 text-muted-foreground" />
             </div>
-            <p className="text-muted-foreground mb-1">No invoices yet</p>
+            <p className="text-muted-foreground mb-1">
+              {searchQuery || statusFilter !== 'all' ? 'No invoices match your filters' : 'No invoices yet'}
+            </p>
             <p className="text-sm text-muted-foreground">
               Create an invoice from an approved quotation to see it here.
             </p>
