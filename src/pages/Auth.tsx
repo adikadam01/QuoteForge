@@ -78,7 +78,7 @@ export default function Auth() {
             {/* Paste your company logo path in the src below */}
             <div className="w-14 h-14 rounded-2xl bg-black flex items-center justify-center mb-6 overflow-hidden shadow-sm">
               <img
-                src="/path-to-your-logo.png"
+                src="public/Logo.jpg"
                 alt="Company Logo"
                 className="w-full h-full object-contain"
                 onError={(e) => {
