@@ -46,7 +46,9 @@ async function request<T>(path: string, options?: RequestInit): Promise<T> {
 
     if (res.status === 401 || res.status === 403) {
         clearAuthToken();
-        window.location.href = "/auth";
+        if (!window.location.pathname.startsWith("/auth")) {
+            window.location.href = "/auth";
+        }
         throw new Error("Session expired. Please log in again.");
     }
 
@@ -56,7 +58,7 @@ async function request<T>(path: string, options?: RequestInit): Promise<T> {
 
         throw new Error(`API Error: ${res.status} ${res.statusText}`);
     }
-    
+
     if (res.status === 204 || res.status === 304) {
         return {} as T;
     }

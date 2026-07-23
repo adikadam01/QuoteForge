@@ -785,16 +785,18 @@ export function AppProvider({ children }: { children: ReactNode }) {
   // Background polling — keeps quotations (and their statuses) fresh even
   // when changes happen elsewhere (e.g. a client accepting/declining via
   // the public share link in a separate browser session).
+  // Background polling
   useEffect(() => {
+    if (!user) return;                     // ← add this guard
     const interval = setInterval(() => {
       refreshQuotations().catch(() => { });
     }, 8000);
     return () => clearInterval(interval);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [user]);                              // ← depend on user
 
-  // Also refresh immediately when the tab regains focus/visibility.
+  // Focus/visibility refresh
   useEffect(() => {
+    if (!user) return;                     // ← add this guard
     const handleVisibility = () => {
       if (document.visibilityState === "visible") {
         refreshQuotations().catch(() => { });
@@ -806,9 +808,8 @@ export function AppProvider({ children }: { children: ReactNode }) {
       document.removeEventListener("visibilitychange", handleVisibility);
       window.removeEventListener("focus", handleVisibility);
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
-
+  }, [user]);                              // ← depend on user
+  
   return (
     <AppContext.Provider
       value={{
