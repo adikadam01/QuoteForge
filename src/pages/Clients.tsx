@@ -393,7 +393,7 @@
 //   );
 // }
 
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import ClientForm from '@/components/clients/ClientForm';
 import { useClientOptions } from '@/components/clients/useClientOptions';
 import { Plus, Edit2, Trash2, Users, Search, Building, Mail, Eye, Phone, MessageCircle, MapPin, Tag, FileText, Calendar } from 'lucide-react';
@@ -431,6 +431,29 @@ export default function Clients() {
   const [filterIndustry, setFilterIndustry] = useState<string>('all');
   const [filterBusinessType, setFilterBusinessType] = useState<string>('all');
   const [filterServiceId, setFilterServiceId] = useState<string>('all');
+
+  const clientFormInitialValues = useMemo(() => {
+    if (!editingClient) return null;
+    return {
+      business_name: editingClient.business_name || '',
+      name: editingClient.name,
+      business_type: editingClient.business_type || "",
+      custom_business_type: editingClient.custom_business_type || null,
+      industry: editingClient.industry || "",
+      custom_industry: editingClient.custom_industry || null,
+      email: editingClient.email || '',
+      phone: editingClient.phone,
+      whatsapp: editingClient.whatsapp,
+      whatsapp_same_as_phone:
+        Boolean(
+          editingClient.whatsapp &&
+          editingClient.phone &&
+          editingClient.whatsapp === editingClient.phone
+        ),
+      location: editingClient.location,
+      address: editingClient.address || '',
+    };
+  }, [editingClient]);
 
   const getClientQuotations = (clientId: string) => {
     return quotations.filter(q => q.client_id === clientId);
@@ -794,7 +817,7 @@ export default function Clients() {
           </DialogHeader>
 
           <div className="max-h-[70vh] overflow-y-auto scrollbar-modern px-6 py-5">
-            <ClientForm
+            {/* <ClientForm
               key={`${clientOptions.businessTypes.join("|")}__${clientOptions.industries.join("|")}`}
               options={clientOptions}
               initialValues={
@@ -816,9 +839,19 @@ export default function Clients() {
                         editingClient.whatsapp === editingClient.phone
                       ),
                     location: editingClient.location,
+                    address: editingClient.address || '',
                   }
                   : null
               }
+              submitLabel={editingClient ? "Update Client" : "Create Client"}
+              onCancel={() => setIsDialogOpen(false)}
+              onSubmit={handleSubmitClient}
+            /> */}
+
+            <ClientForm
+              key={editingClient?.id || 'new'}
+              options={clientOptions}
+              initialValues={clientFormInitialValues}
               submitLabel={editingClient ? "Update Client" : "Create Client"}
               onCancel={() => setIsDialogOpen(false)}
               onSubmit={handleSubmitClient}
