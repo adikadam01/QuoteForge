@@ -3,7 +3,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { buildSectionsFromSnapshot } from "@/lib/quotationPointSnapshot";
 import { formatCurrency } from "@/lib/types";
 import type { BrandKit, Invoice, InvoiceItem } from "@/lib/types";
-
+import triplesLogo from "/public/triplesimage.png";
 export type InvoiceLayoutMode = "screen" | "print";
 
 type Props = {
@@ -98,9 +98,9 @@ export function InvoiceLayout({ invoice, items, brandKit, mode = "screen" }: Pro
               <div className="doc-header__brand">
                 {brandKit?.logo_url ? (
                   <img
-                    src={brandKit.logo_url}
-                    alt="Company Logo"
-                    className="doc-logo doc-logo--invoice"
+                    src={triplesLogo}
+                    alt="Triple S Production"
+                    className="h-14 w-auto object-contain"
                   />
                 ) : null}
               </div>

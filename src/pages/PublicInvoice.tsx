@@ -6,6 +6,7 @@ import { Card, CardContent } from '@/components/ui/card';
 import { useApp } from '@/contexts/AppContext';
 import { type BrandKit, type Invoice, type InvoiceItem } from '@/lib/types';
 import { InvoiceLayout } from '@/components/documents/InvoiceLayout';
+import triplesLogo from "/public/triplesimage.png";
 
 const INVOICE_LOADING_MESSAGES = [
   "Loading invoice...",
@@ -38,28 +39,6 @@ export default function PublicInvoice() {
       return;
     }
 
-    useEffect(() => {
-      if (statelessBrand !== undefined) return;
-
-      let cancelled = false;
-
-      (async () => {
-        try {
-          const repo = getRepo();
-          const kit = await repo.getBrandKit();
-
-          if (!cancelled) {
-            setDirectBrand(kit);
-          }
-        } catch (err) {
-          console.error("Failed to load brand kit", err);
-        }
-      })();
-
-      return () => {
-        cancelled = true;
-      };
-    }, [statelessBrand]);
 
     import('@/lib/shareLink').then(({ decodeInvoiceData }) => {
       const decoded = decodeInvoiceData(dataParam);
@@ -77,6 +56,31 @@ export default function PublicInvoice() {
       setInitialFetchDone(true);
     });
   }, []);
+
+  useEffect(() => {
+    if (statelessBrand !== undefined) return;
+
+    let cancelled = false;
+
+    (async () => {
+      try {
+        const repo = getRepo();
+        const kit = await repo.getBrandKit();
+
+        if (!cancelled) {
+          setDirectBrand(kit);
+        }
+      } catch (err) {
+        console.error("Failed to load brand kit", err);
+      }
+    })();
+
+    return () => {
+
+      cancelled = true;
+    };
+  }, [statelessBrand]);
+
 
   // Fetch live data once on mount (short-link path: /public/invoice/:invoiceId, no ?data=).
   const [directInvoice, setDirectInvoice] = useState<Invoice | null>(null);
@@ -342,7 +346,5 @@ export default function PublicInvoice() {
       </div>
     </div>
   );
-  console.log("brandKit from context:", brandKit);
-  console.log("directBrand:", directBrand);
-  console.log("displayBrand:", displayBrand);
+
 }
