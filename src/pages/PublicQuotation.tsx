@@ -181,7 +181,8 @@ export default function PublicQuotation() {
 
   // Use stateless brand if available, else the direct fetch, else context
   const displayBrand = statelessBrand !== undefined ? statelessBrand : (directBrand || brandKit);
-
+  console.log("DISPLAY BRAND");
+  console.log(displayBrand);
   const isAlreadyAccepted = quotation?.status === 'accepted';
   const isAlreadyDeclined = quotation?.status === 'declined';
 
