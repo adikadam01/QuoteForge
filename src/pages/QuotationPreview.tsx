@@ -94,8 +94,19 @@ export default function QuotationPreview() {
     (async () => {
       setLoading(true);
       try {
+        // First attempt.
         await refreshQuotations();
-        const q = getQuotationById(id);
+        let q = getQuotationById(id);
+
+        // If not found yet, the context state may just not have caught up
+        // to this render — retry once before giving up. This is the same
+        // race that causes a flash of "not found" right after a hard refresh.
+        if (!q && !cancelled) {
+          await new Promise((r) => setTimeout(r, 400));
+          await refreshQuotations();
+          q = getQuotationById(id);
+        }
+
         if (cancelled) return;
         setQuotation(q ? { ...q, status: (q.status || 'draft') as Quotation['status'] } : null);
       } finally {
@@ -108,7 +119,7 @@ export default function QuotationPreview() {
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [id]);
-
+  
   useEffect(() => {
 
     if (!quotation) return;
@@ -238,7 +249,7 @@ export default function QuotationPreview() {
       </div>
     );
   }
-  
+
   if (!quotation) {
     return (
       <div className="space-y-4">
