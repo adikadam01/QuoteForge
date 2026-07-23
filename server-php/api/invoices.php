@@ -61,6 +61,41 @@ if ($path === '/invoices' && $method === 'GET') {
     jsonResponse($invoices);
 }
 
+// GET /invoices/:id
+if (preg_match('#^/invoices/([\w\-]+)$#', $path, $matches) && $method === 'GET') {
+    $id = $matches[1];
+
+    $stmt = $pdo->prepare("SELECT * FROM invoices WHERE id = ?");
+    $stmt->execute([$id]);
+    $row = $stmt->fetch(PDO::FETCH_ASSOC);
+
+    if (!$row) {
+        jsonResponse(['error' => 'Not found'], 404);
+    }
+
+    $invoice = formatInvoice($row);
+
+    // Attach client object, mirroring how quotations.php does it
+    if (!empty($invoice['client_id'])) {
+        $clientStmt = $pdo->prepare("SELECT * FROM clients WHERE id = ? LIMIT 1");
+        $clientStmt->execute([$invoice['client_id']]);
+        $invoice['client'] = $clientStmt->fetch(PDO::FETCH_ASSOC);
+    } else {
+        $invoice['client'] = null;
+    }
+
+    // Attach quotation object if linked, since PublicInvoice.tsx reads invoice.quotation
+    if (!empty($invoice['quotation_id'])) {
+        $quotationStmt = $pdo->prepare("SELECT * FROM quotations WHERE id = ? LIMIT 1");
+        $quotationStmt->execute([$invoice['quotation_id']]);
+        $invoice['quotation'] = $quotationStmt->fetch(PDO::FETCH_ASSOC);
+    } else {
+        $invoice['quotation'] = null;
+    }
+
+    jsonResponse($invoice);
+}
+
 // Only allow actual invoice table columns
 $allowedColumns = [
     'id',
