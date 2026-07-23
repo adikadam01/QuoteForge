@@ -49,15 +49,16 @@ export default function DataSettings() {
   const handleExport = async () => {
     setBusy(true);
     try {
+      const repo = getRepo();
       const [
         clients, services, quotations, invoices, invoiceItems, receipts
       ] = await Promise.all([
-        fetch('/api/clients').then(r => r.json()),
-        fetch('/api/services').then(r => r.json()),
-        fetch('/api/quotations').then(r => r.json()),
-        fetch('/api/invoices').then(r => r.json()),
-        fetch('/api/invoice-items').then(r => r.json()),
-        fetch('/api/receipts').then(r => r.json()),
+        repo.listClients(),
+        repo.listServices(),
+        repo.listQuotations(),
+        repo.listInvoices(),
+        repo.listInvoiceItems(),
+        repo.listReceipts(),
       ]);
 
       const snapshot = { clients, services, quotations, invoices, invoiceItems, receipts };
@@ -70,7 +71,7 @@ export default function DataSettings() {
       setBusy(false);
     }
   };
-
+  
   const handleImportClick = () => fileRef.current?.click();
 
   const handleImport = async (file: File) => {
