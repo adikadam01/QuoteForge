@@ -46,7 +46,7 @@ async function request<T>(path: string, options?: RequestInit): Promise<T> {
 
     if (res.status === 401 || res.status === 403) {
         clearAuthToken();
-        if (!window.location.pathname.startsWith("/auth")) {
+        if (!window.location.pathname.startsWith("/auth") && !window.location.pathname.startsWith("/public")) {
             window.location.href = "/auth";
         }
         throw new Error("Session expired. Please log in again.");

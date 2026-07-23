@@ -112,6 +112,9 @@ function requireAuth() {
     if (strpos($path, '/auth/login') !== false) return;
     if (strpos($path, '/health') !== false) return;
 
+    // Brand Kit GET is public (needed for public invoice/quotation views)
+    if (strpos($path, '/brand-kit') !== false && $method === 'GET') return;
+
     // Public quotation share links (view + client accept/decline)
     if (preg_match('#/api/quotations/[\w\-]+$#', $path) && ($method === 'GET' || $method === 'PUT')) return;
 
