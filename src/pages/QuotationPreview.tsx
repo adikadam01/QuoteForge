@@ -94,29 +94,42 @@ export default function QuotationPreview() {
     (async () => {
       setLoading(true);
       try {
-        // The backend can genuinely take several seconds to respond (observed
-        // 2.5-3s for the quotations fetch alone), so a single quick retry
-        // isn't enough — keep trying for a real window before declaring
-        // "not found". The loader stays visible the whole time.
+        // IMPORTANT: don't rely on getQuotationById here — it's a closure
+        // bound to the `quotations` array from the render that started this
+        // effect, so calling it again after refreshQuotations() still checks
+        // the SAME stale snapshot, no matter how many times we loop. Fetch
+        // the quotation directly from the repo each attempt instead, which
+        // is a fresh live call with no closure-staleness possible.
+        const { getRepo } = await import('@/repo');
+        const repo = getRepo();
+
         const MAX_ATTEMPTS = 6;
         const RETRY_DELAY_MS = 800;
 
-        let q: ReturnType<typeof getQuotationById> | undefined;
+        let direct: Awaited<ReturnType<typeof repo.getQuotation>> | null = null;
 
         for (let attempt = 0; attempt < MAX_ATTEMPTS; attempt++) {
           if (cancelled) return;
 
-          await refreshQuotations();
-          q = getQuotationById(id);
+          direct = await repo.getQuotation(id);
+          if (direct) break;
 
-          if (q) break;
           if (attempt < MAX_ATTEMPTS - 1) {
             await new Promise((r) => setTimeout(r, RETRY_DELAY_MS));
           }
         }
 
         if (cancelled) return;
-        setQuotation(q ? { ...q, status: (q.status || 'draft') as Quotation['status'] } : null);
+
+        if (direct) {
+          // Keep context in sync now that we know the quotation exists,
+          // so the rest of the page (invoices, service progress, etc.)
+          // has fresh data too.
+          refreshQuotations().catch(() => { });
+          setQuotation({ ...direct, status: (direct.status || 'draft') as Quotation['status'] } as Quotation);
+        } else {
+          setQuotation(null);
+        }
       } finally {
         if (!cancelled) setLoading(false);
       }
