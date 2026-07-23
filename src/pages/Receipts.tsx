@@ -209,7 +209,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
-import { Search, ReceiptText } from "lucide-react";
+import { Search, ReceiptText, Wallet, CalendarCheck, TrendingUp } from "lucide-react";
 
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -257,6 +257,14 @@ export default function Receipts() {
         });
     }, [receipts, invoices, searchQuery]);
 
+    // ---------- Catalog-level stats (mirrors the Invoices page pattern) ----------
+    const totalReceipts = receipts.length;
+    const totalCollected = receipts.reduce((sum, r) => sum + Number(r.amount || 0), 0);
+    const mostRecentDate = receipts
+        .map((r) => r.payment_date)
+        .filter(Boolean)
+        .sort((a, b) => String(b).localeCompare(String(a)))[0];
+
     return (
         <div className="space-y-8 animate-fade-in">
 
@@ -271,9 +279,52 @@ export default function Receipts() {
                         Receipts
                     </h1>
                     <p className="text-muted-foreground mt-1">
-                        View and manage payment receipts.
+                        {totalReceipts} {totalReceipts === 1 ? 'receipt' : 'receipts'} on record.
                     </p>
                 </div>
+            </div>
+
+            {/* Stats summary */}
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                <Card className="border-border/60 shadow-sm">
+                    <CardContent className="p-4 flex items-center gap-3">
+                        <div className="w-10 h-10 rounded-xl bg-black flex items-center justify-center shrink-0">
+                            <ReceiptText className="w-5 h-5 text-white" />
+                        </div>
+                        <div className="min-w-0">
+                            <p className="text-xs text-muted-foreground uppercase tracking-wide">Total Receipts</p>
+                            <p className="font-heading font-bold text-xl text-foreground tabular-nums">{totalReceipts}</p>
+                        </div>
+                    </CardContent>
+                </Card>
+
+                <Card className="border-border/60 shadow-sm">
+                    <CardContent className="p-4 flex items-center gap-3">
+                        <div className="w-10 h-10 rounded-xl bg-black flex items-center justify-center shrink-0">
+                            <TrendingUp className="w-5 h-5 text-white" />
+                        </div>
+                        <div className="min-w-0">
+                            <p className="text-xs text-muted-foreground uppercase tracking-wide">Total Collected</p>
+                            <p className="font-heading font-bold text-xl text-foreground tabular-nums truncate">
+                                {formatCurrency(totalCollected, currency)}
+                            </p>
+                        </div>
+                    </CardContent>
+                </Card>
+
+                <Card className="border-border/60 shadow-sm">
+                    <CardContent className="p-4 flex items-center gap-3">
+                        <div className="w-10 h-10 rounded-xl bg-black flex items-center justify-center shrink-0">
+                            <CalendarCheck className="w-5 h-5 text-white" />
+                        </div>
+                        <div className="min-w-0">
+                            <p className="text-xs text-muted-foreground uppercase tracking-wide">Most Recent</p>
+                            <p className="font-heading font-bold text-xl text-foreground truncate">
+                                {mostRecentDate || "—"}
+                            </p>
+                        </div>
+                    </CardContent>
+                </Card>
             </div>
 
             {/* Search */}
@@ -312,27 +363,30 @@ export default function Receipts() {
                     return (
                         <Card
                             key={receipt.id}
-                            className="border border-border/60 hover:border-black/20 shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all duration-300 group overflow-hidden"
+                            className="relative overflow-hidden border border-border/60 hover:border-black/20 shadow-sm hover:shadow-lg hover:-translate-y-0.5 transition-all duration-300 group"
                         >
+                            {/* Signature accent bar — consistent with Invoices/Services cards */}
+                            <div className="absolute left-0 top-0 h-full w-1 bg-black" />
+
                             <CardContent className="p-0">
 
                                 <Link
                                     to={`/receipts/${receipt.id}`}
                                     className="block"
                                 >
-                                    <div className="flex items-center justify-between p-5">
+                                    <div className="flex items-center justify-between p-5 pl-6">
 
                                         {/* Left */}
 
                                         <div className="flex items-center gap-4 flex-1 min-w-0">
 
-                                            <div className="w-12 h-12 rounded-xl bg-primary/10 flex items-center justify-center flex-shrink-0 group-hover:scale-105 transition-transform">
-                                                <ReceiptText className="w-6 h-6 text-primary" />
+                                            <div className="w-12 h-12 rounded-xl bg-primary/10 flex items-center justify-center flex-shrink-0 group-hover:scale-105 group-hover:bg-black transition-all duration-300">
+                                                <ReceiptText className="w-6 h-6 text-primary group-hover:text-white transition-colors duration-300" />
                                             </div>
 
                                             <div className="min-w-0">
 
-                                                <h3 className="font-heading font-semibold text-foreground truncate group-hover:text-primary transition-colors">
+                                                <h3 className="font-heading font-semibold text-foreground truncate group-hover:text-black transition-colors">
                                                     {invoice?.quotation?.title || receipt.receipt_number} Receipt
                                                 </h3>
 
@@ -350,7 +404,8 @@ export default function Receipts() {
                                                             "—"}
                                                     </p>
 
-                                                    <p>
+                                                    <p className="flex items-center gap-1.5">
+                                                        <CalendarCheck className="w-3.5 h-3.5 opacity-60 shrink-0" />
                                                         Paid on{" "}
                                                         {receipt.payment_date}
                                                     </p>
@@ -365,11 +420,12 @@ export default function Receipts() {
 
                                         <div className="text-right shrink-0 pl-4">
 
-                                            <p className="text-xs text-muted-foreground">
+                                            <p className="text-xs text-muted-foreground uppercase tracking-wide flex items-center justify-end gap-1">
+                                                <Wallet className="w-3 h-3 opacity-60" />
                                                 Amount Received
                                             </p>
 
-                                            <p className="font-heading font-bold text-xl tabular-nums">
+                                            <p className="font-heading font-bold text-xl tabular-nums mt-0.5">
                                                 {formatCurrency(
                                                     Number(receipt.amount),
                                                     cur
@@ -398,7 +454,7 @@ export default function Receipts() {
                         </div>
 
                         <p className="text-muted-foreground mb-1">
-                            No receipts found
+                            {searchQuery ? "No receipts match your search" : "No receipts found"}
                         </p>
 
                         <p className="text-sm text-muted-foreground">
