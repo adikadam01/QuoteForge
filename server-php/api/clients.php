@@ -253,18 +253,32 @@ $input = array_intersect_key($input, array_flip($allowedColumns));
 
 $sets = [];
 $values = [];
+$columns = [];
 
-    foreach ($input as $key => $value) {
-        $sets[] = "$key = ?";
-        $values[] = $value;
-    }
+foreach ($input as $key => $value) {
+    $columns[] = $key;
+    $sets[] = "$key = ?";
+    $values[] = $value;
+}
 
-    $values[] = $id;
+/*
+|--------------------------------------------------------------------------
+| PostgreSQL boolean fix — PDO serializes PHP true/false as an empty
+| string when bound via execute(), which Postgres rejects for boolean
+| columns. Convert to explicit 'true'/'false' string literals instead.
+|--------------------------------------------------------------------------
+*/
+$isDeletedIndex = array_search('is_deleted', $columns);
+if ($isDeletedIndex !== false) {
+    $values[$isDeletedIndex] = $input['is_deleted'] ? 'true' : 'false';
+}
 
-    $sql = "UPDATE clients SET " . implode(', ', $sets) . " WHERE id = ?";
+$values[] = $id;
 
-    $stmt = $pdo->prepare($sql);
-    $stmt->execute($values);
+$sql = "UPDATE clients SET " . implode(', ', $sets) . " WHERE id = ?";
+
+$stmt = $pdo->prepare($sql);
+$stmt->execute($values);
 
     $input['id'] = $id;
 
