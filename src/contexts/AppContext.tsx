@@ -571,8 +571,22 @@ export function AppProvider({ children }: { children: ReactNode }) {
     const accepted_at = quotation.status === "accepted" ? quotation.accepted_at || now : quotation.accepted_at || null;
 
     const next = { ...quotation, sent_at, accepted_at, updated_at: now } as Quotation;
+
+    // The actual write — this is what must succeed for the caller to know
+    // the update went through. Public visitors (accepting/declining via a
+    // share link) are allowed to PUT a single quotation but not list them,
+    // so refreshQuotations() below must never be allowed to make this call
+    // look like it failed.
     await repo.updateQuotation(next);
-    await refreshQuotations();
+
+    // Best-effort only: refreshes the in-memory list for signed-in users.
+    // A public visitor has no token, so this 401s — that's expected and
+    // must not be treated as an update failure.
+    try {
+      await refreshQuotations();
+    } catch (err) {
+      if (import.meta.env.DEV) console.warn("refreshQuotations after update failed (likely unauthenticated)", err);
+    }
 
     // Clear draft pointer if this quotation moved past draft stage
     if (quotation.status !== 'draft') {
@@ -584,7 +598,6 @@ export function AppProvider({ children }: { children: ReactNode }) {
       } catch { /* ignore */ }
     }
   };
-
 
   const deleteQuotation = async (id: string) => {
     await repo.deleteQuotation(id);
