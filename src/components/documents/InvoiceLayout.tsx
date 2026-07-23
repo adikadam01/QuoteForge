@@ -98,9 +98,9 @@ export function InvoiceLayout({ invoice, items, brandKit, mode = "screen" }: Pro
               <div className="doc-header__brand">
                 {brandKit?.logo_url ? (
                   <img
-                    src={triplesLogo}
-                    alt="Triple S Production"
-                    className="h-14 w-auto object-contain"
+                    src="/triplesimage.png"
+                    alt="Logo"
+                    className="h-8 w-auto object-contain mb-0"
                   />
                 ) : null}
               </div>
