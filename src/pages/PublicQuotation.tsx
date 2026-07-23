@@ -77,11 +77,18 @@ export default function PublicQuotation() {
     (async () => {
       setLoading(true);
       try {
-        await refreshQuotations();
-        const q = getQuotationById(quotationId);
-        if (q) {
-          if (!cancelled) setQuotation(q);
-          return;
+        // refreshQuotations() requires auth (it hits the protected list endpoint),
+        // so it will throw for public visitors. Swallow that here — the
+        // fallback below uses getQuotation(id), which is a public route.
+        try {
+          await refreshQuotations();
+          const q = getQuotationById(quotationId);
+          if (q) {
+            if (!cancelled) setQuotation(q);
+            return;
+          }
+        } catch {
+          // ignore — fall through to direct fetch below
         }
 
         // Fallback: load directly from repo (ensures link works even if state hydration lags)
@@ -334,17 +341,25 @@ export default function PublicQuotation() {
 
                       try {
                         await updateQuotation(next);
-                        await refreshQuotations();
                       } catch (err) {
                         console.error("Quotation update failed:", err);
                         alert("Failed to save quotation status.");
+                        setSaving(false);
                         return;
                       }
 
+                      // Show the result immediately — refresh the list in the
+                      // background instead of blocking on it. refreshQuotations()
+                      // hits the protected list endpoint, which 401s for public
+                      // visitors even though the update itself (a public PUT)
+                      // already succeeded.
                       setQuotation(next);
                       setAccepted(true);
                       setAcceptedModalOpen(true);
                       setSaving(false);
+                      refreshQuotations().catch((err) => {
+                        console.error("Background quotations refresh failed", err);
+                      });
                     }}
                   >
                     {saving ? (
