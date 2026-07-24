@@ -104,6 +104,12 @@ if (preg_match('#^/receipts(/.*)?$#', $path)) {
     exit;
 }
 
+// Razorpay Webhook
+if ($path === '/webhooks/razorpay' && $method === 'POST') {
+    require 'api/webhooks-razorpay.php';
+    exit;
+}
+
 // Brand Kit
 if (preg_match('#^/brand-kit(/.*)?$#', $path)) {
     require 'api/brand-kit.php';

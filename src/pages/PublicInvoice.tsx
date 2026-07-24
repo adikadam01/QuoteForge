@@ -7,6 +7,7 @@ import { useApp } from '@/contexts/AppContext';
 import { type BrandKit, type Invoice, type InvoiceItem } from '@/lib/types';
 import { InvoiceLayout } from '@/components/documents/InvoiceLayout';
 import triplesLogo from "/public/triplesimage.png";
+import { PaymentMethodSelector } from '@/components/invoices/PaymentMethodSelector';
 
 const INVOICE_LOADING_MESSAGES = [
   "Loading invoice...",
@@ -337,6 +338,18 @@ export default function PublicInvoice() {
         </Button>
       </div>
 
+      {invoice.invoice_status !== 'paid' && (
+        <div className="no-print">
+          <PaymentMethodSelector
+            invoiceId={invoice.id}
+            invoiceNumber={invoice.invoice_number}
+            clientName={invoice.client?.business_name || invoice.client?.name}
+            clientEmail={invoice.client?.email}
+            paymentNotes={invoice.notes}
+          />
+        </div>
+      )}
+
       <div data-doc-quotation-status={invoice.quotation?.status || 'draft'}>
         <InvoiceLayout invoice={invoice} items={items} brandKit={displayBrand} mode="screen" />
       </div>
@@ -345,6 +358,8 @@ export default function PublicInvoice() {
         Status: {invoice.status.toUpperCase()} • Amount due: {(invoice.amount_due || 0).toLocaleString()} {invoice.currency || currency}
       </div>
     </div>
+
+
   );
 
 }

@@ -698,7 +698,7 @@ export default function ProfessionalQuotationPDF({
 
     const serviceBlocks = getQuotationServiceBlocks(quotation);
     const primaryService = serviceBlocks?.[0];
-
+    
     const companyName = brandKit?.company_name || "Triple S Production";
     const companyTagline = "";
 

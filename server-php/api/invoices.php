@@ -124,7 +124,9 @@ $allowedColumns = [
     'payment_method',
     'payment_reference',
     'payment_received_at',
-    'quotation_selected_points_json'
+    'quotation_selected_points_json',
+    'razorpay_order_id',
+    'razorpay_payment_id'
 ];
 
 // POST /invoices
@@ -373,6 +375,73 @@ if ($path === '/invoice-items' && $method === 'GET') {
         return $r;
     }, $rows);
     jsonResponse($items);
+}
+
+// Razorpay Webhook
+if ($path === '/webhooks/razorpay' && $method === 'POST') {
+    require 'api/webhooks-razorpay.php';
+    exit;
+}
+
+// POST /invoices/:id/razorpay-order — create a Razorpay order (public, no auth)
+if (preg_match('#^/invoices/([\w\-]+)/razorpay-order$#', $path, $matches) && $method === 'POST') {
+    $id = $matches[1];
+
+    $stmt = $pdo->prepare("SELECT * FROM invoices WHERE id = ?");
+    $stmt->execute([$id]);
+    $invoice = $stmt->fetch(PDO::FETCH_ASSOC);
+
+    if (!$invoice) jsonResponse(['error' => 'Invoice not found'], 404);
+
+    $amountDue = (float)$invoice['amount_due'];
+    if ($amountDue <= 0) jsonResponse(['error' => 'Nothing due on this invoice'], 400);
+
+    $keyId = getenv('RAZORPAY_KEY_ID');
+    $keySecret = getenv('RAZORPAY_KEY_SECRET');
+    if (!$keyId || !$keySecret) jsonResponse(['error' => 'Razorpay not configured'], 500);
+
+    // Razorpay wants amount in paise (smallest INR unit)
+    $amountInPaise = (int) round($amountDue * 100);
+
+    $payload = json_encode([
+        'amount' => $amountInPaise,
+        'currency' => $invoice['currency'] ?: 'INR',
+        'receipt' => $invoice['invoice_number'],
+        'notes' => ['invoice_id' => $id, 'invoice_number' => $invoice['invoice_number']],
+    ]);
+
+    $ch = curl_init('https://api.razorpay.com/v1/orders');
+    curl_setopt_array($ch, [
+        CURLOPT_RETURNTRANSFER => true,
+        CURLOPT_POST => true,
+        CURLOPT_POSTFIELDS => $payload,
+        CURLOPT_USERPWD => "$keyId:$keySecret",
+        CURLOPT_HTTPHEADER => ['Content-Type: application/json'],
+        CURLOPT_TIMEOUT => 15,
+    ]);
+
+    $response = curl_exec($ch);
+    $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+    $curlErr = curl_error($ch);
+    curl_close($ch);
+
+    if ($response === false) jsonResponse(['error' => 'Failed to reach Razorpay', 'detail' => $curlErr], 502);
+
+    $order = json_decode($response, true);
+    if ($httpCode >= 300 || empty($order['id'])) {
+        jsonResponse(['error' => 'Razorpay order creation failed', 'detail' => $order], 502);
+    }
+
+    // Save so the webhook can look the invoice up by order id later
+    $upd = $pdo->prepare("UPDATE invoices SET razorpay_order_id = ? WHERE id = ?");
+    $upd->execute([$order['id'], $id]);
+
+    jsonResponse([
+        'order_id' => $order['id'],
+        'amount' => $order['amount'],
+        'currency' => $order['currency'],
+        'key_id' => $keyId, // public key id — safe to send to the browser
+    ]);
 }
 
 jsonResponse(['error' => 'Not Found (Invoices)'], 404);
