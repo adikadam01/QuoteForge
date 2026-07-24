@@ -62,8 +62,7 @@ export default function ProfessionalQuotationDocument({
     const primaryService = serviceBlocks?.[0];
 
     const companyName = brandKit?.company_name || "Triple S Production";
-    const companyTagline =
-        brandKit?.company_name || "Creative Digital Solutions";
+    const companyTagline = "";
 
     const quoteNumber = quotation.quotation_number || "QT-0000";
 
