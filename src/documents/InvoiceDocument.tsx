@@ -23,7 +23,7 @@ type Props = {
 
 const styles = StyleSheet.create({
   page: {
-    fontFamily: "NotoSans",
+    fontFamily: "Helvetica",
     fontSize: 10,
     color: "#111827",
     backgroundColor: "#ffffff",
