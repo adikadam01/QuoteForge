@@ -138,16 +138,20 @@ export default function ScopePage({
                     </Text>
                     <View style={styles.serviceContent}>
                         <Text style={styles.serviceTitleText}>PROJECT TIMELINE</Text>
+                        {(serviceBlocks && serviceBlocks.length > 0 ? serviceBlocks : []).map(
+                            (s: any, idx: number) => (
+                                <View key={`timeline-${s.service_id ?? idx}`} style={styles.bulletItem}>
+                                    <Text style={styles.bulletDot}>•</Text>
+                                    <Text style={styles.bulletText}>
+                                        {(s.service_name || "Service") + ": " + (s.timeline || "Timeline to be confirmed")}
+                                    </Text>
+                                </View>
+                            )
+                        )}
                         <View style={styles.bulletItem}>
                             <Text style={styles.bulletDot}>•</Text>
                             <Text style={styles.bulletText}>
-                                {primaryService?.timeline || "Within 30 Days"}
-                            </Text>
-                        </View>
-                        <View style={styles.bulletItem}>
-                            <Text style={styles.bulletDot}>•</Text>
-                            <Text style={styles.bulletText}>
-                                Timeline subject to client approvals and feedback.
+                                Timelines are subject to client approvals and feedback.
                             </Text>
                         </View>
                     </View>
