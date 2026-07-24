@@ -32,6 +32,11 @@ export function MarkPaymentReceivedModal({ open, onOpenChange, invoice, onConfir
   const [progressPct, setProgressPct] = useState(0);
   const [progressLabel, setProgressLabel] = useState('Recording your payment...');
 
+  // Only re-initialize when the modal actually opens — NOT whenever the
+  // invoice's payment_method/payment_reference change. Those fields change
+  // as a direct side effect of onConfirm's own updateInvoice() call while
+  // the modal is still open, which was re-triggering this effect mid-payment
+  // and snapping stage back to 'idle' right before it should show 'success'.
   useEffect(() => {
     if (!open) return;
     setMethod(invoice.payment_method || 'Cash');
@@ -39,7 +44,8 @@ export function MarkPaymentReceivedModal({ open, onOpenChange, invoice, onConfir
     setStage('idle');
     setProgressPct(0);
     setProgressLabel('Recording your payment...');
-  }, [open, invoice.payment_method, invoice.payment_reference]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [open]);
 
   useEffect(() => {
     if (stage !== 'processing') return;
