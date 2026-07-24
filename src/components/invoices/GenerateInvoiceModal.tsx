@@ -68,7 +68,9 @@ export function GenerateInvoiceModal({
     return () => clearInterval(interval);
   }, [generating]);
 
-  // Simulated progress: climbs toward 90% while generating, snaps to 100% on completion.
+  // Simulated progress: keeps crawling toward 99% for as long as generation
+  // takes — never hard-caps and waits, so it never visibly "freezes" even if
+  // the real work runs longer than expected. Only reaches 100% on completion.
   useEffect(() => {
     if (!generating) {
       setGenProgress(0);
@@ -76,7 +78,14 @@ export function GenerateInvoiceModal({
     }
     setGenProgress(0);
     const interval = setInterval(() => {
-      setGenProgress((p) => (p >= 90 ? 90 : p + Math.max(1, (90 - p) * 0.1)));
+      setGenProgress((p) => {
+        if (p >= 99) return 99;
+        // Step size shrinks as we approach 99, but never hits exactly 0 —
+        // always at least a fraction of a percent of visible movement.
+        const remaining = 99 - p;
+        const step = Math.max(0.15, remaining * 0.04);
+        return Math.min(99, p + step);
+      });
     }, 150);
     return () => clearInterval(interval);
   }, [generating]);
