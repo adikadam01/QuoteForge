@@ -439,6 +439,7 @@ export default function ProfessionalQuotationDocument({
                         })}
 
                         {/* Project Timeline */}
+                        {/* Project Timeline — one line per service, using each service's own timeline */}
                         <div className="flex gap-5 py-5 border-t border-gray-100">
                             <span className="text-[10px] text-gray-300 font-semibold pt-0.5 w-6 shrink-0">
                                 {String(
@@ -451,30 +452,30 @@ export default function ProfessionalQuotationDocument({
                                 <h3 className="text-[12px] font-bold text-gray-900 tracking-wide mb-3">
                                     PROJECT TIMELINE
                                 </h3>
-                                <div className="grid grid-cols-2 gap-x-8 gap-y-1.5">
-                                    <ul className="space-y-1.5">
-                                        <li className="text-[11px] text-gray-500 flex gap-2">
+                                <ul className="space-y-1.5">
+                                    {(serviceBlocks && serviceBlocks.length > 0
+                                        ? serviceBlocks
+                                        : []
+                                    ).map((s, idx) => (
+                                        <li
+                                            key={`timeline-${s.service_id ?? idx}`}
+                                            className="text-[11px] text-gray-500 flex gap-2"
+                                        >
                                             <span className="text-gray-300">·</span>
                                             <span>
-                                                First Draft Delivery:{" "}
-                                                {primaryService?.timeline || "Within 15 Days"}
+                                                {s.service_name || "Service"}:{" "}
+                                                {s.timeline || "Timeline to be confirmed"}
                                             </span>
                                         </li>
-                                        <li className="text-[11px] text-gray-500 flex gap-2">
-                                            <span className="text-gray-300">·</span>
-                                            <span>
-                                                Timeline subject to client feedback, content approval,
-                                                and response time.
-                                            </span>
-                                        </li>
-                                    </ul>
-                                    <ul className="space-y-1.5">
-                                        <li className="text-[11px] text-gray-500 flex gap-2">
-                                            <span className="text-gray-300">·</span>
-                                            <span>Final Delivery: Within 30 Days</span>
-                                        </li>
-                                    </ul>
-                                </div>
+                                    ))}
+                                    <li className="text-[11px] text-gray-500 flex gap-2">
+                                        <span className="text-gray-300">·</span>
+                                        <span>
+                                            Timelines are subject to client feedback, content
+                                            approval, and response time.
+                                        </span>
+                                    </li>
+                                </ul>
                             </div>
                         </div>
                     </div>
