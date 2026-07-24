@@ -47,6 +47,7 @@ export function GenerateInvoiceModal({
   const [mode, setMode] = useState<Mode>('full');
   const [generating, setGenerating] = useState(false);
   const [genMessageIndex, setGenMessageIndex] = useState(0);
+  const [genProgress, setGenProgress] = useState(0);
   const [partialRaw, setPartialRaw] = useState('50%');
   const [monthlyAmountRaw, setMonthlyAmountRaw] = useState('');
   const [totalMonths, setTotalMonths] = useState('1');
@@ -66,6 +67,20 @@ export function GenerateInvoiceModal({
     }, 1300);
     return () => clearInterval(interval);
   }, [generating]);
+
+  // Simulated progress: climbs toward 90% while generating, snaps to 100% on completion.
+  useEffect(() => {
+    if (!generating) {
+      setGenProgress(0);
+      return;
+    }
+    setGenProgress(0);
+    const interval = setInterval(() => {
+      setGenProgress((p) => (p >= 90 ? 90 : p + Math.max(1, (90 - p) * 0.1)));
+    }, 150);
+    return () => clearInterval(interval);
+  }, [generating]);
+
 
   // Service Navigator
   const [currentServiceIndex, setCurrentServiceIndex] = useState(0);
@@ -175,61 +190,71 @@ export function GenerateInvoiceModal({
   return (
     <Dialog open={open} onOpenChange={generating ? undefined : onOpenChange}>
       <DialogContent className="p-6 rounded-2xl w-full max-w-3xl max-h-[85vh] overflow-y-auto scrollbar-modern">
-        {generating ? (
-          <div className="flex flex-col items-center justify-center py-16">
-            <div className="relative w-32 h-32 flex items-center justify-center">
+        {generating ? (() => {
+          const circumference = 2 * Math.PI * 45;
+          return (
+            <div className="flex flex-col items-center justify-center py-16 relative overflow-hidden">
               <div
-                className="absolute inset-0 rounded-full border-2 border-dashed border-primary/25 animate-spin"
-                style={{ animationDuration: "5s" }}
+                className="absolute w-72 h-72 rounded-full bg-primary/20 blur-3xl animate-pulse"
+                style={{ animationDuration: "2.4s" }}
               />
-              <div
-                className="absolute w-40 h-40 rounded-full bg-primary/20 blur-2xl animate-pulse"
-                style={{ animationDuration: "2s" }}
-              />
-              <svg className="absolute inset-2 -rotate-90 animate-spin" style={{ animationDuration: "1.4s" }} viewBox="0 0 100 100">
-                <defs>
-                  <linearGradient id="invoiceLoaderGradient" x1="0%" y1="0%" x2="100%" y2="100%">
-                    <stop offset="0%" stopColor="hsl(var(--primary))" stopOpacity="0.3" />
-                    <stop offset="100%" stopColor="hsl(var(--primary))" stopOpacity="1" />
-                  </linearGradient>
-                </defs>
-                <circle cx="50" cy="50" r="45" fill="none" stroke="currentColor" strokeWidth="6" className="text-primary/10" />
-                <circle
-                  cx="50"
-                  cy="50"
-                  r="45"
-                  fill="none"
-                  stroke="url(#invoiceLoaderGradient)"
-                  strokeWidth="6"
-                  strokeLinecap="round"
-                  strokeDasharray={2 * Math.PI * 45}
-                  strokeDashoffset={2 * Math.PI * 45 * 0.75}
-                  style={{ filter: "drop-shadow(0 0 6px hsl(var(--primary) / 0.5))" }}
-                />
-              </svg>
-              <ReceiptText className="relative w-8 h-8 text-primary" strokeWidth={2} />
-            </div>
 
-            <div className="mt-8 h-5 relative overflow-hidden">
-              <p
-                key={genMessageIndex}
-                className="text-sm text-muted-foreground animate-in fade-in slide-in-from-bottom-2 duration-500"
-              >
-                {INVOICE_LOADING_MESSAGES[genMessageIndex]}
-              </p>
-            </div>
-
-            <div className="flex gap-1.5 mt-4">
-              {INVOICE_LOADING_MESSAGES.map((_, i) => (
-                <span
-                  key={i}
-                  className={`w-1.5 h-1.5 rounded-full transition-colors duration-300 ${i === genMessageIndex ? "bg-primary" : "bg-primary/20"
-                    }`}
+              <div className="relative w-36 h-36 flex items-center justify-center">
+                <div
+                  className="absolute inset-0 rounded-full border-2 border-dashed border-primary/25 animate-spin"
+                  style={{ animationDuration: "6s" }}
                 />
-              ))}
+
+                <svg className="absolute inset-2 -rotate-90" viewBox="0 0 100 100">
+                  <defs>
+                    <linearGradient id="invoiceLoaderGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+                      <stop offset="0%" stopColor="hsl(var(--primary))" stopOpacity="0.5" />
+                      <stop offset="100%" stopColor="hsl(var(--primary))" stopOpacity="1" />
+                    </linearGradient>
+                  </defs>
+                  <circle cx="50" cy="50" r="45" fill="none" stroke="currentColor" strokeWidth="6" className="text-primary/10" />
+                  <circle
+                    cx="50"
+                    cy="50"
+                    r="45"
+                    fill="none"
+                    stroke="url(#invoiceLoaderGradient)"
+                    strokeWidth="6"
+                    strokeLinecap="round"
+                    className="transition-all duration-500 ease-out"
+                    strokeDasharray={circumference}
+                    strokeDashoffset={circumference * (1 - genProgress / 100)}
+                    style={{ filter: "drop-shadow(0 0 6px hsl(var(--primary) / 0.5))" }}
+                  />
+                </svg>
+
+                <span className="relative font-heading font-bold text-3xl text-foreground tabular-nums transition-all duration-300">
+                  {Math.round(genProgress)}
+                  <span className="text-lg text-muted-foreground">%</span>
+                </span>
+              </div>
+
+              <div className="mt-8 h-5 relative overflow-hidden">
+                <p
+                  key={genMessageIndex}
+                  className="text-sm text-muted-foreground animate-in fade-in slide-in-from-bottom-2 duration-500"
+                >
+                  {INVOICE_LOADING_MESSAGES[genMessageIndex]}
+                </p>
+              </div>
+
+              <div className="flex gap-1.5 mt-4">
+                {INVOICE_LOADING_MESSAGES.map((_, i) => (
+                  <span
+                    key={i}
+                    className={`w-1.5 h-1.5 rounded-full transition-colors duration-300 ${i === genMessageIndex ? "bg-primary" : "bg-primary/20"
+                      }`}
+                  />
+                ))}
+              </div>
             </div>
-          </div>
-        ) : (
+          );
+        })() : (
           <>
             <DialogHeader>
               <DialogTitle>Generate Invoice</DialogTitle>
