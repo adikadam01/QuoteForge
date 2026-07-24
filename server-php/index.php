@@ -1,7 +1,7 @@
 <?php
 
 $allowedOrigins = [
-    "https://quote-forge-eight.vercel.app",
+    "https://quote-forge-triples.vercel.app",
     "http://localhost:8080",
     "http://172.27.80.1:8080",
 ];
