@@ -121,7 +121,7 @@ export function InvoiceLayout({ invoice, items, brandKit, mode = "screen" }: Pro
 
             <div className="doc-header__metaBox">
               <div className="doc-kv">
-                <span className="doc-k">Document #</span>
+                <span className="doc-k">Document</span>
                 <span className="doc-v">{invoice.invoice_number}</span>
               </div>
               {invoiceDate ? (
