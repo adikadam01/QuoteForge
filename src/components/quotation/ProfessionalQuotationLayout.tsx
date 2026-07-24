@@ -170,7 +170,12 @@ export default function ProfessionalQuotationDocument({
                 </div>
 
                 {/* Divider */}
-                <div className="border-t-2 border-gray-900 mb-14" />
+                {/* <div className="border-t-2 border-gray-900 mb-14" /> */}
+                {/* Divider */}
+                <div className="flex items-center mb-14">
+                    <div className="w-10"></div> {/* same width as logo */}
+                    <div className="ml-3 flex-1 border-t-2 border-gray-900"></div>
+                </div>
 
                 {/* Title Block */}
                 <div className="text-center mb-14">
