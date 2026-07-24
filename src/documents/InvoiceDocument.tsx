@@ -21,19 +21,6 @@ type Props = {
   items?: InvoiceItem[];
 };
 
-// Register NotoSans — standard PDF fonts (Helvetica, etc.) don't include the
-// ₹ glyph, so a Unicode-capable font is needed for the currency symbol to render.
-Font.register({
-  family: "NotoSans",
-  fonts: [
-    {
-      src: "/fonts/NotoSans-Regular.ttf",
-      fontWeight: 400,
-    },
-
-  ],
-});
-
 const styles = StyleSheet.create({
   page: {
     fontFamily: "NotoSans",
@@ -64,7 +51,7 @@ const styles = StyleSheet.create({
   },
   companyName: {
     fontSize: 13,
-    fontFamily: "NotoSans",
+    fontFamily: "Helvetica-Bold",
     color: "#111827",
     marginBottom: 4,
   },
@@ -74,7 +61,7 @@ const styles = StyleSheet.create({
   },
   badge: {
     fontSize: 10,
-    fontFamily: "NotoSans",
+    fontFamily: "Helvetica-Bold",
     letterSpacing: 1,
     paddingHorizontal: 16,
     paddingVertical: 8,
@@ -92,7 +79,7 @@ const styles = StyleSheet.create({
   },
   docTitle: {
     fontSize: 19,
-    fontFamily: "NotoSans",
+    fontFamily: "Helvetica-Bold",
     color: "#111827",
     marginBottom: 3,
   },
@@ -115,11 +102,11 @@ const styles = StyleSheet.create({
   vValue: {
     fontSize: 9.5,
     color: "#111827",
-    fontFamily: "NotoSans",
+    fontFamily: "Helvetica-Bold",
   },
   statusPill: {
     fontSize: 8,
-    fontFamily: "NotoSans",
+    fontFamily: "Helvetica-Bold",
     color: "#111827",
     backgroundColor: "#F3F4F6",
     paddingHorizontal: 8,
@@ -152,7 +139,7 @@ const styles = StyleSheet.create({
   },
   sectionTitle: {
     fontSize: 8.5,
-    fontFamily: "NotoSans",
+    fontFamily: "Helvetica-Bold",
     color: "#6B7280",
     textTransform: "uppercase",
     letterSpacing: 1,
@@ -160,7 +147,7 @@ const styles = StyleSheet.create({
   },
   strong: {
     fontSize: 11,
-    fontFamily: "NotoSans",
+    fontFamily: "Helvetica-Bold",
     color: "#111827",
     marginBottom: 2,
   },
@@ -203,7 +190,7 @@ const styles = StyleSheet.create({
   colMAmount: { width: "25%", textAlign: "right" },
   tableHeaderText: {
     fontSize: 8.5,
-    fontFamily: "NotoSans",
+    fontFamily: "Helvetica-Bold",
     color: "#6B7280",
     textTransform: "uppercase",
     letterSpacing: 0.5,
@@ -244,12 +231,12 @@ const styles = StyleSheet.create({
   },
   totalLabel: {
     fontSize: 10,
-    fontFamily: "NotoSans",
+    fontFamily: "Helvetica-Bold",
     color: "#111827",
   },
   totalValue: {
     fontSize: 10,
-    fontFamily: "NotoSans",
+    fontFamily: "Helvetica-Bold",
   },
   amountDueBox: {
     flexDirection: "row",
@@ -260,12 +247,12 @@ const styles = StyleSheet.create({
   },
   amountDueLabel: {
     fontSize: 10,
-    fontFamily: "NotoSans",
+    fontFamily: "Helvetica-Bold",
     color: "#111827",
   },
   amountDueValue: {
     fontSize: 13,
-    fontFamily: "NotoSans",
+    fontFamily: "Helvetica-Bold",
   },
 
   // ---------- Footer grid (Payment info / Details) ----------
@@ -309,7 +296,7 @@ const styles = StyleSheet.create({
   },
   thankYouText: {
     fontSize: 10,
-    fontFamily: "NotoSans",
+    fontFamily: "Helvetica-Bold",
     color: "#111827",
     letterSpacing: 0.5,
   },
