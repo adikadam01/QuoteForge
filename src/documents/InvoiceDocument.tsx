@@ -27,13 +27,10 @@ Font.register({
   family: "NotoSans",
   fonts: [
     {
-      src: "https://fonts.gstatic.com/s/notosans/v36/o-0mIpQlx3QUlC5A4PNr5TRASf6M7Q.ttf",
+      src: "/fonts/NotoSans-Regular.ttf",
       fontWeight: 400,
     },
-    {
-      src: "https://fonts.gstatic.com/s/notosans/v36/o-0mIpQlx3QUlC5A4PNb5TRASf6M7Q.ttf",
-      fontWeight: 700,
-    },
+
   ],
 });
 
