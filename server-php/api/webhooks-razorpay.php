@@ -60,14 +60,21 @@ if ($invoice['invoice_status'] === 'paid') {
 // "Mark Payment Received" flow — this always closes the invoice out fully.
 // Milestone invoices aren't supported through this flow yet, since the manual
 // flow's per-milestone bookkeeping doesn't map onto a single full payment.
-if (($invoice['type'] ?? null) === 'milestone') {
-    http_response_code(200);
-    echo json_encode(['status' => 'milestone invoices not supported via Razorpay flow']);
-    exit;
-}
-
 $paidAmount = (float)$invoice['amount_due'];
 $now = date('Y-m-d H:i:s');
+
+// Mirror InvoiceView.tsx's onConfirm: for milestone invoices, mark the
+// current milestone's status as paid inside the JSON array. Every other
+// invoice type is unaffected — milestones_json stays whatever it already is.
+$milestonesJson = $invoice['milestones_json'];
+if (($invoice['type'] ?? null) === 'milestone') {
+    $milestones = is_string($milestonesJson) ? json_decode($milestonesJson, true) : ($milestonesJson ?? []);
+    $idx = isset($invoice['milestone_index']) ? (int)$invoice['milestone_index'] : 0;
+    if (is_array($milestones) && isset($milestones[$idx]) && ($milestones[$idx]['status'] ?? null) !== 'paid') {
+        $milestones[$idx]['status'] = 'paid';
+    }
+    $milestonesJson = json_encode($milestones);
+}
 
 $pdo->beginTransaction();
 try {
@@ -82,11 +89,11 @@ try {
             payment_received_at = ?,
             amount_paid = ?,
             amount_due = 0,
-            razorpay_payment_id = ?
+            razorpay_payment_id = ?,
+            milestones_json = ?
         WHERE id = ?
     ");
-    $upd->execute([$now, $paymentId, $now, $paidAmount, $paymentId, $invoice['id']]);
-
+    $upd->execute([$now, $paymentId, $now, $paidAmount, $paymentId, $milestonesJson, $invoice['id']]);
     // 2. Create the receipt — same shape as the manual flow's createReceipt() call.
     //    Note: receipt id === invoice id by design (one receipt per invoice),
     //    and share_token stays null since it's unused everywhere else too.
