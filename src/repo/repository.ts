@@ -43,6 +43,14 @@ export interface Repository {
   listInvoiceItemsByInvoice(invoiceId: string): Promise<InvoiceItem[]>;
   upsertInvoiceItemsForInvoice(invoiceId: string, items: InvoiceItem[]): Promise<void>;
 
+  // razorpay
+  createRazorpayOrder(invoiceId: string): Promise<{
+    order_id: string;
+    amount: number;
+    currency: string;
+    key_id: string;
+  }>;
+
   listNotifications(): Promise<Notification[]>;
   markNotificationRead(id: string): Promise<void>;   // ← add this line right after listNotifications
 

@@ -159,6 +159,9 @@ export function createApiRepo(): Repository {
         listInvoiceItemsByInvoice: (id) => request<InvoiceItem[]>(`/invoices/${id}/items`),
         upsertInvoiceItemsForInvoice: (id, items) => request<void>(`/invoices/${id}/items`, { method: "PUT", body: JSON.stringify(items) }),
 
+        createRazorpayOrder: (invoiceId) =>
+            request(`/invoices/${invoiceId}/razorpay-order`, { method: "POST" }),
+        
         // --- Receipts ---
         listReceipts: () => request<Receipt[]>("/receipts"),
         createReceipt: (r) => request<void>("/receipts", { method: "POST", body: JSON.stringify(r) }),

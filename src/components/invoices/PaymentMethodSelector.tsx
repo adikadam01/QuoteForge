@@ -99,6 +99,7 @@
 import { useState } from "react";
 import { Banknote, Smartphone, CreditCard, Landmark, FileText, Globe, MoreHorizontal, CheckCircle2, Loader2 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { getRepo } from "@/repo";
 
 type Method = "Cash" | "Online" | "Bank Transfer" | "UPI" | "Card" | "Cheque" | "Other";
 
@@ -160,11 +161,13 @@ export function PaymentMethodSelector({ invoiceId, invoiceNumber, clientName, cl
             const scriptOk = await loadRazorpayScript();
             if (!scriptOk) throw new Error("Could not load payment gateway. Check your connection.");
 
-            const res = await fetch(`${API_BASE}/invoices/${invoiceId}/razorpay-order`, {
-                method: "POST",
-            });
-            if (!res.ok) throw new Error("Could not start payment. Please try again.");
-            const order = await res.json();
+            // const res = await fetch(`${API_BASE}/invoices/${invoiceId}/razorpay-order`, {
+            //     method: "POST",
+            // });
+            // if (!res.ok) throw new Error("Could not start payment. Please try again.");
+            // const order = await res.json();
+
+            const order = await getRepo().createRazorpayOrder(invoiceId);
 
             const rzp = new window.Razorpay({
                 key: order.key_id,
