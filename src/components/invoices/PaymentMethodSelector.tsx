@@ -96,32 +96,23 @@
 
 
 
-import { useState } from "react";
-import { Banknote, Smartphone, CreditCard, Landmark, FileText, Globe, MoreHorizontal, CheckCircle2, Loader2 } from "lucide-react";
+import { useEffect, useRef, useState } from "react";
+import { Banknote, FileText, Globe, CheckCircle2, Loader2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { getRepo } from "@/repo";
 
-type Method = "Cash" | "Online" | "Bank Transfer" | "UPI" | "Card" | "Cheque" | "Other";
+type Method = "Cash" | "Online" | "Cheque";
 
 const METHODS: { id: Method; label: string; icon: typeof Banknote; description: string }[] = [
-    { id: "UPI", label: "UPI", icon: Smartphone, description: "Pay instantly via UPI apps" },
-    { id: "Bank Transfer", label: "Bank Transfer", icon: Landmark, description: "NEFT / IMPS / RTGS" },
-    { id: "Card", label: "Card", icon: CreditCard, description: "Credit or Debit card" },
-    { id: "Online", label: "Online", icon: Globe, description: "Payment gateway link" },
+    { id: "Online", label: "Online", icon: Globe, description: "Pay securely online" },
     { id: "Cash", label: "Cash", icon: Banknote, description: "Pay in person" },
     { id: "Cheque", label: "Cheque", icon: FileText, description: "Pay via cheque" },
-    { id: "Other", label: "Other", icon: MoreHorizontal, description: "Alternative arrangement" },
 ];
 
-const PAYMENT_INSTRUCTIONS: Record<Exclude<Method, "Online" | "Card">, string> = {
-    UPI: "Scan the QR code or pay to UPI ID: yourbusiness@upi",
-    "Bank Transfer": "A/C Name: Triple S Production • A/C No: XXXXXXXXXX • IFSC: XXXX0000000",
+const PAYMENT_INSTRUCTIONS: Record<Exclude<Method, "Online">, string> = {
     Cash: "Cash payments can be made in person. Please coordinate a time with our team.",
     Cheque: "Please make the cheque payable to Triple S Production and share the reference once sent.",
-    Other: "Please contact us to arrange an alternative payment method.",
 };
-
-const API_BASE = import.meta.env.VITE_API_URL as string; // adjust if repo.ts uses a different constant
 
 type Props = {
     invoiceId: string;
@@ -129,6 +120,7 @@ type Props = {
     clientName?: string | null;
     clientEmail?: string | null;
     paymentNotes?: string | null;
+    onPaymentConfirmed?: () => void; // notify parent so it can re-fetch and hide this component
 };
 
 declare global {
@@ -148,11 +140,51 @@ function loadRazorpayScript(): Promise<boolean> {
     });
 }
 
-export function PaymentMethodSelector({ invoiceId, invoiceNumber, clientName, clientEmail, paymentNotes }: Props) {
+export function PaymentMethodSelector({
+    invoiceId,
+    invoiceNumber,
+    clientName,
+    clientEmail,
+    paymentNotes,
+    onPaymentConfirmed,
+}: Props) {
     const [selected, setSelected] = useState<Method | null>(null);
     const [payingOnline, setPayingOnline] = useState(false);
     const [paymentSubmitted, setPaymentSubmitted] = useState(false);
+    const [confirmed, setConfirmed] = useState(false);
     const [payError, setPayError] = useState<string | null>(null);
+    const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
+
+    // Once Checkout reports success, poll the invoice until the webhook has
+    // actually flipped it to paid (never trust the browser callback alone —
+    // see handleOnlinePayment's handler for why).
+    useEffect(() => {
+        if (!paymentSubmitted) return;
+
+        let attempts = 0;
+        const maxAttempts = 20; // ~60s at 3s intervals — Render free tier can be slow
+
+        pollRef.current = setInterval(async () => {
+            attempts += 1;
+            try {
+                const inv = await getRepo().getInvoice(invoiceId);
+                if (inv?.invoice_status === "paid") {
+                    setConfirmed(true);
+                    if (pollRef.current) clearInterval(pollRef.current);
+                    onPaymentConfirmed?.();
+                }
+            } catch {
+                // transient fetch errors are fine, just keep polling
+            }
+            if (attempts >= maxAttempts && pollRef.current) {
+                clearInterval(pollRef.current);
+            }
+        }, 3000);
+
+        return () => {
+            if (pollRef.current) clearInterval(pollRef.current);
+        };
+    }, [paymentSubmitted, invoiceId, onPaymentConfirmed]);
 
     const handleOnlinePayment = async () => {
         setPayError(null);
@@ -160,12 +192,6 @@ export function PaymentMethodSelector({ invoiceId, invoiceNumber, clientName, cl
         try {
             const scriptOk = await loadRazorpayScript();
             if (!scriptOk) throw new Error("Could not load payment gateway. Check your connection.");
-
-            // const res = await fetch(`${API_BASE}/invoices/${invoiceId}/razorpay-order`, {
-            //     method: "POST",
-            // });
-            // if (!res.ok) throw new Error("Could not start payment. Please try again.");
-            // const order = await res.json();
 
             const order = await getRepo().createRazorpayOrder(invoiceId);
 
@@ -180,9 +206,9 @@ export function PaymentMethodSelector({ invoiceId, invoiceNumber, clientName, cl
                     name: clientName || "",
                     email: clientEmail || "",
                 },
-                // This handler is UX-only. The invoice is marked paid by the
-                // Razorpay webhook on the backend, never from this callback —
-                // a browser-side "success" signal can be spoofed.
+                // UX-only. The invoice is marked paid by the Razorpay webhook on
+                // the backend, never from this callback — a browser-side
+                // "success" signal can be spoofed. This just starts the poll above.
                 handler: function () {
                     setPaymentSubmitted(true);
                 },
@@ -207,13 +233,23 @@ export function PaymentMethodSelector({ invoiceId, invoiceNumber, clientName, cl
         }
     };
 
-    if (paymentSubmitted) {
+    if (confirmed) {
         return (
             <div className="rounded-2xl border border-border/60 bg-card p-5 text-center">
                 <CheckCircle2 className="w-8 h-8 mx-auto text-emerald-600 mb-2" />
-                <p className="font-heading font-bold text-foreground">Payment submitted</p>
+                <p className="font-heading font-bold text-foreground">Payment received</p>
+                <p className="text-sm text-muted-foreground mt-1">This invoice has been paid in full.</p>
+            </div>
+        );
+    }
+
+    if (paymentSubmitted) {
+        return (
+            <div className="rounded-2xl border border-border/60 bg-card p-5 text-center">
+                <Loader2 className="w-8 h-8 mx-auto text-muted-foreground mb-2 animate-spin" />
+                <p className="font-heading font-bold text-foreground">Confirming your payment</p>
                 <p className="text-sm text-muted-foreground mt-1">
-                    We're confirming your payment — this page will update once it clears.
+                    This page will update automatically once it clears.
                 </p>
             </div>
         );
@@ -226,11 +262,11 @@ export function PaymentMethodSelector({ invoiceId, invoiceNumber, clientName, cl
                 <p className="text-sm text-muted-foreground mt-0.5">Select a payment method to see instructions.</p>
             </div>
 
-            <div className="p-4 grid grid-cols-2 sm:grid-cols-3 gap-2.5">
+            <div className="p-4 grid grid-cols-3 gap-2.5">
                 {METHODS.map((m) => {
                     const Icon = m.icon;
                     const isSelected = selected === m.id;
-                    const isOnlineType = m.id === "Online" || m.id === "Card";
+                    const isOnline = m.id === "Online";
                     return (
                         <button
                             key={m.id}
@@ -238,7 +274,7 @@ export function PaymentMethodSelector({ invoiceId, invoiceNumber, clientName, cl
                             onClick={() => {
                                 setSelected(isSelected ? null : m.id);
                                 setPayError(null);
-                                if (!isSelected && isOnlineType) handleOnlinePayment();
+                                if (!isSelected && isOnline) handleOnlinePayment();
                             }}
                             disabled={payingOnline}
                             className={cn(
@@ -246,13 +282,13 @@ export function PaymentMethodSelector({ invoiceId, invoiceNumber, clientName, cl
                                 isSelected
                                     ? "border-black bg-black text-white shadow-sm"
                                     : "border-border/60 bg-background hover:border-black/30 hover:bg-secondary/40",
-                                payingOnline && isOnlineType && "opacity-60"
+                                payingOnline && isOnline && "opacity-60"
                             )}
                         >
-                            {isSelected && !isOnlineType && (
+                            {isSelected && !isOnline && (
                                 <CheckCircle2 className="absolute top-2.5 right-2.5 w-4 h-4 text-white" />
                             )}
-                            {isSelected && isOnlineType && payingOnline && (
+                            {isSelected && isOnline && payingOnline && (
                                 <Loader2 className="absolute top-2.5 right-2.5 w-4 h-4 text-white animate-spin" />
                             )}
                             <Icon className={cn("w-5 h-5", isSelected ? "text-white" : "text-foreground")} strokeWidth={2} />
@@ -273,7 +309,7 @@ export function PaymentMethodSelector({ invoiceId, invoiceNumber, clientName, cl
                 </div>
             )}
 
-            {selected && selected !== "Online" && selected !== "Card" && (
+            {selected && selected !== "Online" && (
                 <div className="mx-4 mb-4 rounded-xl border border-border/60 bg-secondary/30 p-4 animate-in fade-in slide-in-from-top-2 duration-200">
                     <p className="text-xs uppercase tracking-wide text-muted-foreground font-semibold mb-1.5">
                         {selected} Instructions

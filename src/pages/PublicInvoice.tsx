@@ -346,6 +346,15 @@ export default function PublicInvoice() {
             clientName={invoice.client?.business_name || invoice.client?.name}
             clientEmail={invoice.client?.email}
             paymentNotes={invoice.notes}
+            onPaymentConfirmed={async () => {
+              const repo = getRepo();
+              const inv = await repo.getInvoice(invoice.id);
+              if (inv) {
+                setDirectInvoice(inv);
+                const its = await repo.listInvoiceItemsByInvoice(invoice.id);
+                setDirectItems(its);
+              }
+            }}
           />
         </div>
       )}
