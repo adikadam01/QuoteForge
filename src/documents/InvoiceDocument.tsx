@@ -35,6 +35,8 @@ const styles = StyleSheet.create({
   // ---------- Header ----------
   headerBrand: {
     flexDirection: "column",
+    flexGrow: 1,
+    flexShrink: 1,
   },
   logoImage: {
     width: 110,
