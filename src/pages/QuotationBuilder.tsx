@@ -2069,30 +2069,37 @@ export default function QuotationBuilder() {
                             );
                           })()}
 
-                          {/* Per-service discount amount */}
+                          {/* Per-service discount percentage */}
                           <div className="space-y-2">
                             <Label>Discount (optional)</Label>
                             <div className="relative">
-                              <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground text-sm">
-                                {currency === "INR" ? "₹" : "$"}
-                              </span>
                               <Input
                                 type="number"
                                 min={0}
-                                max={b.price}
-                                value={(b as any).discount_amount ?? 0}
+                                max={100}
+                                value={(b as any).discount_percent ?? 0}
                                 onChange={(e) => {
                                   const raw = Number(e.target.value) || 0;
-                                  const clamped = Math.min(Math.max(0, raw), b.price);
-                                  updateBlock(idx, { discount_amount: clamped } as Partial<QuotationServiceBlock>);
+                                  const clampedPercent = Math.min(100, Math.max(0, raw));
+                                  const amount = Math.round((b.price * clampedPercent) / 100);
+                                  updateBlock(idx, {
+                                    discount_percent: clampedPercent,
+                                    discount_amount: amount,
+                                  } as Partial<QuotationServiceBlock>);
                                 }}
-                                className="pl-7"
+                                className="pr-8"
                               />
+                              <span className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground text-sm">
+                                %
+                              </span>
                             </div>
-                            {Number((b as any).discount_amount) > 0 ? (
+                            {Number((b as any).discount_percent) > 0 ? (
                               <p className="text-xs text-muted-foreground">
-                                Discounted price: {currency === "INR" ? "₹" : "$"}
-                                {Math.max(0, b.price - Number((b as any).discount_amount)).toLocaleString()}
+                                −{currency === "INR" ? "₹" : "$"}
+                                {Number((b as any).discount_amount || 0).toLocaleString()}
+                                {" · Discounted price: "}
+                                {currency === "INR" ? "₹" : "$"}
+                                {Math.max(0, b.price - Number((b as any).discount_amount || 0)).toLocaleString()}
                               </p>
                             ) : null}
                           </div>
