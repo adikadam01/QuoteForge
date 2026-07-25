@@ -51,6 +51,8 @@ export interface Repository {
     key_id: string;
   }>;
 
+  setInvoicePaymentIntent(invoiceId: string, method: 'Cash' | 'Cheque'): Promise<{ status: string; payment_method: string }>;
+
   listNotifications(): Promise<Notification[]>;
   markNotificationRead(id: string): Promise<void>;   // ← add this line right after listNotifications
 
@@ -73,6 +75,8 @@ export interface Repository {
   // client options (business types & industries)
   getClientOptions(): Promise<import("@/lib/types").ClientOptions | null>;
   setClientOptions(options: import("@/lib/types").ClientOptions): Promise<void>;
+
+
 
   // quotation point templates
   listQuotationPointTemplates(): Promise<QuotationPointTemplateRow[]>;

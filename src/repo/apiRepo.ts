@@ -161,7 +161,13 @@ export function createApiRepo(): Repository {
 
         createRazorpayOrder: (invoiceId) =>
             request(`/invoices/${invoiceId}/razorpay-order`, { method: "POST" }),
-        
+
+        setInvoicePaymentIntent: (invoiceId, method) =>
+            request(`/invoices/${invoiceId}/payment-intent`, {
+                method: "POST",
+                body: JSON.stringify({ payment_method: method }),
+            }),
+
         // --- Receipts ---
         listReceipts: () => request<Receipt[]>("/receipts"),
         createReceipt: (r) => request<void>("/receipts", { method: "POST", body: JSON.stringify(r) }),
@@ -187,5 +193,6 @@ export function createApiRepo(): Repository {
 
         listPaymentReceipts: () => request("/payment-receipts"),
         createPaymentReceipt: (r) => request<void>("/payment-receipts", { method: "POST", body: JSON.stringify(r) }),
+
     };
 }

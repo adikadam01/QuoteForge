@@ -804,9 +804,10 @@ export function AppProvider({ children }: { children: ReactNode }) {
     if (!user) return;                     // ← add this guard
     const interval = setInterval(() => {
       refreshQuotations().catch(() => { });
+      refreshInvoices().catch(() => { });
     }, 8000);
     return () => clearInterval(interval);
-  }, [user]);                              // ← depend on user
+  }, [user]);                              // ← depend on user                              // ← depend on user
 
   // Focus/visibility refresh
   useEffect(() => {
@@ -814,6 +815,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
     const handleVisibility = () => {
       if (document.visibilityState === "visible") {
         refreshQuotations().catch(() => { });
+        refreshInvoices().catch(() => { });
       }
     };
     document.addEventListener("visibilitychange", handleVisibility);
@@ -823,7 +825,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
       window.removeEventListener("focus", handleVisibility);
     };
   }, [user]);                              // ← depend on user
-
+  
   return (
     <AppContext.Provider
       value={{

@@ -777,6 +777,12 @@ export default function InvoiceView() {
               ) : null}
             </div>
 
+            {invoice.invoice_status !== 'paid' && invoice.payment_method && !receipt ? (
+              <div className="rounded-xl border border-amber-200 bg-amber-50 p-3 text-sm text-amber-800">
+                Client selected <strong>{invoice.payment_method}</strong> — awaiting your confirmation.
+              </div>
+            ) : null}
+
             <MarkPaymentReceivedModal
               open={payModalOpen}
               onOpenChange={setPayModalOpen}

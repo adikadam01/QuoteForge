@@ -125,6 +125,8 @@ function requireAuth() {
     if (preg_match('#/api/invoices/[\w\-]+/razorpay-order$#', $path) && $method === 'POST') return;
     if ($path === '/api/webhooks/razorpay' && $method === 'POST') return;
 
+    if (preg_match('#/api/invoices/[\w\-]+/payment-intent$#', $path) && $method === 'POST') return;
+
     $headers = getallheaders();
     $authHeader = $headers['Authorization'] ?? $headers['authorization'] ?? '';
 

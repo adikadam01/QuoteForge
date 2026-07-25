@@ -153,6 +153,8 @@ export function PaymentMethodSelector({
     const [paymentSubmitted, setPaymentSubmitted] = useState(false);
     const [confirmed, setConfirmed] = useState(false);
     const [payError, setPayError] = useState<string | null>(null);
+    const [confirmingIntent, setConfirmingIntent] = useState(false);
+    const [intentConfirmed, setIntentConfirmed] = useState<Method | null>(null);
     const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
     // Once Checkout reports success, poll the invoice until the webhook has
@@ -233,6 +235,20 @@ export function PaymentMethodSelector({
         }
     };
 
+    const confirmIntent = async (method: Exclude<Method, "Online">) => {
+        setConfirmingIntent(true);
+        setPayError(null);
+        try {
+            await getRepo().setInvoicePaymentIntent(invoiceId, method);
+            setIntentConfirmed(method);
+            onPaymentConfirmed?.();
+        } catch (err) {
+            setPayError(err instanceof Error ? err.message : "Could not save your selection.");
+        } finally {
+            setConfirmingIntent(false);
+        }
+    };
+
     if (confirmed) {
         return (
             <div className="rounded-2xl border border-border/60 bg-card p-5 text-center">
@@ -250,6 +266,20 @@ export function PaymentMethodSelector({
                 <p className="font-heading font-bold text-foreground">Confirming your payment</p>
                 <p className="text-sm text-muted-foreground mt-1">
                     This page will update automatically once it clears.
+                </p>
+            </div>
+        );
+    }
+
+    if (intentConfirmed) {
+        return (
+            <div className="rounded-2xl border border-border/60 bg-card p-5 text-center">
+                <CheckCircle2 className="w-8 h-8 mx-auto text-emerald-600 mb-2" />
+                <p className="font-heading font-bold text-foreground">
+                    You selected {intentConfirmed} payment
+                </p>
+                <p className="text-sm text-muted-foreground mt-1">
+                    We'll confirm once your payment is received.
                 </p>
             </div>
         );
@@ -308,15 +338,25 @@ export function PaymentMethodSelector({
                     {payError}
                 </div>
             )}
-
+            
             {selected && selected !== "Online" && (
-                <div className="mx-4 mb-4 rounded-xl border border-border/60 bg-secondary/30 p-4 animate-in fade-in slide-in-from-top-2 duration-200">
-                    <p className="text-xs uppercase tracking-wide text-muted-foreground font-semibold mb-1.5">
-                        {selected} Instructions
-                    </p>
-                    <p className="text-sm text-foreground leading-relaxed">
-                        {PAYMENT_INSTRUCTIONS[selected]}
-                    </p>
+                <div className="mx-4 mb-4 rounded-xl border border-border/60 bg-secondary/30 p-4 animate-in fade-in slide-in-from-top-2 duration-200 space-y-3">
+                    <div>
+                        <p className="text-xs uppercase tracking-wide text-muted-foreground font-semibold mb-1.5">
+                            {selected} Instructions
+                        </p>
+                        <p className="text-sm text-foreground leading-relaxed">
+                            {PAYMENT_INSTRUCTIONS[selected]}
+                        </p>
+                    </div>
+                    <button
+                        type="button"
+                        disabled={confirmingIntent}
+                        onClick={() => confirmIntent(selected)}
+                        className="w-full rounded-xl bg-black text-white text-sm font-semibold py-2.5 hover:bg-black/90 disabled:opacity-60 transition-colors"
+                    >
+                        {confirmingIntent ? "Saving..." : `Select ${selected} Payment`}
+                    </button>
                 </div>
             )}
 

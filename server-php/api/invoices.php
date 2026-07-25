@@ -444,4 +444,26 @@ if (preg_match('#^/invoices/([\w\-]+)/razorpay-order$#', $path, $matches) && $me
     ]);
 }
 
+// POST /invoices/:id/payment-intent — public: client indicates Cash/Cheque intent
+if (preg_match('#^/invoices/([\w\-]+)/payment-intent$#', $path, $matches) && $method === 'POST') {
+    $id = $matches[1];
+    $input = getJsonInput();
+    $paymentMethod = $input['payment_method'] ?? null;
+
+    if (!in_array($paymentMethod, ['Cash', 'Cheque'], true)) {
+        jsonResponse(['error' => 'Invalid payment method'], 400);
+    }
+
+    $stmt = $pdo->prepare("SELECT id, invoice_status FROM invoices WHERE id = ?");
+    $stmt->execute([$id]);
+    $invoice = $stmt->fetch(PDO::FETCH_ASSOC);
+    if (!$invoice) jsonResponse(['error' => 'Invoice not found'], 404);
+    if ($invoice['invoice_status'] === 'paid') jsonResponse(['error' => 'Invoice already paid'], 400);
+
+    $upd = $pdo->prepare("UPDATE invoices SET payment_method = ? WHERE id = ?");
+    $upd->execute([$paymentMethod, $id]);
+
+    jsonResponse(['status' => 'ok', 'payment_method' => $paymentMethod]);
+}
+
 jsonResponse(['error' => 'Not Found (Invoices)'], 404);
