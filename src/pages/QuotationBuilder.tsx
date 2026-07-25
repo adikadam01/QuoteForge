@@ -2646,12 +2646,22 @@ export default function QuotationBuilder() {
                         <span className="text-foreground font-medium">{(currency === "INR" ? "₹" : "$")}{derivedTotals.one_time.toLocaleString()}</span>
                       </div>
                     ) : null}
-                    <div className="flex items-center justify-between pt-2">
+                    <div className="flex items-center justify-between text-sm pt-1">
+                      <span className="text-muted-foreground">Subtotal</span>
+                      <span className="text-foreground font-medium">{(currency === "INR" ? "₹" : "$")}{derivedTotals.total.toLocaleString()}</span>
+                    </div>
+                    {discountAmount > 0 ? (
+                      <div className="flex items-center justify-between text-sm text-red-600">
+                        <span>Total discount</span>
+                        <span className="font-medium">-{(currency === "INR" ? "₹" : "$")}{discountAmount.toLocaleString()}</span>
+                      </div>
+                    ) : null}
+                    <div className="flex items-center justify-between pt-2 border-t border-border/50 mt-1">
                       <span className="font-heading font-semibold text-foreground">Total</span>
-                      <span className="font-heading font-bold text-2xl text-foreground">{(currency === "INR" ? "₹" : "$")}{derivedTotals.total.toLocaleString()}</span>
+                      <span className="font-heading font-bold text-2xl text-foreground">{(currency === "INR" ? "₹" : "$")}{finalTotal.toLocaleString()}</span>
                     </div>
                   </div>
-
+                  
                   <div className="space-y-2">
                     <Button variant="outline" className="w-full gap-2 rounded-xl border border-black" onClick={goBack}>
                       <Pencil className="w-4 h-4" /> Edit Quotation

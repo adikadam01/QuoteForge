@@ -728,7 +728,7 @@ export default function ProfessionalQuotationDocument({
                                 </div>
                                 <div className="px-4 py-3 text-[12px] font-bold text-gray-900 text-right">
                                     {formatCurrency(
-                                        (s.price),
+                                        Math.max(0, Number(s.price ?? 0) - Number((s as any).discount_amount ?? 0)),
                                         quotation.currency
                                     )}
                                 </div>
@@ -737,8 +737,18 @@ export default function ProfessionalQuotationDocument({
                     </div>
 
                     {/* Commercial Summary Totals */}
+                    {/* Commercial Summary Totals */}
                     {(() => {
                         const totals = getQuotationTotalsForDisplay(quotation);
+
+                        // Sum each service block's own discount_amount — this is the
+                        // source of truth set per-service in the builder's Pricing card.
+                        const totalDiscount = (serviceBlocks || []).reduce(
+                            (sum, s) => sum + Number((s as any).discount_amount ?? 0),
+                            0
+                        );
+
+                        const grandTotal = Math.max(0, totals.total - totalDiscount);
 
                         return (
                             <div className="flex justify-end mb-10">
@@ -749,37 +759,26 @@ export default function ProfessionalQuotationDocument({
                                             {formatCurrency(totals.subtotal, quotation.currency)}
                                         </span>
                                     </div>
-                                    {/* {totals.discount > 0 && (
+                                    {totalDiscount > 0 ? (
                                         <div className="flex justify-between text-[11px]">
                                             <span className="text-gray-400">Discount</span>
                                             <span className="text-gray-700">
-                                                -{formatCurrency(totals.discount, quotation.currency)}
+                                                -{formatCurrency(totalDiscount, quotation.currency)}
                                             </span>
                                         </div>
-                                    )}
-                                    {totals.tax > 0 && (
-                                        <div className="flex justify-between text-[11px]">
-                                            <span className="text-gray-400">
-                                                Tax {quotation.tax_rate ? `(${quotation.tax_rate}%)` : ""}
-                                            </span>
-                                            <span className="text-gray-700">
-                                                {formatCurrency(totals.tax, quotation.currency)}
-                                            </span>
-                                        </div>
-                                    )} */}
+                                    ) : null}
                                     <div className="flex justify-between border-t border-gray-900 pt-2">
                                         <span className="text-[12px] font-bold text-gray-900">
                                             Grand Total
                                         </span>
                                         <span className="text-[14px] font-bold text-gray-900">
-                                            {formatCurrency(totals.total, quotation.currency)}
+                                            {formatCurrency(grandTotal, quotation.currency)}
                                         </span>
                                     </div>
                                 </div>
                             </div>
                         );
                     })()}
-
 
                     {/* Contact Information / Signatures */}
                     <div className="border-t border-gray-100 pt-6 grid grid-cols-3 gap-8">
