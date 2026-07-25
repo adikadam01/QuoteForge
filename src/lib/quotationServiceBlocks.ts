@@ -81,16 +81,22 @@ export type QuotationServiceBlock = {
   milestone_count?: number;
   milestone_template?: MilestoneItem[];
 
-invoice_progress?: {
-    generated: number;
-    total: number;
-    completed: boolean;
+  /** Per-service discount, set in the builder's Pricing card. */
+  discount_percent?: number;
+  discount_amount?: number;
+
+  invoice_progress?: {
+
+    invoice_progress?: {
+      generated: number;
+      total: number;
+      completed: boolean;
+    };
+
+    /** Dynamic pricing configuration state (Phase 2/3 feature). Optional — only present for services with a matching ServiceConfig. */
+    service_config?: import("@/lib/pricing-engine").ServiceConfigState;
+
   };
-
-  /** Dynamic pricing configuration state (Phase 2/3 feature). Optional — only present for services with a matching ServiceConfig. */
-  service_config?: import("@/lib/pricing-engine").ServiceConfigState;
-
-};
 
 
 function normalizeText(v: unknown): string {
@@ -225,6 +231,16 @@ export function getQuotationServiceBlocks(q: Quotation): QuotationServiceBlock[]
               amount: Number(m.amount ?? 0),
             }))
             : [],
+
+          discount_percent:
+            r.discount_percent != null
+              ? normalizeNumber(r.discount_percent)
+              : undefined,
+
+          discount_amount:
+            r.discount_amount != null
+              ? normalizeNumber(r.discount_amount)
+              : undefined,
 
           invoice_progress:
             r.invoice_progress != null
