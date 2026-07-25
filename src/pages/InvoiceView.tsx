@@ -10,6 +10,8 @@ import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
 import { useApp } from "@/contexts/AppContext";
+import { getRepo } from "@/repo";
+import { newId } from "@/lib/id";
 import { MarkPaymentReceivedModal } from '@/components/invoices/MarkPaymentReceivedModal';
 import type { Invoice, InvoiceItem, InvoiceStatus } from "@/lib/types";
 import { assertInvoiceEditable, isInvoiceEditable } from "@/lib/invoiceLock";
@@ -20,7 +22,7 @@ export default function InvoiceView() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const { toast } = useToast();
-  const { brandKit, currency, clients, quotations, getInvoiceById, listInvoiceItemsByInvoice, updateInvoice, refreshInvoices, refreshInvoiceItems, receipts, createReceipt, refreshReceipts } = useApp();
+  const { brandKit, currency, clients, quotations, getInvoiceById, listInvoiceItemsByInvoice, updateInvoice, refreshInvoices, refreshInvoiceItems, receipts, createReceipt, refreshReceipts, refreshNotifications } = useApp();
 
   const [editDueDate, setEditDueDate] = useState("");
   const [editNotes, setEditNotes] = useState("");
@@ -846,6 +848,22 @@ export default function InvoiceView() {
                 reportProgress(75, "Refreshing invoice data...");
 
                 await Promise.all([refreshInvoices(), refreshReceipts()]);
+
+                try {
+                  const repo = getRepo();
+                  await repo.createNotification({
+                    id: newId(),
+                    quotation_id: invoice.quotation_id,
+                    invoice_id: invoice.id,
+                    client_id: invoice.client_id,
+                    type: "payment_received",
+                    title: "Payment received",
+                    message: `Invoice ${invoice.invoice_number} was marked paid via ${method}.`,
+                  });
+                  await refreshNotifications();
+                } catch {
+                  // notification failure shouldn't block the payment flow
+                }
 
                 reportProgress(100, "Done!");
               }}

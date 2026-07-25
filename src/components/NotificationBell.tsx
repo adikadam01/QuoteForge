@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { Bell, CheckCircle2, XCircle } from "lucide-react";
+import { Bell, CheckCircle2, XCircle, CreditCard } from "lucide-react";
 import { useApp } from "@/contexts/AppContext";
 import { cn } from "@/lib/utils";
 
@@ -71,12 +71,16 @@ export function NotificationBell() {
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []);
 
-    const handleNotificationClick = async (id: string, quotationId: string, isRead: boolean) => {
+    const handleNotificationClick = async (id: string, quotationId: string | null, isRead: boolean, invoiceId?: string | null) => {
         if (!isRead) {
             await markNotificationAsRead(id);
         }
         setOpen(false);
-        navigate(`/quotations/${quotationId}/preview`);
+        if (invoiceId) {
+            navigate(`/invoices/${invoiceId}`);
+        } else if (quotationId) {
+            navigate(`/quotations/${quotationId}/preview`);
+        }
     };
 
     return (
@@ -117,7 +121,7 @@ export function NotificationBell() {
                                 <button
                                     key={n.id}
                                     type="button"
-                                    onClick={() => handleNotificationClick(n.id, n.quotation_id, n.is_read)}
+                                    onClick={() => handleNotificationClick(n.id, n.quotation_id, n.is_read, n.invoice_id)}
                                     className={cn(
                                         "w-full text-left flex items-start gap-3 px-4 py-3.5 border-b border-border/40 last:border-b-0 transition-colors duration-150 hover:bg-muted/40",
                                         !n.is_read && "bg-accent/5"
@@ -126,14 +130,14 @@ export function NotificationBell() {
                                     <div
                                         className={cn(
                                             "flex items-center justify-center w-8 h-8 rounded-full shrink-0 mt-0.5",
-                                            n.type === "accepted" ? "bg-emerald-100 text-emerald-600" : "bg-red-100 text-red-600"
+                                            n.type === "accepted" && "bg-emerald-100 text-emerald-600",
+                                            n.type === "declined" && "bg-red-100 text-red-600",
+                                            n.type === "payment_received" && "bg-blue-100 text-blue-600"
                                         )}
                                     >
-                                        {n.type === "accepted" ? (
-                                            <CheckCircle2 className="w-4 h-4" strokeWidth={2.2} />
-                                        ) : (
-                                            <XCircle className="w-4 h-4" strokeWidth={2.2} />
-                                        )}
+                                        {n.type === "accepted" && <CheckCircle2 className="w-4 h-4" strokeWidth={2.2} />}
+                                        {n.type === "declined" && <XCircle className="w-4 h-4" strokeWidth={2.2} />}
+                                        {n.type === "payment_received" && <CreditCard className="w-4 h-4" strokeWidth={2.2} />}
                                     </div>
 
                                     <div className="flex-1 min-w-0">

@@ -178,6 +178,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import { Search, Receipt, TrendingUp, Clock, CheckCircle2, FileStack } from "lucide-react";
+import { NotificationBell } from "@/components/NotificationBell";
 
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -246,19 +247,18 @@ export default function Invoices() {
     <div className="space-y-8 animate-fade-in">
       {/* Header */}
       <div className="flex items-center justify-between pb-2 border-b border-border/60">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-4">
-            <div className="w-14 h-14 rounded-2xl bg-black flex items-center justify-center shrink-0 shadow-md shadow-black/10 ring-1 ring-black/5">
-              <Receipt className="w-7 h-7 text-white" strokeWidth={2} />
-            </div>
-            <div>
-              <h1 className="text-3xl font-heading font-bold text-foreground tracking-tight">Invoices</h1>
-              <p className="text-muted-foreground mt-1">
-                {totalInvoices} {totalInvoices === 1 ? 'invoice' : 'invoices'} in your records
-              </p>
-            </div>
+        <div className="flex items-center gap-4">
+          <div className="w-14 h-14 rounded-2xl bg-black flex items-center justify-center shrink-0 shadow-md shadow-black/10 ring-1 ring-black/5">
+            <Receipt className="w-7 h-7 text-white" strokeWidth={2} />
+          </div>
+          <div>
+            <h1 className="text-3xl font-heading font-bold text-foreground tracking-tight">Invoices</h1>
+            <p className="text-muted-foreground mt-1">
+              {totalInvoices} {totalInvoices === 1 ? 'invoice' : 'invoices'} in your records
+            </p>
           </div>
         </div>
+        <NotificationBell />
       </div>
 
       {/* Stats summary */}

@@ -55,7 +55,9 @@ export interface Repository {
 
   listNotifications(): Promise<Notification[]>;
   markNotificationRead(id: string): Promise<void>;   // ← add this line right after listNotifications
+  createNotification(notif: Omit<Notification, "created_at" | "is_read">): Promise<void>;
 
+  
   // Phase 4 workflow entities
   listContracts(): Promise<Contract[]>;
   createContract(contract: Contract): Promise<void>;

@@ -115,6 +115,24 @@ try {
         $now,
     ]);
 
+    // 3. Insert a notification so the bell icon reflects Razorpay payments too
+    $notifId = bin2hex(random_bytes(16));
+    $notifTitle = 'Payment received';
+    $notifMessage = "Invoice {$invoice['invoice_number']} was paid online via Razorpay.";
+    $insNotif = $pdo->prepare("
+        INSERT INTO notifications (id, quotation_id, invoice_id, client_id, type, title, message, is_read, created_at)
+        VALUES (?, ?, ?, ?, 'payment_received', ?, ?, false, ?)
+    ");
+    $insNotif->execute([
+        $notifId,
+        $invoice['quotation_id'],
+        $invoice['id'],
+        $invoice['client_id'],
+        $notifTitle,
+        $notifMessage,
+        $now,
+    ]);
+
     $pdo->commit();
 } catch (Exception $e) {
     $pdo->rollBack();

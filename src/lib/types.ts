@@ -262,11 +262,13 @@ export interface Notification {
 
   id: string;
 
-  quotation_id: string;
+  quotation_id: string | null;
+
+  invoice_id?: string | null;
 
   client_id: string | null;
 
-  type: "accepted" | "declined";
+  type: "accepted" | "declined" | "payment_received";
 
   title: string;
 
