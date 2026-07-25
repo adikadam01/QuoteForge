@@ -85,18 +85,17 @@ export type QuotationServiceBlock = {
   discount_percent?: number;
   discount_amount?: number;
 
+
   invoice_progress?: {
-
-    invoice_progress?: {
-      generated: number;
-      total: number;
-      completed: boolean;
-    };
-
-    /** Dynamic pricing configuration state (Phase 2/3 feature). Optional — only present for services with a matching ServiceConfig. */
-    service_config?: import("@/lib/pricing-engine").ServiceConfigState;
-
+    generated: number;
+    total: number;
+    completed: boolean;
   };
+
+  /** Dynamic pricing configuration state (Phase 2/3 feature). Optional — only present for services with a matching ServiceConfig. */
+  service_config?: import("@/lib/pricing-engine").ServiceConfigState;
+
+};
 
 
 function normalizeText(v: unknown): string {
@@ -216,9 +215,6 @@ export function getQuotationServiceBlocks(q: Quotation): QuotationServiceBlock[]
 
           payment_terms:
             normalizeText(r.payment_terms) || undefined,
-
-          service_terms:
-            normalizeText(r.service_terms) || undefined,
 
           milestone_template: Array.isArray(r.milestone_template)
             ? (r.milestone_template as any[]).map((m, index) => ({
