@@ -346,6 +346,7 @@ export default function PublicInvoice() {
             clientName={invoice.client?.business_name || invoice.client?.name}
             clientEmail={invoice.client?.email}
             paymentNotes={invoice.notes}
+            existingPaymentMethod={invoice.payment_method}
             onPaymentConfirmed={async () => {
               const repo = getRepo();
               const inv = await repo.getInvoice(invoice.id);

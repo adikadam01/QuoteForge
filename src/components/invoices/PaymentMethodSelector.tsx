@@ -120,6 +120,7 @@ type Props = {
     clientName?: string | null;
     clientEmail?: string | null;
     paymentNotes?: string | null;
+    existingPaymentMethod?: string | null; // invoice.payment_method, so a refresh doesn't lose the client's earlier Cash/Cheque selection
     onPaymentConfirmed?: () => void; // notify parent so it can re-fetch and hide this component
 };
 
@@ -146,15 +147,19 @@ export function PaymentMethodSelector({
     clientName,
     clientEmail,
     paymentNotes,
+    existingPaymentMethod,
     onPaymentConfirmed,
 }: Props) {
+    const initialIntent: Method | null =
+        existingPaymentMethod === "Cash" || existingPaymentMethod === "Cheque" ? existingPaymentMethod : null;
+
     const [selected, setSelected] = useState<Method | null>(null);
     const [payingOnline, setPayingOnline] = useState(false);
     const [paymentSubmitted, setPaymentSubmitted] = useState(false);
     const [confirmed, setConfirmed] = useState(false);
     const [payError, setPayError] = useState<string | null>(null);
     const [confirmingIntent, setConfirmingIntent] = useState(false);
-    const [intentConfirmed, setIntentConfirmed] = useState<Method | null>(null);
+    const [intentConfirmed, setIntentConfirmed] = useState<Method | null>(initialIntent);
     const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
     // Once Checkout reports success, poll the invoice until the webhook has
@@ -187,6 +192,7 @@ export function PaymentMethodSelector({
             if (pollRef.current) clearInterval(pollRef.current);
         };
     }, [paymentSubmitted, invoiceId, onPaymentConfirmed]);
+
 
     const handleOnlinePayment = async () => {
         setPayError(null);
