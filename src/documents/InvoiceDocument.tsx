@@ -96,6 +96,11 @@ const styles = StyleSheet.create({
   },
   metaBox: {
     width: 190,
+    backgroundColor: "#F9FAFB",
+    borderWidth: 1,
+    borderColor: "#E5E7EB",
+    borderRadius: 8,
+    padding: 10,
   },
   kvRow: {
     flexDirection: "row",
