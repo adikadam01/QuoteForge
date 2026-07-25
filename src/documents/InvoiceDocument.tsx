@@ -22,27 +22,42 @@ type Props = {
 };
 
 const styles = StyleSheet.create({
+  // page: {
+  //   fontFamily: "Helvetica",
+  //   fontSize: 10,
+  //   color: "#111827",
+  //   backgroundColor: "#ffffff",
+  //   paddingTop: 40,
+  //   paddingBottom: 60,
+  //   paddingHorizontal: 44,
+  // },
+
   page: {
     fontFamily: "Helvetica",
     fontSize: 10,
     color: "#111827",
     backgroundColor: "#ffffff",
-    paddingTop: 40,
+    paddingTop: 24,
     paddingBottom: 60,
     paddingHorizontal: 44,
   },
-
   // ---------- Header ----------
   headerBrand: {
     flexDirection: "column",
     flexGrow: 1,
     flexShrink: 1,
   },
+  // logoImage: {
+  //   width: 110,
+  //   height: 36,
+  //   objectFit: "contain",
+  //   marginBottom: 6,
+  // },
   logoImage: {
     width: 110,
     height: 36,
     objectFit: "contain",
-    marginBottom: 6,
+    marginBottom: 2,
   },
   companyName: {
     fontSize: 13,
@@ -56,11 +71,19 @@ const styles = StyleSheet.create({
   },
 
   // ---------- Title row ----------
+  // titleRow: {
+  //   flexDirection: "row",
+  //   justifyContent: "space-between",
+  //   alignItems: "flex-start",
+  //   marginTop: 20,
+  //   marginBottom: 22,
+  // },
+
   titleRow: {
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "flex-start",
-    marginTop: 20,
+    marginTop: 6,
     marginBottom: 22,
   },
   docTitle: {
