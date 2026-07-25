@@ -777,8 +777,8 @@ export default function QuotationBuilder() {
         service_blocks: partial.service_blocks !== undefined ? partial.service_blocks : serviceBlocks,
         services: partial.services ?? legacyServices,
         subtotal: partial.subtotal ?? derivedTotals.total,
-        discount: partial.discount ?? discountPercent,
-        discount_type: partial.discount_type ?? "percentage",
+        discount: partial.discount ?? discountAmount,
+        discount_type: partial.discount_type ?? "fixed",
         total: partial.total ?? finalTotal,
         updated_at: nowIso(),
       } as Quotation;
@@ -2661,7 +2661,7 @@ export default function QuotationBuilder() {
                       <span className="font-heading font-bold text-2xl text-foreground">{(currency === "INR" ? "₹" : "$")}{finalTotal.toLocaleString()}</span>
                     </div>
                   </div>
-                  
+
                   <div className="space-y-2">
                     <Button variant="outline" className="w-full gap-2 rounded-xl border border-black" onClick={goBack}>
                       <Pencil className="w-4 h-4" /> Edit Quotation
