@@ -338,7 +338,7 @@ export function PaymentMethodSelector({
                     {payError}
                 </div>
             )}
-            
+
             {selected && selected !== "Online" && (
                 <div className="mx-4 mb-4 rounded-xl border border-border/60 bg-secondary/30 p-4 animate-in fade-in slide-in-from-top-2 duration-200 space-y-3">
                     <div>

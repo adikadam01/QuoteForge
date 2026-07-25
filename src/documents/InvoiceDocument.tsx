@@ -33,11 +33,6 @@ const styles = StyleSheet.create({
   },
 
   // ---------- Header ----------
-  headerTop: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "flex-start",
-  },
   headerBrand: {
     flexDirection: "column",
     flexGrow: 1,
@@ -58,15 +53,6 @@ const styles = StyleSheet.create({
   companyMeta: {
     fontSize: 9,
     color: "#6B7280",
-  },
-  badge: {
-    fontSize: 10,
-    fontFamily: "Helvetica-Bold",
-    letterSpacing: 1,
-    paddingHorizontal: 16,
-    paddingVertical: 8,
-    borderRadius: 6,
-    color: "#ffffff",
   },
 
   // ---------- Title row ----------
@@ -105,14 +91,10 @@ const styles = StyleSheet.create({
     fontFamily: "Helvetica-Bold",
   },
   statusPill: {
-    fontSize: 8,
+    fontSize: 9,
     fontFamily: "Helvetica-Bold",
-    color: "#111827",
-    backgroundColor: "#F3F4F6",
-    paddingHorizontal: 8,
-    paddingVertical: 3,
-    borderRadius: 4,
     textTransform: "uppercase",
+    letterSpacing: 0.5,
   },
 
   // ---------- Card wrapper (mirrors doc-card on screen) ----------
@@ -278,12 +260,8 @@ const styles = StyleSheet.create({
     marginTop: 2,
   },
 
-  // ---------- Details card (narrower) ----------
+  // ---------- Details card (narrower, no border/padding) ----------
   detailsCard: {
-    borderWidth: 1,
-    borderColor: "#E5E7EB",
-    borderRadius: 8,
-    padding: 18,
     marginBottom: 16,
     width: "48%",
   },
@@ -345,10 +323,7 @@ function formatDate(dateStr: string | null | undefined): string {
 function getStatusColor(status: string | null | undefined): string {
   switch ((status ?? "").toLowerCase()) {
     case "paid": return "#16a34a";
-    case "overdue": return "#dc2626";
-    case "sent": return "#2563eb";
-    case "draft": return "#6b7280";
-    default: return "#6b7280";
+    default: return "#111827";
   }
 }
 
@@ -367,24 +342,18 @@ const InvoiceDocument: React.FC<Props> = ({ invoice, brandKit, items: passedItem
     <Document>
       <Page size="A4" style={styles.page}>
 
-        {/* Header: logo/company left, INVOICE badge right */}
-        <View style={styles.headerTop}>
-          <View style={styles.headerBrand}>
-            {brandKit?.company_name ? (
-              <Image src="/triplesimage.png" style={styles.logoImage} />
-            ) : (
-              <Text style={styles.companyName}>
-                {brandKit?.company_name || "Company Name"}
-              </Text>
-            )}
-            <Text style={styles.companyMeta}>
-              {brandKit?.website || brandKit?.email || brandKit?.phone || ""}
+        {/* Header: logo/company */}
+        <View style={styles.headerBrand}>
+          {brandKit?.company_name ? (
+            <Image src="/triplesimage.png" style={styles.logoImage} />
+          ) : (
+            <Text style={styles.companyName}>
+              {brandKit?.company_name || "Company Name"}
             </Text>
-          </View>
-
-          <View style={[styles.badge, { backgroundColor: primaryColor }]}>
-            <Text>INVOICE</Text>
-          </View>
+          )}
+          <Text style={styles.companyMeta}>
+            {brandKit?.website || brandKit?.email || brandKit?.phone || ""}
+          </Text>
         </View>
 
         {/* Title row: Invoice / Billing for X  ---  meta box */}
@@ -416,7 +385,7 @@ const InvoiceDocument: React.FC<Props> = ({ invoice, brandKit, items: passedItem
               <Text
                 style={[
                   styles.statusPill,
-                  { backgroundColor: getStatusColor(displayStatus), color: "#ffffff" },
+                  { color: getStatusColor(displayStatus) },
                 ]}
               >
                 {String(invoice.status || displayStatus).toUpperCase()}
@@ -529,11 +498,10 @@ const InvoiceDocument: React.FC<Props> = ({ invoice, brandKit, items: passedItem
           </View>
         </View>
 
-        {/* Payment info / Details (signature) — narrower card */}
+        {/* Payment info / Details (signature) — no border, tighter spacing */}
         <View style={styles.detailsCard}>
           <Text style={styles.sectionTitle}>Details</Text>
           <View style={styles.signature}>
-            {/* Signature image — replace src with your actual signature file path */}
             <Image
               src="/signature.png"
               style={styles.signatureImage}
