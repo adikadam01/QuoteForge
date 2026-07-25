@@ -360,6 +360,10 @@ export default function Invoices() {
         {filtered.map((invoice) => {
           const cfg = statusConfig[(invoice.status as keyof typeof statusConfig) || 'draft'] ?? statusConfig.draft;
           const invCurrency = invoice.currency || currency;
+          const pendingMethodLabel =
+            invoice.invoice_status !== 'paid' && invoice.payment_method
+              ? `Pay by ${invoice.payment_method}`
+              : null;
           return (
             <Card
               key={invoice.id}
@@ -380,8 +384,10 @@ export default function Invoices() {
                           <h3 className="font-heading font-semibold text-foreground truncate group-hover:text-black transition-colors">
                             {invoice.quotation?.title || invoice.invoice_number} Invoice
                           </h3>
-                          <Badge className={`${cfg.color} rounded-full px-3 py-0.5 font-medium shrink-0`}>
-                            {invoice.invoice_status?.toUpperCase?.() || cfg.label}
+                          <Badge
+                            className={`${pendingMethodLabel ? 'bg-amber-100 text-amber-700' : cfg.color} rounded-full px-3 py-0.5 font-medium shrink-0`}
+                          >
+                            {pendingMethodLabel || invoice.invoice_status?.toUpperCase?.() || cfg.label}
                           </Badge>
                         </div>
                         <div className="flex items-center gap-4 text-sm text-muted-foreground">
