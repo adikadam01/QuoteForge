@@ -454,7 +454,7 @@ if (preg_match('#^/invoices/([\w\-]+)/payment-intent$#', $path, $matches) && $me
         jsonResponse(['error' => 'Invalid payment method'], 400);
     }
 
-    $stmt = $pdo->prepare("SELECT id, invoice_status FROM invoices WHERE id = ?");
+    $stmt = $pdo->prepare("SELECT * FROM invoices WHERE id = ?");
     $stmt->execute([$id]);
     $invoice = $stmt->fetch(PDO::FETCH_ASSOC);
     if (!$invoice) jsonResponse(['error' => 'Invoice not found'], 404);
@@ -463,7 +463,23 @@ if (preg_match('#^/invoices/([\w\-]+)/payment-intent$#', $path, $matches) && $me
     $upd = $pdo->prepare("UPDATE invoices SET payment_method = ? WHERE id = ?");
     $upd->execute([$paymentMethod, $id]);
 
+    // Notify the admin that the client picked Cash/Cheque and is awaiting confirmation
+    $notifId = bin2hex(random_bytes(16));
+    $notifTitle = "Client selected {$paymentMethod}";
+    $notifMessage = "Invoice {$invoice['invoice_number']} — client chose to pay by {$paymentMethod}. Awaiting manual confirmation.";
+    $insNotif = $pdo->prepare("
+        INSERT INTO notifications (id, quotation_id, invoice_id, client_id, type, title, message, is_read, created_at)
+        VALUES (?, ?, ?, ?, 'payment_intent', ?, ?, false, NOW())
+    ");
+    $insNotif->execute([
+        $notifId,
+        $invoice['quotation_id'],
+        $invoice['id'],
+        $invoice['client_id'],
+        $notifTitle,
+        $notifMessage,
+    ]);
+
     jsonResponse(['status' => 'ok', 'payment_method' => $paymentMethod]);
 }
-
 jsonResponse(['error' => 'Not Found (Invoices)'], 404);

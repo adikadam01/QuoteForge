@@ -268,7 +268,7 @@ export interface Notification {
 
   client_id: string | null;
 
-  type: "accepted" | "declined" | "payment_received";
+  type: "accepted" | "declined" | "payment_received" | "payment_intent";
 
   title: string;
 

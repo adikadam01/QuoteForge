@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { Bell, CheckCircle2, XCircle, CreditCard } from "lucide-react";
+import { Bell, CheckCircle2, XCircle, CreditCard, Clock } from "lucide-react";
 import { useApp } from "@/contexts/AppContext";
 import { cn } from "@/lib/utils";
 
@@ -132,14 +132,16 @@ export function NotificationBell() {
                                             "flex items-center justify-center w-8 h-8 rounded-full shrink-0 mt-0.5",
                                             n.type === "accepted" && "bg-emerald-100 text-emerald-600",
                                             n.type === "declined" && "bg-red-100 text-red-600",
-                                            n.type === "payment_received" && "bg-blue-100 text-blue-600"
+                                            n.type === "payment_received" && "bg-blue-100 text-blue-600",
+                                            n.type === "payment_intent" && "bg-amber-100 text-amber-600"
                                         )}
                                     >
                                         {n.type === "accepted" && <CheckCircle2 className="w-4 h-4" strokeWidth={2.2} />}
                                         {n.type === "declined" && <XCircle className="w-4 h-4" strokeWidth={2.2} />}
                                         {n.type === "payment_received" && <CreditCard className="w-4 h-4" strokeWidth={2.2} />}
+                                        {n.type === "payment_intent" && <Clock className="w-4 h-4" strokeWidth={2.2} />}
                                     </div>
-
+                                    
                                     <div className="flex-1 min-w-0">
                                         <div className="flex items-center gap-2">
                                             <p className="text-sm font-semibold text-foreground truncate">{n.title}</p>
