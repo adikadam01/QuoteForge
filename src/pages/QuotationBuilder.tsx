@@ -462,7 +462,7 @@ export default function QuotationBuilder() {
       valid_until: q.valid_until || defaultValidUntil,
     });
 
-    setDiscountPercent(Number(q.discount) || 0);
+    // Source of truth: service_blocks. If missing, fall back to legacy line-items.
 
     // Source of truth: service_blocks. If missing, fall back to legacy line-items.
     const blocksUnknown = (q as unknown as { service_blocks?: unknown }).service_blocks;
@@ -591,11 +591,12 @@ export default function QuotationBuilder() {
 
   const derivedTotals = useMemo(() => getServiceBlockTotals(serviceBlocks), [serviceBlocks]);
 
-  const [discountPercent, setDiscountPercent] = useState<number>(0);
-
+  // Each service block now carries its own `discount_amount` (a flat currency
+  // amount, not a percent) — set per-service in the Pricing card. The total
+  // discount is just the sum of every service's discount.
   const discountAmount = useMemo(
-    () => (derivedTotals.total * (discountPercent || 0)) / 100,
-    [derivedTotals.total, discountPercent]
+    () => serviceBlocks.reduce((sum, b) => sum + Number((b as any).discount_amount || 0), 0),
+    [serviceBlocks]
   );
 
   const finalTotal = useMemo(
@@ -784,7 +785,7 @@ export default function QuotationBuilder() {
 
       await updateQuotation(updated);
     },
-    [derivedTotals.total, discountPercent, draftId, finalTotal, getQuotationById, serviceBlocks, serviceLibraryById, updateQuotation],
+    [derivedTotals.total, discountAmount, draftId, finalTotal, getQuotationById, serviceBlocks, serviceLibraryById, updateQuotation],
   );
 
   // STEP 1 — Auto-save draft immediately
@@ -1049,8 +1050,8 @@ export default function QuotationBuilder() {
 
         subtotal: derivedTotals.total,
         total: finalTotal,
-        discount: discountPercent,
-        discount_type: "percentage",
+        discount: discountAmount,
+        discount_type: "fixed",
         tax_rate: 0,
         tax_amount: 0,
 
@@ -1210,9 +1211,9 @@ export default function QuotationBuilder() {
 
         total: finalTotal,
 
-        discount: discountPercent,
+        discount: discountAmount,
 
-        discount_type: "percentage",
+        discount_type: "fixed",
 
         tax_rate: 0,
 
@@ -2068,6 +2069,34 @@ export default function QuotationBuilder() {
                             );
                           })()}
 
+                          {/* Per-service discount amount */}
+                          <div className="space-y-2">
+                            <Label>Discount (optional)</Label>
+                            <div className="relative">
+                              <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground text-sm">
+                                {currency === "INR" ? "₹" : "$"}
+                              </span>
+                              <Input
+                                type="number"
+                                min={0}
+                                max={b.price}
+                                value={(b as any).discount_amount ?? 0}
+                                onChange={(e) => {
+                                  const raw = Number(e.target.value) || 0;
+                                  const clamped = Math.min(Math.max(0, raw), b.price);
+                                  updateBlock(idx, { discount_amount: clamped } as Partial<QuotationServiceBlock>);
+                                }}
+                                className="pl-7"
+                              />
+                            </div>
+                            {Number((b as any).discount_amount) > 0 ? (
+                              <p className="text-xs text-muted-foreground">
+                                Discounted price: {currency === "INR" ? "₹" : "$"}
+                                {Math.max(0, b.price - Number((b as any).discount_amount)).toLocaleString()}
+                              </p>
+                            ) : null}
+                          </div>
+
                           {/* Show only for milestone billing */}
                           {b.billing_type === "milestone" && (
                             <>
@@ -2351,27 +2380,9 @@ export default function QuotationBuilder() {
                     <span className="text-foreground font-medium">{(currency === "INR" ? "₹" : "$")}{derivedTotals.total.toLocaleString()}</span>
                   </div>
 
-                  <div className="flex items-center justify-between text-sm gap-3">
-                    <span className="text-muted-foreground">Discount</span>
-                    <div className="flex items-center gap-1.5">
-                      <Input
-                        type="number"
-                        min={0}
-                        max={100}
-                        value={discountPercent}
-                        onChange={(e) => {
-                          const val = Math.min(100, Math.max(0, Number(e.target.value) || 0));
-                          setDiscountPercent(val);
-                        }}
-                        className="h-8 w-16 rounded-lg text-right text-sm"
-                      />
-                      <span className="text-muted-foreground text-sm">%</span>
-                    </div>
-                  </div>
-
                   {discountAmount > 0 ? (
                     <div className="flex items-center justify-between text-sm text-red-600">
-                      <span>Discount amount</span>
+                      <span>Total discount</span>
                       <span className="font-medium">-{(currency === "INR" ? "₹" : "$")}{discountAmount.toLocaleString()}</span>
                     </div>
                   ) : null}
