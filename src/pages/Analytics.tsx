@@ -354,6 +354,7 @@ import {
   LineChart,
   XAxis,
   YAxis,
+  LabelList
 } from 'recharts';
 import {
   Send,
@@ -591,8 +592,8 @@ export default function Analytics() {
                     <div className="flex items-center gap-3 min-w-0">
                       <div
                         className={`w-8 h-8 rounded-lg flex items-center justify-center text-sm font-heading font-bold shrink-0 ${idx === 0
-                            ? 'bg-black text-white'
-                            : 'bg-secondary/70 text-foreground'
+                          ? 'bg-black text-white'
+                          : 'bg-secondary/70 text-foreground'
                           }`}
                       >
                         {idx + 1}
@@ -649,12 +650,20 @@ export default function Analytics() {
           </CardContent>
         </Card>
 
-        <Card className="glass-card border border-border/60 transition-all duration-300 hover:-translate-y-1 hover:shadow-[0_18px_45px_rgba(0,0,0,0.22)] lg:col-span-2">
-          <CardHeader className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 border-b border-border/50 pb-4">
-            <CardTitle className="font-heading text-lg flex items-center gap-2">
-              <span className="w-1.5 h-5 rounded-full bg-black" />
-              Top Services (Revenue)
-            </CardTitle>
+        <Card className="glass-card border border-border/60 transition-all duration-300 hover:-translate-y-1 hover:shadow-[0_18px_45px_rgba(0,0,0,0.22)] lg:col-span-2 overflow-hidden relative">
+          {/* Decorative corner accent */}
+          <div className="absolute top-0 right-0 w-40 h-40 bg-gradient-to-bl from-primary/10 to-transparent rounded-full -translate-y-1/2 translate-x-1/2 pointer-events-none" />
+
+          <CardHeader className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 border-b border-border/50 pb-4 relative">
+            <div>
+              <CardTitle className="font-heading text-lg flex items-center gap-2">
+                <span className="w-1.5 h-5 rounded-full bg-gradient-to-b from-primary to-primary/40" />
+                Top Services (Revenue)
+              </CardTitle>
+              <p className="text-xs text-muted-foreground mt-1 ml-3.5">
+                Ranked by total revenue generated
+              </p>
+            </div>
             <div className="w-full sm:w-56">
               <Select value={selectedMonth} onValueChange={setSelectedMonth}>
                 <SelectTrigger className="rounded-xl h-9 border-border/70 hover:border-black/30 transition-colors">
@@ -671,24 +680,44 @@ export default function Analytics() {
               </Select>
             </div>
           </CardHeader>
-          <CardContent className="pt-5">
+
+          <CardContent className="pt-5 relative">
             <ChartContainer
               config={{ revenue: { label: 'Revenue', color: 'hsl(var(--primary))' } }}
-              className="h-[280px] w-full"
+              className="h-[300px] w-full"
             >
-              <BarChart data={topServices} margin={{ left: 8, right: 8 }}>
-                <CartesianGrid vertical={false} strokeDasharray="3 3" />
+              <BarChart data={topServices} margin={{ left: 8, right: 8, top: 20 }}>
+                <defs>
+                  <linearGradient id="revenueBarGradient" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="0%" stopColor="hsl(var(--primary))" stopOpacity={1} />
+                    <stop offset="100%" stopColor="hsl(var(--primary))" stopOpacity={0.55} />
+                  </linearGradient>
+                  <linearGradient id="revenueBarGradientHover" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="0%" stopColor="hsl(var(--primary))" stopOpacity={1} />
+                    <stop offset="100%" stopColor="hsl(var(--primary))" stopOpacity={0.85} />
+                  </linearGradient>
+                </defs>
+
+                <CartesianGrid vertical={false} strokeDasharray="3 3" stroke="hsl(var(--border))" opacity={0.5} />
                 <XAxis dataKey="name" tickLine={false} axisLine={false} hide />
-                <YAxis allowDecimals={false} tickLine={false} axisLine={false} />
+                <YAxis
+                  allowDecimals={false}
+                  tickLine={false}
+                  axisLine={false}
+                  tick={{ fontSize: 11, fill: 'hsl(var(--muted-foreground))' }}
+                  width={40}
+                />
+
                 <ChartTooltip
+                  cursor={{ fill: 'hsl(var(--primary))', opacity: 0.06, radius: 8 }}
                   content={
                     <ChartTooltipContent
                       formatter={(value) => {
                         if (typeof value === 'number') {
                           return (
-                            <div className="flex flex-1 justify-between leading-none items-center">
+                            <div className="flex flex-1 justify-between leading-none items-center gap-4 min-w-[160px]">
                               <span className="text-muted-foreground">Revenue</span>
-                              <span className="font-mono font-medium tabular-nums text-foreground">
+                              <span className="font-mono font-semibold tabular-nums text-foreground">
                                 {formatCurrency(value, displayCurrency)}
                               </span>
                             </div>
@@ -698,16 +727,45 @@ export default function Analytics() {
                       }}
                       labelFormatter={(label, payload) => {
                         const p = payload?.[0]?.payload as { name?: string } | undefined;
-                        return p?.name || String(label);
+                        return (
+                          <span className="font-heading font-bold text-foreground">
+                            {p?.name || String(label)}
+                          </span>
+                        );
                       }}
                     />
                   }
                 />
-                <Bar dataKey="revenue" fill="var(--color-revenue)" radius={8} maxBarSize={56} />
+
+                <Bar
+                  dataKey="revenue"
+                  fill="url(#revenueBarGradient)"
+                  radius={[8, 8, 4, 4]}
+                  maxBarSize={56}
+                  animationDuration={800}
+                  animationEasing="ease-out"
+                >
+                  <LabelList
+                    dataKey="revenue"
+                    position="top"
+                    offset={8}
+                    formatter={(value: number) => formatCurrency(value, displayCurrency)}
+                    style={{ fontSize: 11, fontWeight: 600, fill: 'hsl(var(--foreground))' }}
+                  />
+                </Bar>
               </BarChart>
             </ChartContainer>
-            <div className="mt-3 text-xs text-muted-foreground border-t border-border/50 pt-3">
-              Showing up to {topServices.length} services.
+
+            <div className="mt-4 flex items-center justify-between text-xs text-muted-foreground border-t border-border/50 pt-3">
+              <span className="flex items-center gap-1.5">
+                <span className="w-2 h-2 rounded-full bg-gradient-to-b from-primary to-primary/40" />
+                Showing top {topServices.length} services
+              </span>
+              {topServices.length > 0 && (
+                <span className="font-medium text-foreground">
+                  Highest: {formatCurrency(Math.max(...topServices.map((s) => s.revenue)), displayCurrency)}
+                </span>
+              )}
             </div>
           </CardContent>
         </Card>
