@@ -113,7 +113,7 @@ export function ReceiptLayout({
       return items;
 
     }
-    
+
     if (items.length === 0) {
       items.push({
         name: `Payment for Invoice #${invoiceNumber?.slice(-4)}`,
@@ -124,7 +124,7 @@ export function ReceiptLayout({
     }
 
     return items;
-  }, [invoice, quotation, receipt, invoiceNumber]);
+  }, [invoice, quotation, receipt, invoiceNumber, invoiceItems]);
 
   return (
     <div className="doc" data-receipt-doc>
