@@ -19,6 +19,7 @@ import Invoices from "./pages/Invoices";
 import InvoiceView from "./pages/InvoiceView";
 import PublicQuotation from "@/pages/PublicQuotation";
 import PublicInvoice from "@/pages/PublicInvoice";
+import PublicReceipt from "@/pages/PublicReceipt";
 import ReceiptView from "@/pages/ReceiptView";
 import QuotationTemplates from "./pages/QuotationTemplates";
 import NotFound from "./pages/NotFound";
@@ -39,6 +40,7 @@ const App = () => (
 
             {/* <Route path="/public/quotation/:quotationId" element={<PublicQuotation />} /> */}
             <Route path="/public/invoice/:invoiceId" element={<PublicInvoice />} />
+            <Route path="/public/receipt/:receiptId" element={<PublicReceipt />} />
             <Route path="/" element={<AppLayout><Dashboard /></AppLayout>} />
             <Route path="/services" element={<AppLayout><Services /></AppLayout>} />
             <Route path="/clients" element={<AppLayout><Clients /></AppLayout>} />
