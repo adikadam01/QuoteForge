@@ -425,7 +425,7 @@ export default function Invoices() {
                             className={`${pendingMethodLabel
                               ? 'bg-amber-100 text-amber-700'
                               : paidMethodLabel
-                                ? 'bg-green-100 text-green-700'
+                                ? 'bg-black text-white'
                                 : cfg.color
                               } rounded-full px-3 py-0.5 font-medium shrink-0`}
                           >
