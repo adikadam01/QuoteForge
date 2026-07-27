@@ -470,19 +470,19 @@ export default function Dashboard() {
             <CardTitle className="font-heading text-lg">Quick Actions</CardTitle>
           </CardHeader>
           <CardContent className="space-y-3 pt-5">
-            <Link to="/quotations/new" className="block">
+            {/* <Link to="/quotations/new" className="block">
               <div className="p-4 rounded-xl bg-black hover:bg-black/90 transition-colors group cursor-pointer shadow-sm hover:shadow-md">
                 <div className="flex items-center gap-3">
                   <div className="w-10 h-10 rounded-lg bg-white/10 flex items-center justify-center group-hover:scale-105 transition-transform">
                     <Plus className="w-5 h-5 text-white" />
                   </div>
-                  {/* <div>
+                  <div>
                     <p className="font-medium text-white">New Quotation</p>
                     <p className="text-sm text-white/70">Create a new quote</p>
-                  </div> */}
+                  </div>
                 </div>
               </div>
-            </Link>
+            </Link> */}
             <Link to="/clients" className="block">
               <div className="p-4 rounded-xl bg-secondary hover:bg-secondary/80 border border-transparent hover:border-black/10 transition-all group cursor-pointer">
                 <div className="flex items-center gap-3">
