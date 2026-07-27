@@ -2075,9 +2075,9 @@ export default function QuotationBuilder() {
                             <div className="relative">
                               <Input
                                 type="number"
-                                
+                                min={0}
                                 max={100}
-                                value={(b as any).discount_percent ?? 0}
+                                value={(b as any).discount_percent ?? ""}
                                 onChange={(e) => {
                                   const raw = Number(e.target.value) || 0;
                                   const clampedPercent = Math.min(100, Math.max(0, raw));
