@@ -181,7 +181,7 @@ export function AppLayout({ children }: { children: ReactNode }) {
   };
 
   return (
-    <div className="min-h-screen bg-background flex">
+    <div className="h-screen bg-background flex overflow-hidden">
       {/* Sidebar */}
       <aside className="w-64 sidebar-glass text-sidebar-foreground flex flex-col fixed h-full z-50">
         {/* Logo */}
@@ -272,8 +272,8 @@ export function AppLayout({ children }: { children: ReactNode }) {
       {/* Main Content */}
 
       {/* Main Content */}
-      <main className="flex-1 ml-64">
-        <div className="p-8 max-w-7xl mx-auto">
+      <main className="flex-1 ml-64 h-screen overflow-y-auto scrollbar-hide">
+        <div className="p-8 max-w-7xl mx-auto min-h-full">
           {children}
         </div>
       </main>
