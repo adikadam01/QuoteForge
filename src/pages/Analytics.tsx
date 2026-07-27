@@ -658,7 +658,7 @@ export default function Analytics() {
             <div>
               <CardTitle className="font-heading text-lg flex items-center gap-2">
                 <span className="w-1.5 h-5 rounded-full bg-gradient-to-b from-primary to-primary/40" />
-                Top 12 Services (Revenue)
+                Top Services (Revenue)
               </CardTitle>
               <p className="text-xs text-muted-foreground mt-1 ml-3.5">
                 Ranked by total revenue generated
@@ -684,27 +684,22 @@ export default function Analytics() {
           <CardContent className="pt-5 relative">
             <ChartContainer
               config={{ revenue: { label: 'Revenue', color: 'hsl(var(--primary))' } }}
-              className="h-[340px] w-full"
+              className="h-[300px] w-full"
             >
-              <BarChart data={topServices} margin={{ left: 8, right: 8, top: 24, bottom: 32 }}>
+              <BarChart data={topServices} margin={{ left: 8, right: 8, top: 20 }}>
                 <defs>
                   <linearGradient id="revenueBarGradient" x1="0" y1="0" x2="0" y2="1">
                     <stop offset="0%" stopColor="hsl(var(--primary))" stopOpacity={1} />
                     <stop offset="100%" stopColor="hsl(var(--primary))" stopOpacity={0.55} />
                   </linearGradient>
+                  <linearGradient id="revenueBarGradientHover" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="0%" stopColor="hsl(var(--primary))" stopOpacity={1} />
+                    <stop offset="100%" stopColor="hsl(var(--primary))" stopOpacity={0.85} />
+                  </linearGradient>
                 </defs>
 
                 <CartesianGrid vertical={false} strokeDasharray="3 3" stroke="hsl(var(--border))" opacity={0.5} />
-                <XAxis
-                  dataKey="name"
-                  tickLine={false}
-                  axisLine={false}
-                  interval={0}
-                  angle={-35}
-                  textAnchor="end"
-                  height={60}
-                  tick={{ fontSize: 10, fill: 'hsl(var(--muted-foreground))' }}
-                />
+                <XAxis dataKey="name" tickLine={false} axisLine={false} hide />
                 <YAxis
                   allowDecimals={false}
                   tickLine={false}
@@ -745,17 +740,17 @@ export default function Analytics() {
                 <Bar
                   dataKey="revenue"
                   fill="url(#revenueBarGradient)"
-                  radius={[6, 6, 3, 3]}
-                  maxBarSize={36}
+                  radius={[8, 8, 4, 4]}
+                  maxBarSize={56}
                   animationDuration={800}
                   animationEasing="ease-out"
                 >
                   <LabelList
                     dataKey="revenue"
                     position="top"
-                    offset={6}
+                    offset={8}
                     formatter={(value: number) => formatCurrency(value, displayCurrency)}
-                    style={{ fontSize: 9.5, fontWeight: 600, fill: 'hsl(var(--foreground))' }}
+                    style={{ fontSize: 11, fontWeight: 600, fill: 'hsl(var(--foreground))' }}
                   />
                 </Bar>
               </BarChart>
