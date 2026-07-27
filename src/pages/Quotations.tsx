@@ -1129,8 +1129,8 @@ export default function Quotations() {
               size="sm"
               onClick={() => setStatusFilter(status)}
               className={`rounded-full capitalize whitespace-nowrap px-4 h-9 font-medium transition-colors ${statusFilter === status
-                  ? 'bg-black text-white hover:bg-black/85 hover:text-white'
-                  : 'bg-transparent text-muted-foreground hover:bg-secondary hover:text-foreground'
+                ? 'bg-black text-white hover:bg-black/85 hover:text-white'
+                : 'bg-transparent text-muted-foreground hover:bg-secondary hover:text-foreground'
                 }`}
             >
               {status === 'all' ? 'All' : status}
@@ -1165,8 +1165,8 @@ export default function Quotations() {
               <Card
                 key={status}
                 className={`cursor-pointer transition-all duration-200 rounded-2xl overflow-hidden group ${isActive
-                    ? 'border-2 border-black shadow-md'
-                    : 'border border-border/50 hover:border-black/30 hover:shadow-sm'
+                  ? 'border-2 border-black shadow-md'
+                  : 'border border-border/50 hover:border-black/30 hover:shadow-sm'
                   }`}
                 onClick={() => setStatusFilter(statusFilter === status ? 'all' : status)}
               >
@@ -1378,7 +1378,7 @@ export default function Quotations() {
                           </Link>
                         </DropdownMenuItem>
 
-                        {quotation.status !== 'draft' && (
+                        {quotation.status !== 'draft' && quotation.status !== 'declined' && (
                           <DropdownMenuItem
                             className="gap-2"
                             disabled={Boolean(quotation.invoiced_at)}
@@ -1408,64 +1408,68 @@ export default function Quotations() {
                           </DropdownMenuItem>
                         )}
 
-                        {quotation.status !== 'sent' && quotation.status !== 'accepted' && (
-                          <DropdownMenuItem
-                            className="gap-2"
-                            disabled={Boolean(quotation.invoiced_at)}
-                            onClick={async () => {
-                              try {
-                                await updateQuotation({
-                                  ...quotation,
-                                  status: 'sent',
-                                  sent_at: quotation.sent_at ?? null,
-                                  accepted_at: quotation.accepted_at ?? null,
-                                });
-                                toast({
-                                  title: 'Marked as sent',
-                                  description: 'The quotation is now marked as sent.',
-                                });
-                              } catch (err) {
-                                if (import.meta.env.DEV) console.error('Failed to mark quotation as sent', err);
-                                toast({
-                                  title: 'Error',
-                                  description: 'Failed to mark quotation as sent.',
-                                  variant: 'destructive',
-                                });
-                              }
-                            }}
-                          >
-                            <Calendar className="w-4 h-4" /> Mark as Sent
-                          </DropdownMenuItem>
-                        )}
+                        {quotation.status !== 'sent' &&
+                          quotation.status !== 'accepted' &&
+                          quotation.status !== 'declined' && (
+                            <DropdownMenuItem
+                              className="gap-2"
+                              disabled={Boolean(quotation.invoiced_at)}
+                              onClick={async () => {
+                                try {
+                                  await updateQuotation({
+                                    ...quotation,
+                                    status: 'sent',
+                                    sent_at: quotation.sent_at ?? null,
+                                    accepted_at: quotation.accepted_at ?? null,
+                                  });
+                                  toast({
+                                    title: 'Marked as sent',
+                                    description: 'The quotation is now marked as sent.',
+                                  });
+                                } catch (err) {
+                                  if (import.meta.env.DEV) console.error('Failed to mark quotation as sent', err);
+                                  toast({
+                                    title: 'Error',
+                                    description: 'Failed to mark quotation as sent.',
+                                    variant: 'destructive',
+                                  });
+                                }
+                              }}
+                            >
+                              <Calendar className="w-4 h-4" /> Mark as Sent
+                            </DropdownMenuItem>
+                          )}
 
-                        {quotation.status !== 'accepted' && quotation.status !== 'invoiced' && (
-                          <DropdownMenuItem
-                            className="gap-2"
-                            disabled={false}
-                            onClick={async () => {
-                              try {
-                                await updateQuotation({
-                                  ...quotation,
-                                  status: "accepted",
-                                  accepted_at: new Date().toISOString(),
-                                });
-                                toast({
-                                  title: 'Marked as approved',
-                                  description: 'The quotation is now marked as approved.',
-                                });
-                              } catch (err) {
-                                if (import.meta.env.DEV) console.error('Failed to mark quotation as approved', err);
-                                toast({
-                                  title: 'Error',
-                                  description: 'Failed to mark quotation as approved.',
-                                  variant: 'destructive',
-                                });
-                              }
-                            }}
-                          >
-                            <CheckCircle className="w-4 h-4" /> Mark as Approved
-                          </DropdownMenuItem>
-                        )}
+                        {quotation.status !== 'accepted' &&
+                          quotation.status !== 'invoiced' &&
+                          quotation.status !== 'declined' && (
+                            <DropdownMenuItem
+                              className="gap-2"
+                              disabled={false}
+                              onClick={async () => {
+                                try {
+                                  await updateQuotation({
+                                    ...quotation,
+                                    status: "accepted",
+                                    accepted_at: new Date().toISOString(),
+                                  });
+                                  toast({
+                                    title: 'Marked as approved',
+                                    description: 'The quotation is now marked as approved.',
+                                  });
+                                } catch (err) {
+                                  if (import.meta.env.DEV) console.error('Failed to mark quotation as approved', err);
+                                  toast({
+                                    title: 'Error',
+                                    description: 'Failed to mark quotation as approved.',
+                                    variant: 'destructive',
+                                  });
+                                }
+                              }}
+                            >
+                              <CheckCircle className="w-4 h-4" /> Mark as Approved
+                            </DropdownMenuItem>
+                          )}
 
                         {quotation.status === 'invoiced' && quotation.invoiced_at && (
                           <DropdownMenuItem
@@ -1503,9 +1507,14 @@ export default function Quotations() {
                           </DropdownMenuItem>
                         )}
 
-                        <DropdownMenuItem onClick={() => handleDuplicate(quotation)} className="gap-2">
-                          <Copy className="w-4 h-4" /> Duplicate
-                        </DropdownMenuItem>
+                        {quotation.status !== 'declined' && (
+                          <DropdownMenuItem
+                            onClick={() => handleDuplicate(quotation)}
+                            className="gap-2"
+                          >
+                            <Copy className="w-4 h-4" /> Duplicate
+                          </DropdownMenuItem>
+                        )}
                         {/* <DropdownMenuItem onClick={() => handleSaveAsTemplate(quotation)} className="gap-2">
                           <FileText className="w-4 h-4" /> Save as Template
                         </DropdownMenuItem> */}
