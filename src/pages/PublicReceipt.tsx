@@ -23,6 +23,7 @@ export default function PublicReceipt() {
     const [directBrand, setDirectBrand] = useState<BrandKit | null>(null);
     const [invoiceItems, setInvoiceItems] = useState<InvoiceItem[]>([]);
     const [loadMsgIndex, setLoadMsgIndex] = useState(0);
+    const [loadingProgress, setLoadingProgress] = useState(0);
 
     useEffect(() => {
         let cancelled = false;
@@ -95,6 +96,23 @@ export default function PublicReceipt() {
         return () => clearInterval(interval);
     }, [receipt]);
 
+    // Simulated progress: climbs toward 90% while waiting, snaps to 100% once
+    // the receipt actually resolves — same pattern as PublicInvoice.tsx.
+    const isPageLoading = !receipt && !notFoundGraceExpired;
+
+    useEffect(() => {
+        if (!isPageLoading) {
+            setLoadingProgress(100);
+            const reset = setTimeout(() => setLoadingProgress(0), 400);
+            return () => clearTimeout(reset);
+        }
+        setLoadingProgress(0);
+        const interval = setInterval(() => {
+            setLoadingProgress((p) => (p >= 90 ? 90 : p + Math.max(1, (90 - p) * 0.1)));
+        }, 150);
+        return () => clearInterval(interval);
+    }, [isPageLoading]);
+
     const displayBrand = directBrand || brandKit;
 
     const invoice: Invoice | null | undefined = receipt?.invoice;
@@ -130,12 +148,61 @@ export default function PublicReceipt() {
 
     if (!receipt) {
         if (!notFoundGraceExpired) {
+            const circumference = 2 * Math.PI * 45;
             return (
-                <div className="min-h-[60vh] flex flex-col items-center justify-center">
-                    <p className="text-sm text-muted-foreground">{RECEIPT_LOADING_MESSAGES[loadMsgIndex]}</p>
+                <div className="min-h-[60vh] flex flex-col items-center justify-center relative overflow-hidden">
+                    <div
+                        className="absolute w-72 h-72 rounded-full bg-primary/20 blur-3xl animate-pulse"
+                        style={{ animationDuration: "2.4s" }}
+                    />
+
+                    <div className="relative w-36 h-36 flex items-center justify-center">
+                        <div
+                            className="absolute inset-0 rounded-full border-2 border-dashed border-primary/25 animate-spin"
+                            style={{ animationDuration: "6s" }}
+                        />
+
+                        <svg className="absolute inset-2 -rotate-90" viewBox="0 0 100 100">
+                            <defs>
+                                <linearGradient id="receiptLoaderGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+                                    <stop offset="0%" stopColor="hsl(var(--primary))" stopOpacity="0.5" />
+                                    <stop offset="100%" stopColor="hsl(var(--primary))" stopOpacity="1" />
+                                </linearGradient>
+                            </defs>
+                            <circle cx="50" cy="50" r="45" fill="none" stroke="currentColor" strokeWidth="6" className="text-primary/10" />
+                            <circle
+                                cx="50"
+                                cy="50"
+                                r="45"
+                                fill="none"
+                                stroke="url(#receiptLoaderGradient)"
+                                strokeWidth="6"
+                                strokeLinecap="round"
+                                className="transition-all duration-500 ease-out"
+                                strokeDasharray={circumference}
+                                strokeDashoffset={circumference * (1 - loadingProgress / 100)}
+                                style={{ filter: "drop-shadow(0 0 6px hsl(var(--primary) / 0.5))" }}
+                            />
+                        </svg>
+
+                        <span className="relative font-heading font-bold text-3xl text-foreground tabular-nums transition-all duration-300">
+                            {Math.round(loadingProgress)}
+                            <span className="text-lg text-muted-foreground">%</span>
+                        </span>
+                    </div>
+
+                    <div className="mt-8 h-5 relative overflow-hidden">
+                        <p
+                            key={loadMsgIndex}
+                            className="text-sm text-muted-foreground animate-in fade-in slide-in-from-bottom-2 duration-500"
+                        >
+                            {RECEIPT_LOADING_MESSAGES[loadMsgIndex]}
+                        </p>
+                    </div>
                 </div>
             );
         }
+
         return (
             <div className="max-w-3xl mx-auto p-6">
                 <Card className="glass-card">

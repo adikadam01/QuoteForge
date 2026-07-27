@@ -5,12 +5,14 @@ import { Link, useNavigate, useParams } from 'react-router-dom';
 import { ArrowLeft, Download, Lock, Send } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useApp } from '@/contexts/AppContext';
+import { useToast } from '@/hooks/use-toast';
 
 import { ReceiptLayout } from '@/components/documents/ReceiptLayout';
 
 export default function ReceiptView() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
+  const { toast } = useToast();
   const {
     brandKit,
     clients,
@@ -130,6 +132,7 @@ export default function ReceiptView() {
               const publicUrl = `${window.location.origin}/public/receipt/${receipt.id}`;
               try {
                 await navigator.clipboard.writeText(publicUrl);
+                toast({ title: "Link copied to clipboard" });
               } catch {
                 window.prompt("Copy receipt link:", publicUrl);
               }
