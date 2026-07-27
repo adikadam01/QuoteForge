@@ -476,10 +476,10 @@ export default function Dashboard() {
                   <div className="w-10 h-10 rounded-lg bg-white/10 flex items-center justify-center group-hover:scale-105 transition-transform">
                     <Plus className="w-5 h-5 text-white" />
                   </div>
-                  <div>
+                  {/* <div>
                     <p className="font-medium text-white">New Quotation</p>
                     <p className="text-sm text-white/70">Create a new quote</p>
-                  </div>
+                  </div> */}
                 </div>
               </div>
             </Link>
