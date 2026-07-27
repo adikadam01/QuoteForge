@@ -140,7 +140,7 @@ export default function QuotationPreview() {
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [id]);
-  
+
   useEffect(() => {
 
     if (!quotation) return;
@@ -293,7 +293,8 @@ export default function QuotationPreview() {
   const oneTime = Number(safeTotals.one_time_total || 0);
   const monthly = Number(safeTotals.monthly_total || 0);
   const tax = Number(quotation.tax_amount || 0);
-  const total = Number(safeTotals.total || 0);
+  const discountAmount = Number(quotation.discount || 0);
+  const total = Math.max(0, Number(safeTotals.total || 0) - discountAmount);
 
   return (
     <div className="quotation-preview-page" style={{ background: "#ffffff" }}>
@@ -418,6 +419,12 @@ export default function QuotationPreview() {
                   <span className="text-foreground font-medium">{subtotal.toLocaleString()}</span>
                 </div>
               )}
+              {discountAmount > 0 ? (
+                <div className="flex items-center justify-between text-sm text-red-600">
+                  <span>Discount</span>
+                  <span className="font-medium">-{discountAmount.toLocaleString()}</span>
+                </div>
+              ) : null}
               <div className="flex items-center justify-between text-sm">
                 <span className="text-muted-foreground">Tax</span>
                 <span className="text-foreground font-medium">{tax.toLocaleString()}</span>
