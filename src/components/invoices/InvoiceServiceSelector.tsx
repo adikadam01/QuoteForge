@@ -58,7 +58,8 @@ export default function InvoiceServiceSelector({
                     const eligibility = eligibilityMap[service.service_id];
                     const completed = eligibility?.completed ?? false;
                     const paymentPending = eligibility?.reason === "payment_pending";
-                    const disabled = completed || paymentPending;
+                    const inCooldown = eligibility?.reason === "cooldown";
+                    const disabled = completed || paymentPending || inCooldown;
 
                     return (
                         <Card
@@ -84,7 +85,6 @@ export default function InvoiceServiceSelector({
                                         <h3 className="font-semibold text-base">
                                             {service.service_name}
                                         </h3>
-
                                         {completed && (
                                             <span className="text-xs px-2 py-1 rounded-full bg-green-100 text-green-700">
                                                 Completed
@@ -94,6 +94,12 @@ export default function InvoiceServiceSelector({
                                         {paymentPending && (
                                             <span className="text-xs px-2 py-1 rounded-full bg-amber-100 text-amber-700">
                                                 Payment Pending
+                                            </span>
+                                        )}
+
+                                        {inCooldown && (
+                                            <span className="text-xs px-2 py-1 rounded-full bg-blue-100 text-blue-700">
+                                                Available in {eligibility?.cooldownDaysRemaining} day{eligibility?.cooldownDaysRemaining === 1 ? '' : 's'}
                                             </span>
                                         )}
 
