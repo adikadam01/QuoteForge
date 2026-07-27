@@ -1156,7 +1156,7 @@ import { useEffect, useState } from 'react';
 import {
   Plus, Edit2, Trash2, Package, Search, Eye,
   Zap, Repeat, ShieldCheck, Milestone as MilestoneIcon,
-  LayoutGrid, Tag, Wallet,
+  LayoutGrid, Tag, Flame,
 } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import {
@@ -1183,6 +1183,7 @@ import { useApp } from '@/contexts/AppContext';
 import { useToast } from '@/hooks/use-toast';
 import { Service, PricingModel } from '@/lib/types';
 import { RichEditor, RichTextDisplay } from '@/components/ui/RichText';
+import { getQuotationServiceBlocks } from '@/lib/quotationServiceBlocks';
 
 type TimelineUnit = 'Days' | 'Weeks' | 'Months';
 
@@ -1337,7 +1338,7 @@ interface LocalAddon {
 }
 
 export default function Services() {
-  const { services, addService, updateService, deleteService, currency, serviceOptions } = useApp();
+  const { services, addService, updateService, deleteService, currency, serviceOptions, quotations } = useApp();
   const { toast } = useToast();
   const [searchQuery, setSearchQuery] = useState('');
   const [categoryFilter, setCategoryFilter] = useState<string>('all');
@@ -1399,7 +1400,36 @@ export default function Services() {
   // ---------- Catalog-level stats ----------
   const totalServices = services.length;
   const totalCategories = categoriesInUse.length;
-  const catalogValue = services.reduce((sum, s) => sum + getServiceTotalValue(s), 0);
+
+  // Most-used service: tally how many quotations include each service_id
+  // (via service_blocks, the source of truth for services on a quotation),
+  // then surface the one with the highest count.
+  const mostUsedService = (() => {
+    const counts: Record<string, number> = {};
+
+    (quotations || []).forEach((q) => {
+      const blocks = getQuotationServiceBlocks(q);
+      const seenInThisQuotation = new Set<string>();
+      blocks.forEach((b) => {
+        if (!b.service_id || seenInThisQuotation.has(b.service_id)) return;
+        seenInThisQuotation.add(b.service_id);
+        counts[b.service_id] = (counts[b.service_id] || 0) + 1;
+      });
+    });
+
+    let topId: string | null = null;
+    let topCount = 0;
+    Object.entries(counts).forEach(([id, count]) => {
+      if (count > topCount) {
+        topCount = count;
+        topId = id;
+      }
+    });
+
+    if (!topId || topCount === 0) return null;
+    const service = services.find((s) => s.id === topId);
+    return service ? { service, count: topCount } : null;
+  })();
 
   const handleOpenDialog = (service?: Service) => {
     if (service) {
@@ -1646,13 +1676,20 @@ export default function Services() {
         <Card className="border-border/50">
           <CardContent className="p-4 flex items-center gap-3">
             <div className="w-10 h-10 rounded-xl bg-zinc-100 flex items-center justify-center shrink-0">
-              <Wallet className="w-5 h-5 text-zinc-700" />
+              <Flame className="w-5 h-5 text-zinc-700" />
             </div>
-            <div>
-              <p className="text-xs text-muted-foreground uppercase tracking-wide">Catalog Value</p>
-              <p className="font-heading font-bold text-xl text-foreground">
-                {currencySymbol}{catalogValue.toLocaleString()}
-              </p>
+            <div className="min-w-0">
+              <p className="text-xs text-muted-foreground uppercase tracking-wide">Most Used Service</p>
+              {mostUsedService ? (
+                <p className="font-heading font-bold text-base text-foreground truncate" title={mostUsedService.service.name}>
+                  {mostUsedService.service.name}
+                  <span className="ml-1.5 text-xs font-medium text-muted-foreground">
+                    ({mostUsedService.count}×)
+                  </span>
+                </p>
+              ) : (
+                <p className="font-heading font-bold text-base text-muted-foreground">—</p>
+              )}
             </div>
           </CardContent>
         </Card>
