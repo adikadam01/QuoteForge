@@ -203,7 +203,7 @@ const statusConfig = {
   },
   paid: {
     label: "Paid",
-    color: "bg-green-100 text-green-700",
+    color: "bg-black-100 text-white-700",
   },
   partially_paid: {
     label: "Partially Paid",
@@ -425,7 +425,7 @@ export default function Invoices() {
                             className={`${pendingMethodLabel
                               ? 'bg-amber-100 text-amber-700'
                               : paidMethodLabel
-                                ? 'bg-black text-white'
+                                ? 'bg-green-100 text-green-700'
                                 : cfg.color
                               } rounded-full px-3 py-0.5 font-medium shrink-0`}
                           >
