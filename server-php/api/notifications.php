@@ -39,6 +39,24 @@ $stmt = $pdo->prepare("
 }
 
 
+// PUT /notifications/read-all
+if ($path === "/notifications/read-all" && $method === "PUT") {
+
+    $stmt = $pdo->prepare("
+        UPDATE notifications
+        SET is_read = true
+        WHERE is_read = false
+    ");
+
+    $stmt->execute();
+
+    jsonResponse([
+        "success" => true
+    ]);
+
+    exit;
+}
+
 // POST /notifications
 if ($path === "/notifications" && $method === "POST") {
     $input = getJsonInput();
@@ -60,6 +78,8 @@ if ($path === "/notifications" && $method === "POST") {
     jsonResponse(['success' => true]);
     exit;
 }
+
+
 
 jsonResponse([
     "error" => "Notifications route not found"

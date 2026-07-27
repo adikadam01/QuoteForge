@@ -77,6 +77,7 @@ type AppContextType = {
   notifications: Notification[];
   refreshNotifications: () => Promise<void>;
   markNotificationAsRead: (id: string) => Promise<void>;   // ← add this line
+  markAllNotificationsAsRead: () => Promise<void>;
   services: Service[];
   addService: (service: Omit<Service, "id" | "created_at">) => Promise<void>;
   termsConditions: any[];
@@ -669,6 +670,17 @@ export function AppProvider({ children }: { children: ReactNode }) {
     }
   };
 
+  const markAllNotificationsAsRead = async () => {
+    const previous = notifications;
+    setNotifications((prev) => prev.map((n) => ({ ...n, is_read: true })));
+    try {
+      await repo.markAllNotificationsRead();
+    } catch (err) {
+      if (import.meta.env.DEV) console.error("Failed to mark all notifications as read", err);
+      setNotifications(previous);
+    }
+  };
+
   const createReceipt = async (receipt: import('@/lib/types').Receipt) => {
     await repo.createReceipt(receipt);
     await refreshReceipts();
@@ -828,7 +840,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
       window.removeEventListener("focus", handleVisibility);
     };
   }, [user]);                              // ← depend on user
-  
+
   return (
     <AppContext.Provider
       value={{
@@ -894,6 +906,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
         notifications,
         refreshNotifications,
         markNotificationAsRead,
+        markAllNotificationsAsRead,
       }}
     >
       {children}

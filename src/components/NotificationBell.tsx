@@ -23,7 +23,7 @@ function timeAgo(dateStr: string): string {
     return new Date(isoSafe).toLocaleDateString("en-IN", { day: "2-digit", month: "short" });
 }
 export function NotificationBell() {
-    const { notifications, refreshNotifications, markNotificationAsRead } = useApp();
+    const { notifications, refreshNotifications, markNotificationAsRead, markAllNotificationsAsRead } = useApp();
     const [open, setOpen] = useState(false);
     const containerRef = useRef<HTMLDivElement>(null);
     const navigate = useNavigate();
@@ -104,9 +104,13 @@ export function NotificationBell() {
                     <div className="flex items-center justify-between px-4 py-3 border-b border-border/50">
                         <p className="font-heading font-bold text-sm text-foreground">Notifications</p>
                         {unreadCount > 0 && (
-                            <span className="text-[11px] uppercase tracking-wide text-muted-foreground font-semibold">
-                                {unreadCount} unread
-                            </span>
+                            <button
+                                type="button"
+                                onClick={() => markAllNotificationsAsRead()}
+                                className="text-[11px] uppercase tracking-wide text-accent font-semibold hover:underline"
+                            >
+                                Mark all as read
+                            </button>
                         )}
                     </div>
 
@@ -141,7 +145,7 @@ export function NotificationBell() {
                                         {n.type === "payment_received" && <CreditCard className="w-4 h-4" strokeWidth={2.2} />}
                                         {n.type === "payment_intent" && <Clock className="w-4 h-4" strokeWidth={2.2} />}
                                     </div>
-                                    
+
                                     <div className="flex-1 min-w-0">
                                         <div className="flex items-center gap-2">
                                             <p className="text-sm font-semibold text-foreground truncate">{n.title}</p>
