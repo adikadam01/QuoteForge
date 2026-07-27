@@ -584,25 +584,13 @@ export async function generateInvoiceForQuotationPlan(
   // -------------------------------------
   // Partial Payment
   // -------------------------------------
-
   if (plan.type === "partial") {
-
     base.type = "partial";
-
-    const amount = Math.max(
-      0,
-      Math.min(
-        calculatedSubtotal,
-        Number(plan.amount || 0)
-      )
-    );
-
+    const amount = Math.max(0, Math.min(calculatedSubtotal, Number(plan.amount || 0)));
     base.subtotal = calculatedSubtotal;
     base.total = calculatedSubtotal;
-
     base.amount_due = amount;
-    base.balance_amount =
-      calculatedSubtotal - amount;
+    base.balance_amount = calculatedSubtotal - amount;
   }
 
   // -------------------------------------
@@ -647,8 +635,8 @@ export async function generateInvoiceForQuotationPlan(
     base.type = "milestone";
     base.milestones = ms;
 
-    base.subtotal = calculatedSubtotal;
-    base.total = calculatedSubtotal;
+    base.subtotal = calculatedAmountDue;
+    base.total = calculatedAmountDue;
 
     base.amount_due = calculatedAmountDue;
 
@@ -697,8 +685,8 @@ export async function generateInvoiceForQuotationPlan(
     base.monthly_amount = monthlyAmount;
     base.total_months = totalMonths;
 
-    base.subtotal = calculatedSubtotal;
-    base.total = calculatedSubtotal;
+    base.subtotal = calculatedAmountDue;
+    base.total = calculatedAmountDue;
 
     base.amount_due = calculatedAmountDue;
 
