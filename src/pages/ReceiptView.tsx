@@ -2,8 +2,7 @@
 
 import { useEffect, useMemo, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
-import { ArrowLeft, Download, Lock } from 'lucide-react';
-
+import { ArrowLeft, Download, Lock, Send } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useApp } from '@/contexts/AppContext';
 
@@ -84,7 +83,7 @@ export default function ReceiptView() {
       console.error('Print failed', err);
     }
   };
-  
+
   if (!id) return null;
 
   if (!receipt) {
@@ -124,6 +123,20 @@ export default function ReceiptView() {
           <div className="flex items-center gap-2 text-sm text-muted-foreground">
             <Lock className="w-4 h-4" /> Immutable
           </div>
+          <Button
+            variant="outline"
+            className="rounded-xl gap-2"
+            onClick={async () => {
+              const publicUrl = `${window.location.origin}/public/receipt/${receipt.id}`;
+              try {
+                await navigator.clipboard.writeText(publicUrl);
+              } catch {
+                window.prompt("Copy receipt link:", publicUrl);
+              }
+            }}
+          >
+            <Send className="w-4 h-4" /> Share Receipt Link
+          </Button>
           <Button className="rounded-xl gap-2" onClick={handleDownloadPdf}>
             <Download className="w-4 h-4" /> Download PDF
           </Button>

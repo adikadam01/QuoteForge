@@ -203,7 +203,7 @@ const statusConfig = {
   },
   paid: {
     label: "Paid",
-    color: "bg-black-100 text-white-700",
+    color: "bg-green-100 text-green-700",
   },
   partially_paid: {
     label: "Partially Paid",

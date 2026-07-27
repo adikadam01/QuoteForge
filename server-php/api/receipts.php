@@ -51,6 +51,46 @@ if ($path === '/receipts' && $method === 'POST') {
     jsonResponse($input);
 }
 
+// GET /receipts/:id — public, includes invoice + client for the share link
+if (preg_match('#^/receipts/([\w\-]+)$#', $path, $matches) && $method === 'GET') {
+    $id = $matches[1];
+
+    $stmt = $pdo->prepare("SELECT * FROM receipts WHERE id = ?");
+    $stmt->execute([$id]);
+    $receipt = $stmt->fetch(PDO::FETCH_ASSOC);
+
+    if (!$receipt) {
+        jsonResponse(['error' => 'Not found'], 404);
+    }
+
+    $receipt['amount'] = (float)$receipt['amount'];
+
+    if (!empty($receipt['client_id'])) {
+        $clientStmt = $pdo->prepare("SELECT * FROM clients WHERE id = ? LIMIT 1");
+        $clientStmt->execute([$receipt['client_id']]);
+        $receipt['client'] = $clientStmt->fetch(PDO::FETCH_ASSOC);
+    } else {
+        $receipt['client'] = null;
+    }
+
+    if (!empty($receipt['invoice_id'])) {
+        $invoiceStmt = $pdo->prepare("SELECT * FROM invoices WHERE id = ? LIMIT 1");
+        $invoiceStmt->execute([$receipt['invoice_id']]);
+        $invoice = $invoiceStmt->fetch(PDO::FETCH_ASSOC);
+        if ($invoice) {
+            $invoice['subtotal'] = (float)$invoice['subtotal'];
+            $invoice['total'] = (float)$invoice['total'];
+            $invoice['amount_paid'] = (float)$invoice['amount_paid'];
+            $invoice['amount_due'] = (float)$invoice['amount_due'];
+        }
+        $receipt['invoice'] = $invoice ?: null;
+    } else {
+        $receipt['invoice'] = null;
+    }
+
+    jsonResponse($receipt);
+}
+
 // DELETE /receipts/:id
 if (preg_match('#^/receipts/([\w\-]+)$#', $path, $matches) && $method === 'DELETE') {
     $id = $matches[1];

@@ -169,7 +169,9 @@ export function createApiRepo(): Repository {
             }),
 
         // --- Receipts ---
+
         listReceipts: () => request<Receipt[]>("/receipts"),
+        getReceipt: (id) => request<Receipt | null>(`/receipts/${id}`),
         createReceipt: (r) => request<void>("/receipts", { method: "POST", body: JSON.stringify(r) }),
 
         // --- Templates ---

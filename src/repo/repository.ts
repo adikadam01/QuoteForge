@@ -71,8 +71,8 @@ export interface Repository {
   listPaymentReceipts(): Promise<PaymentReceipt[]>;
   createPaymentReceipt(receipt: PaymentReceipt): Promise<void>;
 
-  // receipts
   listReceipts(): Promise<import('@/lib/types').Receipt[]>;
+  getReceipt(id: string): Promise<import('@/lib/types').Receipt | null>;
   createReceipt(receipt: import('@/lib/types').Receipt): Promise<void>;
 
   // client options (business types & industries)
