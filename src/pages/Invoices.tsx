@@ -220,11 +220,17 @@ export default function Invoices() {
 
   const [searchQuery, setSearchQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState<'all' | 'draft' | 'sent' | 'paid'>('all');
+  const [paidMethodFilter, setPaidMethodFilter] = useState<'all' | 'Online' | 'Cash' | 'Cheque'>('all');
 
   const filtered = useMemo(() => {
     const q = searchQuery.trim().toLowerCase();
     return invoices
       .filter((inv) => (statusFilter === 'all' ? true : inv.invoice_status === statusFilter))
+      .filter((inv) => {
+        // Sub-filter only applies once "Paid" is selected as the main status filter.
+        if (statusFilter !== 'paid' || paidMethodFilter === 'all') return true;
+        return inv.payment_method === paidMethodFilter;
+      })
       .filter((inv) => {
         if (!q) return true;
         return (
@@ -233,7 +239,7 @@ export default function Invoices() {
           (inv.client?.business_name || "").toLowerCase().includes(q)
         );
       });
-  }, [invoices, searchQuery, statusFilter]);
+  }, [invoices, searchQuery, statusFilter, paidMethodFilter]);
 
   // ---------- Catalog-level stats (mirrors the Services page pattern) ----------
   const totalInvoices = invoices.length;
@@ -334,7 +340,10 @@ export default function Invoices() {
           {(['all', 'draft', 'sent', 'paid'] as const).map((s) => (
             <button
               key={s}
-              onClick={() => setStatusFilter(s)}
+              onClick={() => {
+                setStatusFilter(s);
+                if (s !== 'paid') setPaidMethodFilter('all');
+              }}
               className={`px-4 h-10 rounded-xl border text-sm font-medium transition-all ${statusFilter === s
                 ? 'bg-black text-white border-black shadow-sm'
                 : 'bg-background border-border/70 text-muted-foreground hover:border-black/20 hover:text-foreground'
@@ -345,6 +354,24 @@ export default function Invoices() {
             </button>
           ))}
         </div>
+
+        {statusFilter === 'paid' && (
+          <div className="flex gap-2 flex-wrap items-center border-l border-border/60 pl-3 ml-1">
+            {(['all', 'Online', 'Cash', 'Cheque'] as const).map((m) => (
+              <button
+                key={m}
+                onClick={() => setPaidMethodFilter(m)}
+                className={`px-3 h-9 rounded-lg border text-xs font-semibold transition-all ${paidMethodFilter === m
+                  ? 'bg-emerald-600 text-white border-emerald-600 shadow-sm'
+                  : 'bg-background border-border/70 text-muted-foreground hover:border-emerald-400/50 hover:text-foreground'
+                  }`}
+                type="button"
+              >
+                {m === 'all' ? 'ALL' : m.toUpperCase()}
+              </button>
+            ))}
+          </div>
+        )}
       </div>
 
       {/* List */}
@@ -363,6 +390,16 @@ export default function Invoices() {
           const pendingMethodLabel =
             invoice.invoice_status !== 'paid' && invoice.payment_method
               ? `Pay by ${invoice.payment_method}`
+              : null;
+          const paidMethodLabel =
+            invoice.invoice_status === 'paid' && invoice.payment_method
+              ? invoice.payment_method === 'Online'
+                ? 'PAID ONLINE'
+                : invoice.payment_method === 'Cash'
+                  ? 'PAID BY CASH'
+                  : invoice.payment_method === 'Cheque'
+                    ? 'PAID BY CHEQUE'
+                    : null
               : null;
           return (
             <Card
@@ -385,9 +422,14 @@ export default function Invoices() {
                             {invoice.quotation?.title || invoice.invoice_number} Invoice
                           </h3>
                           <Badge
-                            className={`${pendingMethodLabel ? 'bg-amber-100 text-amber-700' : cfg.color} rounded-full px-3 py-0.5 font-medium shrink-0`}
+                            className={`${pendingMethodLabel
+                              ? 'bg-amber-100 text-amber-700'
+                              : paidMethodLabel
+                                ? 'bg-green-100 text-green-700'
+                                : cfg.color
+                              } rounded-full px-3 py-0.5 font-medium shrink-0`}
                           >
-                            {pendingMethodLabel || invoice.invoice_status?.toUpperCase?.() || cfg.label}
+                            {paidMethodLabel || pendingMethodLabel || invoice.invoice_status?.toUpperCase?.() || cfg.label}
                           </Badge>
                         </div>
                         <div className="flex items-center gap-4 text-sm text-muted-foreground">
