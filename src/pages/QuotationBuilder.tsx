@@ -2075,7 +2075,7 @@ export default function QuotationBuilder() {
                             <div className="relative">
                               <Input
                                 type="number"
-                                min={0}
+                                
                                 max={100}
                                 value={(b as any).discount_percent ?? 0}
                                 onChange={(e) => {
