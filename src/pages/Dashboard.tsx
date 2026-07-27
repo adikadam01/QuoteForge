@@ -286,10 +286,7 @@ export default function Dashboard() {
   const pendingPayments = invoices.filter((i) => i.invoice_status !== 'paid').length;
   // const completedProjects = activeQuotations.filter((q) => invoices.some((i) => i.quotation_id === q.id && i.invoice_status === 'paid')).length;
   const invoicedProjects = activeQuotations.filter(
-    (q) =>
-      invoices.some(
-        (i) => i.quotation_id === q.id
-      )
+    q => q.status === 'invoiced'
   ).length;
   const totalQuotations = quotations.filter(q => !q.is_template).length;
   const sentQuotations = quotations.filter(q => q.status === 'sent' || q.status === 'accepted' || q.status === 'declined').length;
