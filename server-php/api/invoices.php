@@ -134,6 +134,42 @@ if ($path === '/invoices' && $method === 'POST') {
     $input = getJsonInput();
     $items = $input['items'] ?? [];
     unset($input['items'], $input['client'], $input['quotation']);
+
+    // Enforce a 25-day cooldown between monthly invoices for the same
+    // service — this is the real enforcement point; the frontend button
+    // disable is just a UX nicety, so this must run regardless of what
+    // the client sends.
+    if (($input['type'] ?? null) === 'monthly' && !empty($input['quotation_id'])) {
+        $monthlyServiceIds = array_values(array_unique(array_filter(array_map(
+            fn($item) => $item['service_id'] ?? null,
+            $items
+        ))));
+
+        foreach ($monthlyServiceIds as $serviceId) {
+            $cooldownStmt = $pdo->prepare("
+                SELECT MAX(i.created_at) AS last_created
+                FROM invoices i
+                INNER JOIN invoice_items ii ON ii.invoice_id = i.id
+                WHERE i.quotation_id = ?
+                  AND i.type = 'monthly'
+                  AND ii.service_id = ?
+            ");
+            $cooldownStmt->execute([$input['quotation_id'], $serviceId]);
+            $lastCreated = $cooldownStmt->fetchColumn();
+
+            if ($lastCreated) {
+                $daysElapsed = (strtotime('now') - strtotime($lastCreated)) / 86400;
+                if ($daysElapsed < 25) {
+                    $daysRemaining = (int) ceil(25 - $daysElapsed);
+                    jsonResponse([
+                        'error' => 'Monthly invoice cooldown active',
+                        'message' => "The next monthly invoice for this service isn't available yet. Please wait {$daysRemaining} more day(s).",
+                        'days_remaining' => $daysRemaining,
+                    ], 429);
+                }
+            }
+        }
+    }
     
     $milestones = $input['milestones'] ?? null;
     $quotation_selected_points = $input['quotation_selected_points'] ?? null;

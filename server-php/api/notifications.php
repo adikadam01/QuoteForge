@@ -79,6 +79,60 @@ if ($path === "/notifications" && $method === "POST") {
     exit;
 }
 
+// GET /notifications/check-due-dates
+// Idempotent scan: for unpaid invoices whose due_date falls within the
+// threshold, insert a "due_soon" notification only if one doesn't already
+// exist for that invoice — safe to call repeatedly from polling.
+if ($path === "/notifications/check-due-dates" && $method === "GET") {
+
+    $thresholdDays = 3;
+
+    $stmt = $pdo->prepare("
+        SELECT id, invoice_number, due_date, quotation_id, client_id
+        FROM invoices
+        WHERE invoice_status != 'paid'
+          AND due_date IS NOT NULL
+          AND due_date >= CURRENT_DATE
+          AND due_date <= (CURRENT_DATE + INTERVAL '{$thresholdDays} days')
+    ");
+    $stmt->execute();
+    $dueSoon = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+    $createdCount = 0;
+
+    foreach ($dueSoon as $inv) {
+        $existsStmt = $pdo->prepare("
+            SELECT id FROM notifications
+            WHERE invoice_id = ? AND type = 'due_soon'
+            LIMIT 1
+        ");
+        $existsStmt->execute([$inv['id']]);
+        if ($existsStmt->fetch()) {
+            continue; // Already notified for this invoice — skip.
+        }
+
+        $daysUntilDue = (int) round(
+            (strtotime($inv['due_date']) - strtotime(date('Y-m-d'))) / 86400
+        );
+
+        $id = bin2hex(random_bytes(16));
+        $title = "Invoice due soon";
+        $message = "Invoice {$inv['invoice_number']} is due in {$daysUntilDue} day" .
+            ($daysUntilDue === 1 ? "" : "s") . ".";
+
+        $insStmt = $pdo->prepare("
+            INSERT INTO notifications (id, quotation_id, invoice_id, client_id, type, title, message, is_read, created_at)
+            VALUES (?, ?, ?, ?, 'due_soon', ?, ?, false, NOW())
+        ");
+        $insStmt->execute([$id, $inv['quotation_id'], $inv['id'], $inv['client_id'], $title, $message]);
+
+        $createdCount++;
+    }
+
+    jsonResponse(['success' => true, 'notifications_created' => $createdCount]);
+    exit;
+}
+
 
 
 jsonResponse([

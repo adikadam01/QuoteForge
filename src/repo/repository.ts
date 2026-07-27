@@ -54,7 +54,8 @@ export interface Repository {
   setInvoicePaymentIntent(invoiceId: string, method: 'Cash' | 'Cheque'): Promise<{ status: string; payment_method: string }>;
 
   listNotifications(): Promise<Notification[]>;
-  markNotificationRead(id: string): Promise<void>;   // ← add this line right after listNotifications
+  markNotificationRead(id: string): Promise<void>;
+  checkDueDateNotifications(): Promise<{ success: boolean; notifications_created: number }>;
   markAllNotificationsRead(): Promise<void>;
   createNotification(notif: Omit<Notification, "created_at" | "is_read">): Promise<void>;
 

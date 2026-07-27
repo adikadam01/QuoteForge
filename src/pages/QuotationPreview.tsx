@@ -188,7 +188,9 @@ export default function QuotationPreview() {
             ? "Completed"
             : eligibility.reason === "payment_pending"
               ? "Previous invoice must be paid first"
-              : null,
+              : eligibility.reason === "cooldown"
+                ? `Available in ${eligibility.cooldownDaysRemaining} day${eligibility.cooldownDaysRemaining === 1 ? '' : 's'}`
+                : null,
       };
     }
 
@@ -705,12 +707,13 @@ export default function QuotationPreview() {
                       let buttonLabel = "Generate Invoice";
 
                       switch (service.billing_type) {
-
                         case "monthly":
 
                           buttonLabel = progress.completed
                             ? "Completed"
-                            : `Generate Month ${progress.next}`;
+                            : progress.reason?.startsWith("Available in")
+                              ? progress.reason
+                              : `Generate Month ${progress.next}`;
 
                           break;
 

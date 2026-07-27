@@ -781,7 +781,9 @@ export function AppProvider({ children }: { children: ReactNode }) {
         refreshInvoiceItems(),
         refreshReceipts(),
         refreshQuotationPointTemplates(),
-        refreshNotifications(),
+        refreshNotifications().then(() =>
+          repo.checkDueDateNotifications().then(() => refreshNotifications()).catch(() => { })
+        ),
       ];
 
       const total = tasks.length;
@@ -813,14 +815,25 @@ export function AppProvider({ children }: { children: ReactNode }) {
   // the public share link in a separate browser session).
   // Background polling
   useEffect(() => {
-    if (!user) return;                     // ← add this guard
+    if (!user) return;
+    let tickCount = 0;
     const interval = setInterval(() => {
       refreshQuotations().catch(() => { });
       refreshInvoices().catch(() => { });
       refreshReceipts().catch(() => { });
+
+      // Due-date notification scan is idempotent (server checks for an
+      // existing notification before inserting), but doesn't need to run
+      // on every 8s tick — every 6th tick (~48s) is frequent enough.
+      tickCount += 1;
+      if (tickCount % 6 === 0) {
+        repo.checkDueDateNotifications()
+          .then(() => refreshNotifications())
+          .catch(() => { });
+      }
     }, 8000);
     return () => clearInterval(interval);
-  }, [user]);                              // ← depend on user                              // ← depend on user
+  }, [user]);                          // ← depend on user
   //                              // ← depend on user                              // ← depend on user
 
   // Focus/visibility refresh

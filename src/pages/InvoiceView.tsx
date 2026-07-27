@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState, type CSSProperties } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
-import { ArrowLeft, Download, Send, CreditCard, ListChecks, ReceiptText, Loader2 } from "lucide-react";
+import { ArrowLeft, Download, Send, CreditCard, ListChecks, ReceiptText, Loader2, Receipt } from "lucide-react";
 import { DatePicker } from "@/pages/DatePicker";
 
 import { Button } from "@/components/ui/button";
@@ -88,7 +88,13 @@ export default function InvoiceView() {
   const quotationStatus = (invoice?.quotation?.status || linkedQuotation?.status || 'draft');
   const quotationIsDraft = quotationStatus === 'draft';
 
-  const receipt = useMemo(() => (invoice ? receipts.find((r) => r.invoice_id === invoice.id) : undefined), [invoice, receipts]);
+  const monthlyCooldownDaysRemaining = useMemo(() => {
+    if (!invoice || invoice.type !== 'monthly') return 0;
+    const COOLDOWN_DAYS = 25;
+    const elapsedMs = Date.now() - new Date(invoice.created_at).getTime();
+    const elapsedDays = elapsedMs / (1000 * 60 * 60 * 24);
+    return Math.max(0, Math.ceil(COOLDOWN_DAYS - elapsedDays));
+  }, [invoice]);
 
   // const amountPaid = useMemo(() => {
   //   if (!invoice) return 0;
@@ -118,6 +124,11 @@ export default function InvoiceView() {
       due: Number(invoice.amount_due || 0),
     };
   }, [invoice]);
+
+  const receipt = useMemo(() => {
+    if (!invoice) return null;
+    return receipts.find((r) => r.invoice_id === invoice.id) || null;
+  }, [receipts, invoice?.id]);
 
   const saveInvoiceDetails = async () => {
     if (!invoice) return;
@@ -726,7 +737,7 @@ export default function InvoiceView() {
                   <Button
                     variant="outline"
                     className="w-full gap-2 rounded-xl"
-                    disabled={generatingNext}
+                    disabled={generatingNext || monthlyCooldownDaysRemaining > 0}
                     onClick={async () => {
                       if (!invoice) return;
                       setGeneratingNext(true);
@@ -737,13 +748,17 @@ export default function InvoiceView() {
                         else toast({ title: "All months invoiced", description: "Every month for this plan has been invoiced." });
                       } catch (err) {
                         if (import.meta.env.DEV) console.error('Failed to generate next monthly invoice', err);
-                        toast({ title: "Error", description: "Could not generate next month's invoice." });
+                        const message = err instanceof Error ? err.message : "Could not generate next month's invoice.";
+                        toast({ title: "Not available yet", description: message });
                       } finally {
                         setGeneratingNext(false);
                       }
                     }}
                   >
-                    <ListChecks className="w-4 h-4" /> Generate Next Month's Invoice
+                    <ListChecks className="w-4 h-4" />
+                    {monthlyCooldownDaysRemaining > 0
+                      ? `Available in ${monthlyCooldownDaysRemaining} day${monthlyCooldownDaysRemaining === 1 ? '' : 's'}`
+                      : "Generate Next Month's Invoice"}
                   </Button>
                 ) : null
               }

@@ -187,6 +187,7 @@ export function createApiRepo(): Repository {
         updateContract: (c) => request<void>(`/contracts/${c.id}`, { method: "PUT", body: JSON.stringify(c) }),
         listNotifications: () =>
             request<Notification[]>("/notifications"),
+        checkDueDateNotifications: () => request<{ success: boolean; notifications_created: number }>("/notifications/check-due-dates"),
         markNotificationRead: (id: string) =>
             request<void>(`/notifications/${id}/read`, { method: "PUT" }),
         markAllNotificationsRead: () =>

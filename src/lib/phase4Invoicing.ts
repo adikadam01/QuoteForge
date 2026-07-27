@@ -58,6 +58,15 @@ function updateServiceProgress(
 }
 
 
+const MONTHLY_INVOICE_COOLDOWN_DAYS = 25;
+
+export function getMonthlyCooldownDaysRemaining(latestInvoice: Invoice | null): number {
+  if (!latestInvoice?.created_at) return 0;
+  const elapsedMs = Date.now() - new Date(latestInvoice.created_at).getTime();
+  const elapsedDays = elapsedMs / (1000 * 60 * 60 * 24);
+  return Math.max(0, Math.ceil(MONTHLY_INVOICE_COOLDOWN_DAYS - elapsedDays));
+}
+
 export async function getInvoicesForService(
   quotationId: string,
   serviceId: string,
@@ -169,9 +178,9 @@ export async function getServiceProgress(
 export type ServiceInvoiceEligibility = {
   completed: boolean;
   canGenerate: boolean;
-  reason: "completed" | "payment_pending" | null;
+  reason: "completed" | "payment_pending" | "cooldown" | null;
+  cooldownDaysRemaining?: number;
 };
-
 export function getServiceInvoiceEligibility(
   quotationId: string,
   service: QuotationServiceBlock,
@@ -212,12 +221,24 @@ export function getServiceInvoiceEligibility(
 
   const previousInvoicePaid = !latestInvoice || latestInvoice.invoice_status === "paid";
 
+  const cooldownDaysRemaining =
+    service.billing_type === "monthly" ? getMonthlyCooldownDaysRemaining(latestInvoice) : 0;
+  const inCooldown = cooldownDaysRemaining > 0;
+
   return {
     completed,
-    canGenerate: !completed && previousInvoicePaid,
-    reason: completed ? "completed" : !previousInvoicePaid ? "payment_pending" : null,
+    canGenerate: !completed && previousInvoicePaid && !inCooldown,
+    reason: completed
+      ? "completed"
+      : !previousInvoicePaid
+        ? "payment_pending"
+        : inCooldown
+          ? "cooldown"
+          : null,
+    cooldownDaysRemaining: inCooldown ? cooldownDaysRemaining : undefined,
   };
 }
+
 
 export type GenerateInvoicePlan =
   | {
@@ -813,6 +834,15 @@ export async function generateNextMilestoneInvoice(currentInvoice: Invoice): Pro
 export async function generateNextMonthlyInvoice(currentInvoice: Invoice): Promise<string | null> {
   if (currentInvoice.type !== 'monthly') return null;
   if (!currentInvoice.quotation_id) return null;
+
+  // Client-side guard — mirrors the server-side rejection in invoices.php.
+  // The server is the source of truth; this just saves a wasted request.
+  const daysRemaining = getMonthlyCooldownDaysRemaining(currentInvoice);
+  if (daysRemaining > 0) {
+    throw new Error(
+      `Next month's invoice isn't available yet. Please wait ${daysRemaining} more day${daysRemaining === 1 ? '' : 's'}.`
+    );
+  }
 
   const repo = getRepo();
   const all = await repo.listInvoices();
