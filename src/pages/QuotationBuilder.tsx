@@ -2079,9 +2079,20 @@ export default function QuotationBuilder() {
                                 max={100}
                                 value={(b as any).discount_percent ?? ""}
                                 onChange={(e) => {
-                                  const raw = Number(e.target.value) || 0;
+                                  const value = e.target.value;
+
+                                  if (value === "") {
+                                    updateBlock(idx, {
+                                      discount_percent: undefined,
+                                      discount_amount: 0,
+                                    } as Partial<QuotationServiceBlock>);
+                                    return;
+                                  }
+
+                                  const raw = Number(value);
                                   const clampedPercent = Math.min(100, Math.max(0, raw));
                                   const amount = Math.round((b.price * clampedPercent) / 100);
+
                                   updateBlock(idx, {
                                     discount_percent: clampedPercent,
                                     discount_amount: amount,
