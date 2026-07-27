@@ -285,10 +285,10 @@ export default function Dashboard() {
   const ongoingProjects = activeQuotations.filter((q) => q.status === 'accepted' && !invoices.some((i) => i.quotation_id === q.id && i.invoice_status === 'paid')).length;
   const pendingPayments = invoices.filter((i) => i.invoice_status !== 'paid').length;
   // const completedProjects = activeQuotations.filter((q) => invoices.some((i) => i.quotation_id === q.id && i.invoice_status === 'paid')).length;
+  const totalQuotations = quotations.filter(q => !q.is_template).length;
   const invoicedProjects = activeQuotations.filter(
     q => q.status === 'invoiced'
   ).length;
-  const totalQuotations = quotations.filter(q => !q.is_template).length;
   const sentQuotations = quotations.filter(q => q.status === 'sent' || q.status === 'accepted' || q.status === 'declined').length;
   const acceptedQuotations = quotations.filter(q => q.status === 'accepted').length;
   const conversionRate = sentQuotations > 0 ? Math.round((acceptedQuotations / sentQuotations) * 100) : 0;
@@ -306,23 +306,18 @@ export default function Dashboard() {
       icon: Receipt,
       color: 'text-amber-600',
     },
-    // {
-    //   label: 'Completed Projects',
-    //   value: completedProjects,
-    //   icon: CheckCircle,
-    //   color: 'text-green-500',
-    // },
-    {
-      label: 'Invoiced Projects',
-      value: invoicedProjects,
-      icon: Receipt,
-      color: 'text-green-500',
-    },
+
     {
       label: 'Total Quotations',
       value: totalQuotations,
       icon: FileText,
       color: 'text-primary'
+    },
+    {
+      label: 'Invoiced Projects',
+      value: invoicedProjects,
+      icon: Receipt,
+      color: 'text-green-500',
     },
     {
       label: 'Sent Quotations',
