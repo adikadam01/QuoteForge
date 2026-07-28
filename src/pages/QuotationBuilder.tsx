@@ -1948,7 +1948,8 @@ export default function QuotationBuilder() {
                         </div>
                         <div className="text-right shrink-0">
                           <p className="text-sm font-bold text-foreground">
-                            {currency === "INR" ? "₹" : "$"}{Number(b.price || 0).toLocaleString()}
+                            {currency === "INR" ? "₹" : "$"}
+                            {Number(b.price || 0).toLocaleString()}
                           </p>
                           {Number((b as any).discount_percent) > 0 ? (
                             <p className="text-[10px] text-red-600 font-medium">
@@ -1961,14 +1962,12 @@ export default function QuotationBuilder() {
                   </CardContent>
                 </Card>
               )}
-            </div>
+            </div>   {/* ← this closes the LEFT column */}
 
-            <div ref={rightColumnRef} className="w-[500px] space-y-6">
-            </div>
-
+            {/* ========== RIGHT COLUMN (only one!) ========== */}
             <div ref={rightColumnRef} className="w-[500px] space-y-6">
               <Card className="relative rounded-2xl border-2 shadow-sm hover:shadow-xl transition-shadow duration-300 overflow-hidden">
-                {/* Thick left accent bar */}
+                {/* ... Pricing card content stays exactly as it was ... */}
                 <div className="absolute left-0 top-0 bottom-0 w-1.5 bg-foreground" />
 
                 <CardHeader className="pl-8 pb-5 border-b border-border/50">
