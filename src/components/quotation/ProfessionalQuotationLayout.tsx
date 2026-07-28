@@ -574,7 +574,6 @@ export default function ProfessionalQuotationDocument({
                         )}
                     </div> */}
 
-
                     {/* Payment Terms */}
                     {quotation.payment_terms_text ? (
                         <div className="mb-8">
