@@ -615,15 +615,15 @@ export default function Analytics() {
           </CardContent>
         </Card>
 
-        <Card className="glass-card border border-border/60 transition-all duration-300 hover:-translate-y-1 hover:shadow-[0_18px_45px_rgba(0,0,0,0.22)]">
+        <Card className="glass-card border border-border/60 transition-all duration-300 hover:-translate-y-1 hover:shadow-[0_18px_45px_rgba(0,0,0,0.22)] flex flex-col">
           <CardHeader className="border-b border-border/50 pb-4">
             <CardTitle className="font-heading text-lg flex items-center gap-2">
               <span className="w-1.5 h-5 rounded-full bg-black" />
               6-Month Trend
             </CardTitle>
           </CardHeader>
-          <CardContent className="pt-5">
-            <ChartContainer config={chartConfig} className="h-[260px] w-full">
+          <CardContent className="pt-5 flex-1 flex flex-col min-h-0">
+            <ChartContainer config={chartConfig} className="flex-1 w-full min-h-[260px]">
               <LineChart data={trendData} margin={{ left: 8, right: 8 }}>
                 <CartesianGrid vertical={false} strokeDasharray="3 3" />
                 <XAxis dataKey="label" tickLine={false} axisLine={false} />
@@ -649,7 +649,7 @@ export default function Analytics() {
             </ChartContainer>
           </CardContent>
         </Card>
-
+        
         <Card className="glass-card border border-border/60 transition-all duration-300 hover:-translate-y-1 hover:shadow-[0_18px_45px_rgba(0,0,0,0.22)] lg:col-span-2 overflow-hidden relative">
           {/* Decorative corner accent */}
           <div className="absolute top-0 right-0 w-40 h-40 bg-gradient-to-bl from-primary/10 to-transparent rounded-full -translate-y-1/2 translate-x-1/2 pointer-events-none" />
