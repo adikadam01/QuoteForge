@@ -354,8 +354,12 @@ import {
   LineChart,
   XAxis,
   YAxis,
-  LabelList
+  LabelList,
+  Pie,
+  PieChart,
+  Cell,
 } from 'recharts';
+
 import {
   Send,
   CheckCircle,
@@ -495,6 +499,32 @@ export default function Analytics() {
     });
 
     return buckets;
+  }, [liveQuotes]);
+
+  const STATUS_META: Record<string, { label: string; color: string }> = {
+    draft: { label: 'Draft', color: '#e4e4e7' },
+    sent: { label: 'Sent', color: '#a1a1aa' },
+    accepted: { label: 'Accepted', color: '#52525b' },
+    invoiced: { label: 'Invoiced', color: '#18181b' },
+    declined: { label: 'Declined', color: '#71717a' },
+    expired: { label: 'Expired', color: '#d4d4d8' },
+  };
+
+  const statusDistribution = useMemo(() => {
+    const counts: Record<string, number> = {};
+    liveQuotes.forEach((q) => {
+      const status = q.status || 'draft';
+      counts[status] = (counts[status] || 0) + 1;
+    });
+
+    return Object.entries(counts)
+      .map(([status, count]) => ({
+        status,
+        name: STATUS_META[status]?.label || status,
+        value: count,
+        fill: STATUS_META[status]?.color || '#a1a1aa',
+      }))
+      .sort((a, b) => b.value - a.value);
   }, [liveQuotes]);
 
   const chartConfig = {
@@ -649,8 +679,8 @@ export default function Analytics() {
             </ChartContainer>
           </CardContent>
         </Card>
-        
-        <Card className="glass-card border border-border/60 transition-all duration-300 hover:-translate-y-1 hover:shadow-[0_18px_45px_rgba(0,0,0,0.22)] lg:col-span-2 overflow-hidden relative">
+
+        <Card className="glass-card border border-border/60 transition-all duration-300 hover:-translate-y-1 hover:shadow-[0_18px_45px_rgba(0,0,0,0.22)] overflow-hidden relative">
           {/* Decorative corner accent */}
           <div className="absolute top-0 right-0 w-40 h-40 bg-gradient-to-bl from-primary/10 to-transparent rounded-full -translate-y-1/2 translate-x-1/2 pointer-events-none" />
 
@@ -766,6 +796,74 @@ export default function Analytics() {
                   Highest: {formatCurrency(Math.max(...topServices.map((s) => s.revenue)), displayCurrency)}
                 </span>
               )}
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card className="glass-card border border-border/60 transition-all duration-300 hover:-translate-y-1 hover:shadow-[0_18px_45px_rgba(0,0,0,0.22)] overflow-hidden relative flex flex-col">
+          <CardHeader className="border-b border-border/50 pb-4">
+            <CardTitle className="font-heading text-lg flex items-center gap-2">
+              <span className="w-1.5 h-5 rounded-full bg-black" />
+              Quotation Status Breakdown
+            </CardTitle>
+            <p className="text-xs text-muted-foreground mt-1 ml-3.5">
+              Where every quotation stands right now
+            </p>
+          </CardHeader>
+
+          <CardContent className="pt-5 flex-1 flex flex-col min-h-0">
+            <ChartContainer
+              config={{ value: { label: 'Quotations', color: 'hsl(var(--primary))' } }}
+              className="h-[300px] w-full"
+            >
+              <PieChart>
+                <ChartTooltip
+                  content={
+                    <ChartTooltipContent
+                      formatter={(value, _name, item) => {
+                        const p = item?.payload as { name?: string } | undefined;
+                        return (
+                          <div className="flex flex-1 justify-between leading-none items-center gap-4 min-w-[140px]">
+                            <span className="text-muted-foreground">{p?.name}</span>
+                            <span className="font-mono font-semibold tabular-nums text-foreground">
+                              {value}
+                            </span>
+                          </div>
+                        );
+                      }}
+                    />
+                  }
+                />
+                <Pie
+                  data={statusDistribution}
+                  dataKey="value"
+                  nameKey="name"
+                  innerRadius={62}
+                  outerRadius={100}
+                  paddingAngle={2}
+                  cornerRadius={4}
+                  animationDuration={900}
+                  animationEasing="ease-out"
+                  stroke="hsl(var(--background))"
+                  strokeWidth={2}
+                >
+                  {statusDistribution.map((entry) => (
+                    <Cell key={entry.status} fill={entry.fill} />
+                  ))}
+                </Pie>
+              </PieChart>
+            </ChartContainer>
+
+            <div className="mt-4 flex flex-wrap gap-x-4 gap-y-2 text-xs border-t border-border/50 pt-3">
+              {statusDistribution.map((entry) => (
+                <span key={entry.status} className="flex items-center gap-1.5 text-muted-foreground">
+                  <span
+                    className="w-2.5 h-2.5 rounded-full shrink-0"
+                    style={{ backgroundColor: entry.fill }}
+                  />
+                  <span className="font-medium text-foreground">{entry.value}</span> {entry.name}
+                </span>
+              ))}
             </div>
           </CardContent>
         </Card>
