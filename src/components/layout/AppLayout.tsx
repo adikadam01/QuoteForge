@@ -85,7 +85,7 @@ export function AppLayout({ children }: { children: ReactNode }) {
     ensureLink("icon");
     ensureLink("shortcut icon");
   }, [brandKit?.logo_url]);
-  
+
   if (loading) {
     const circumference = 2 * Math.PI * 45;
     return (
