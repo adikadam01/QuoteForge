@@ -133,7 +133,62 @@ if ($path === "/notifications/check-due-dates" && $method === "GET") {
     exit;
 }
 
+// DELETE /notifications/:id
+if (
+    preg_match('#^/notifications/([\w\-]+)$#', $path, $matches)
+    && $method === "DELETE"
+) {
 
+    $id = $matches[1];
+
+    $stmt = $pdo->prepare("
+        DELETE FROM notifications
+        WHERE id = ?
+    ");
+
+    $stmt->execute([$id]);
+
+    jsonResponse([
+        "success" => true
+    ]);
+
+    exit;
+}
+
+// DELETE /notifications/clear-read
+// Removes every notification already marked as read — this is what
+// "Clear notifications" calls, so unread items are never silently lost.
+if ($path === "/notifications/clear-read" && $method === "DELETE") {
+
+    $stmt = $pdo->prepare("
+        DELETE FROM notifications
+        WHERE is_read = true
+    ");
+
+    $stmt->execute();
+
+    jsonResponse([
+        "success" => true,
+        "deleted" => $stmt->rowCount()
+    ]);
+
+    exit;
+}
+
+// DELETE /notifications/all
+// Removes everything, read or not — used if the user wants a hard reset.
+if ($path === "/notifications/all" && $method === "DELETE") {
+
+    $stmt = $pdo->prepare("DELETE FROM notifications");
+    $stmt->execute();
+
+    jsonResponse([
+        "success" => true,
+        "deleted" => $stmt->rowCount()
+    ]);
+
+    exit;
+}
 
 jsonResponse([
     "error" => "Notifications route not found"
