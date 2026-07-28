@@ -6,7 +6,6 @@ import { getServiceInvoiceEligibility } from "@/lib/phase4Invoicing";
 import { getRepo } from '@/repo';
 import { getQuotationServiceBlocks } from "@/lib/quotationServiceBlocks";
 import { useApp } from "@/contexts/AppContext";
-
 import { useEffect, useMemo, useState } from 'react';
 
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
@@ -15,9 +14,10 @@ import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
 import { Card } from '@/components/ui/card';
-import { ReceiptText } from 'lucide-react';
+import { ReceiptText, Lock, CheckCircle2 } from 'lucide-react';
 import InvoiceServiceSelector from "./InvoiceServiceSelector"; ``
 
+const { invoices, invoiceItems } = useApp();
 
 type Props = {
   open: boolean;
@@ -98,7 +98,11 @@ export function GenerateInvoiceModal({
 
   const [selectedServiceIds, setSelectedServiceIds] = useState<string[]>([]);
 
-  const { invoices, invoiceItems } = useApp();
+  const getGeneratedCountForService = (serviceId: string) =>
+    invoices.filter((inv) => {
+      if (inv.quotation_id !== quotation.id) return false;
+      return invoiceItems.some((item) => item.invoice_id === inv.id && item.service_id === serviceId);
+    }).length;
 
   const serviceBlocks =
     getQuotationServiceBlocks(quotation);
@@ -445,52 +449,78 @@ export function GenerateInvoiceModal({
 
                       {/* ---------------- MILESTONE ---------------- */}
 
-                      {service.billing_type === "milestone" && (
+                      {service.billing_type === "milestone" && (() => {
+                        const generatedCount = getGeneratedCountForService(service.service_id);
+                        const template = service.milestone_template ?? [];
+                        const nextLabel = template[generatedCount]?.label ?? null;
 
-                        <>
+                        return (
+                          <>
+                            <div className="flex items-center justify-between">
+                              <p className="text-sm text-muted-foreground">
+                                Milestone Payment Plan
+                              </p>
+                              {nextLabel ? (
+                                <p className="text-xs font-semibold text-foreground">
+                                  Invoicing now: {nextLabel}
+                                </p>
+                              ) : (
+                                <p className="text-xs font-semibold text-muted-foreground">
+                                  All milestones invoiced
+                                </p>
+                              )}
+                            </div>
 
-                          <p className="text-sm text-muted-foreground">
-                            Milestone Payment Plan
-                          </p>
+                            <div className="space-y-3">
+                              {template.map((milestone, index) => {
+                                const isInvoiced = index < generatedCount;
+                                const isNext = index === generatedCount;
 
-                          <div className="space-y-3">
+                                return (
+                                  <div
+                                    key={milestone.id ?? index}
+                                    className={`grid grid-cols-[24px_1fr_90px_130px] gap-3 items-center border rounded-xl px-4 py-3 ${isInvoiced
+                                      ? "bg-muted/40 border-border/50 opacity-70"
+                                      : isNext
+                                        ? "border-black ring-1 ring-black"
+                                        : "border-border/50"
+                                      }`}
+                                  >
+                                    <div className="flex items-center justify-center">
+                                      {isInvoiced ? (
+                                        <CheckCircle2 className="w-4 h-4 text-emerald-600" />
+                                      ) : isNext ? null : (
+                                        <Lock className="w-4 h-4 text-muted-foreground" />
+                                      )}
+                                    </div>
 
-                            {(service.milestone_template ?? []).map((milestone, index) => (
+                                    <div>
+                                      <p className="font-medium">
+                                        {milestone.label}
+                                      </p>
+                                      {isInvoiced ? (
+                                        <p className="text-xs text-muted-foreground">Already invoiced</p>
+                                      ) : isNext ? (
+                                        <p className="text-xs font-semibold text-foreground">Invoicing now</p>
+                                      ) : (
+                                        <p className="text-xs text-muted-foreground">Not yet available</p>
+                                      )}
+                                    </div>
 
-                              <div
-                                key={milestone.id ?? index}
-                                className="grid grid-cols-[1fr_90px_130px] gap-3 border rounded-xl px-4 py-3"
-                              >
+                                    <div className="text-center">
+                                      {milestone.percentage}%
+                                    </div>
 
-                                <div>
-
-                                  <p className="font-medium">
-                                    {milestone.label}
-                                  </p>
-
-                                </div>
-
-                                <div className="text-center">
-
-                                  {milestone.percentage}%
-
-                                </div>
-
-                                <div className="text-right font-semibold">
-
-                                  ₹{Number(milestone.amount).toLocaleString()}
-
-                                </div>
-
-                              </div>
-
-                            ))}
-
-                          </div>
-
-                        </>
-
-                      )}
+                                    <div className="text-right font-semibold">
+                                      ₹{Number(milestone.amount).toLocaleString()}
+                                    </div>
+                                  </div>
+                                );
+                              })}
+                            </div>
+                          </>
+                        );
+                      })()}
 
                       {/* ---------------- MONTHLY ---------------- */}
 
@@ -703,7 +733,13 @@ export function GenerateInvoiceModal({
                         ? "Generate Advance Invoice"
                         : mode === "monthly"
                           ? "Generate First Month Invoice"
-                          : "Generate First Milestone Invoice"}
+                          : (() => {
+                            const milestoneService = filteredServiceBlocks.find((s) => s.billing_type === "milestone");
+                            if (!milestoneService) return "Generate Milestone Invoice";
+                            const count = getGeneratedCountForService(milestoneService.service_id);
+                            const label = milestoneService.milestone_template?.[count]?.label;
+                            return label ? `Generate Invoice — ${label}` : "Generate Milestone Invoice";
+                          })()}
                   </Button>
                 </>
 
