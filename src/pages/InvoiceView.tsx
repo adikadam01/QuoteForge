@@ -3,6 +3,8 @@ import { Link, useNavigate, useParams } from "react-router-dom";
 import { ArrowLeft, Download, Send, CreditCard, ListChecks, ReceiptText, Loader2, Receipt } from "lucide-react";
 import { DatePicker } from "@/pages/DatePicker";
 
+import CountdownTimer from "@/components/ui/CountdownTimer";
+
 import { Button } from "@/components/ui/button";
 // Phase 3A: Invoice document redesign (in this view only). Keep logic untouched.
 import { Input } from "@/components/ui/input";
@@ -88,13 +90,17 @@ export default function InvoiceView() {
   const quotationStatus = (invoice?.quotation?.status || linkedQuotation?.status || 'draft');
   const quotationIsDraft = quotationStatus === 'draft';
 
-  const monthlyCooldownDaysRemaining = useMemo(() => {
-    if (!invoice || invoice.type !== 'monthly') return 0;
+  const monthlyCooldownEndsAt = useMemo(() => {
+    if (!invoice || invoice.type !== "monthly") return null;
     const COOLDOWN_DAYS = 25;
-    const elapsedMs = Date.now() - new Date(invoice.created_at).getTime();
-    const elapsedDays = elapsedMs / (1000 * 60 * 60 * 24);
-    return Math.max(0, Math.ceil(COOLDOWN_DAYS - elapsedDays));
+    const createdMs = new Date(invoice.created_at).getTime();
+    return createdMs + COOLDOWN_DAYS * 24 * 60 * 60 * 1000;
   }, [invoice]);
+
+  const isMonthlyInCooldown = useMemo(() => {
+    if (!monthlyCooldownEndsAt) return false;
+    return Date.now() < monthlyCooldownEndsAt;
+  }, [monthlyCooldownEndsAt]);
 
   // const amountPaid = useMemo(() => {
   //   if (!invoice) return 0;
@@ -732,36 +738,45 @@ export default function InvoiceView() {
                 </Button>
               ) : null}
 
-              {
-                invoice.type === 'monthly' && invoice.invoice_status === 'paid' ? (
-                  <Button
-                    variant="outline"
-                    className="w-full gap-2 rounded-xl"
-                    disabled={generatingNext || monthlyCooldownDaysRemaining > 0}
-                    onClick={async () => {
-                      if (!invoice) return;
-                      setGeneratingNext(true);
-                      try {
-                        const { generateNextMonthlyInvoice } = await import('@/lib/phase4Invoicing');
-                        const nextId = await generateNextMonthlyInvoice(invoice);
-                        if (nextId) navigate(`/invoices/${nextId}`);
-                        else toast({ title: "All months invoiced", description: "Every month for this plan has been invoiced." });
-                      } catch (err) {
-                        if (import.meta.env.DEV) console.error('Failed to generate next monthly invoice', err);
-                        const message = err instanceof Error ? err.message : "Could not generate next month's invoice.";
-                        toast({ title: "Not available yet", description: message });
-                      } finally {
-                        setGeneratingNext(false);
-                      }
-                    }}
-                  >
-                    <ListChecks className="w-4 h-4" />
-                    {monthlyCooldownDaysRemaining > 0
-                      ? `Available in ${monthlyCooldownDaysRemaining} day${monthlyCooldownDaysRemaining === 1 ? '' : 's'}`
-                      : "Generate Next Month's Invoice"}
-                  </Button>
-                ) : null
-              }
+              {invoice.type === "monthly" && invoice.invoice_status === "paid" ? (
+                <Button
+                  variant="outline"
+                  className="w-full gap-2 rounded-xl"
+                  disabled={generatingNext || isMonthlyInCooldown}
+                  onClick={async () => {
+                    if (!invoice) return;
+                    setGeneratingNext(true);
+                    try {
+                      const { generateNextMonthlyInvoice } = await import("@/lib/phase4Invoicing");
+                      const nextId = await generateNextMonthlyInvoice(invoice);
+                      if (nextId) navigate(`/invoices/${nextId}`);
+                      else
+                        toast({
+                          title: "All months invoiced",
+                          description: "Every month for this plan has been invoiced.",
+                        });
+                    } catch (err) {
+                      if (import.meta.env.DEV) console.error("Failed to generate next monthly invoice", err);
+                      const message =
+                        err instanceof Error ? err.message : "Could not generate next month's invoice.";
+                      toast({ title: "Not available yet", description: message });
+                    } finally {
+                      setGeneratingNext(false);
+                    }
+                  }}
+                >
+                  <ListChecks className="w-4 h-4" />
+                  {isMonthlyInCooldown && monthlyCooldownEndsAt ? (
+                    <CountdownTimer
+                      endsAt={monthlyCooldownEndsAt}
+                      prefix="Available in"
+                      className="tabular-nums"
+                    />
+                  ) : (
+                    "Generate Next Month's Invoice"
+                  )}
+                </Button>
+              ) : null}
 
               {invoice.type === 'partial' && invoice.invoice_status === 'paid' && Number(invoice.balance_amount) > 0 ? (
                 <Button

@@ -2,6 +2,8 @@ import { useEffect, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import { ArrowLeft, Download, Send, CreditCard, FileText } from "lucide-react";
 
+import CountdownTimer from "@/components/ui/CountdownTimer";
+
 import { Button } from "@/components/ui/button";
 import { useApp } from "@/contexts/AppContext";
 import { useToast } from "@/hooks/use-toast";
@@ -81,6 +83,7 @@ export default function QuotationPreview() {
         next: number;
         canGenerate: boolean;
         reason: string | null;
+        cooldownEndsAt?: number;
       }
     >
   >({});
@@ -142,15 +145,12 @@ export default function QuotationPreview() {
   }, [id]);
 
   useEffect(() => {
-
     if (!quotation) return;
 
     const services = getQuotationServiceBlocks(quotation);
-
     const map: typeof serviceProgress = {};
 
     for (const service of services) {
-
       const eligibility = getServiceInvoiceEligibility(
         quotation.id,
         service,
@@ -189,13 +189,13 @@ export default function QuotationPreview() {
             : eligibility.reason === "payment_pending"
               ? "Previous invoice must be paid first"
               : eligibility.reason === "cooldown"
-                ? `Available in ${eligibility.cooldownDaysRemaining} day${eligibility.cooldownDaysRemaining === 1 ? '' : 's'}`
+                ? "cooldown" // marker only — actual display uses CountdownTimer
                 : null,
+        cooldownEndsAt: eligibility.cooldownEndsAt,
       };
     }
 
     setServiceProgress(map);
-
   }, [quotation, invoices, invoiceItems]);
 
   if (!id) {
@@ -668,7 +668,6 @@ export default function QuotationPreview() {
                   <div className="space-y-3 mt-3">
 
                     {serviceBlocks.map((service) => {
-
                       const progress =
                         serviceProgress[service.service_id] ?? {
                           generated: 0,
@@ -682,126 +681,71 @@ export default function QuotationPreview() {
                           next: 1,
                           canGenerate: true,
                           reason: null,
+                          cooldownEndsAt: undefined,
                         };
 
-                      // let buttonLabel = "Generate Invoice";
+                      const isCooldown = progress.reason === "cooldown" && !!progress.cooldownEndsAt;
 
-                      // if (service.billing_type === "monthly") {
-
-                      //   buttonLabel =
-                      //     progress.completed
-                      //       ? "Completed"
-                      //       : `Generate Month ${progress.generated + 1}`;
-
-                      // }
-
-                      // if (service.billing_type === "milestone") {
-
-                      //   buttonLabel =
-                      //     progress.completed
-                      //       ? "Completed"
-                      //       : `Generate Milestone ${progress.generated + 1}`;
-
-                      // }
-
-                      let buttonLabel = "Generate Invoice";
+                      let buttonLabel: React.ReactNode = "Generate Invoice";
 
                       switch (service.billing_type) {
                         case "monthly":
-
-                          buttonLabel = progress.completed
-                            ? "Completed"
-                            : progress.reason?.startsWith("Available in")
-                              ? progress.reason
-                              : `Generate Month ${progress.next}`;
-
+                          if (progress.completed) {
+                            buttonLabel = "Completed";
+                          } else if (isCooldown) {
+                            buttonLabel = (
+                              <CountdownTimer
+                                endsAt={progress.cooldownEndsAt!}
+                                prefix="Available in"
+                                className="tabular-nums"
+                              />
+                            );
+                          } else {
+                            buttonLabel = `Generate Month ${progress.next}`;
+                          }
                           break;
 
                         case "milestone":
-
                           buttonLabel = progress.completed
                             ? "Completed"
                             : `Generate Milestone ${progress.next}`;
-
                           break;
 
                         case "one_time":
-
-                          buttonLabel = progress.completed
-                            ? "Completed"
-                            : "Generate Invoice";
-
-                          break;
-
                         default:
-
-                          buttonLabel = progress.completed
-                            ? "Completed"
-                            : "Generate Invoice";
-
+                          buttonLabel = progress.completed ? "Completed" : "Generate Invoice";
                       }
 
                       return (
-
-                        <div
-                          key={service.service_id}
-                          className="rounded-lg border p-3"
-                        >
-
+                        <div key={service.service_id} className="rounded-lg border p-3">
                           <div className="flex justify-between">
-
                             <div>
-
-                              <p className="font-semibold">
-                                {service.service_name}
-                              </p>
-
+                              <p className="font-semibold">{service.service_name}</p>
                               <p className="text-xs text-muted-foreground capitalize">
                                 {service.billing_type}
                               </p>
-
                             </div>
-
                             <div className="text-right">
-
                               <p className="text-sm font-medium">
-
-                                {Math.min(progress.generated, progress.total)}
-                                {" / "}
-                                {progress.total}
-
+                                {Math.min(progress.generated, progress.total)} / {progress.total}
                               </p>
-
                             </div>
-
                           </div>
 
                           <Button
                             className="w-full mt-3"
                             disabled={!progress.canGenerate}
                             onClick={() => {
-
                               if (!progress.canGenerate) return;
-
                               setSelectedServiceId(service.service_id);
-
                               setInvoiceModalOpen(true);
-
                             }}
                           >
-
-                            {progress.completed
-                              ? "Completed"
-                              : buttonLabel}
-
+                            {progress.completed ? "Completed" : buttonLabel}
                           </Button>
-
                         </div>
-
                       );
-
                     })}
-
                   </div>
 
                 </div>

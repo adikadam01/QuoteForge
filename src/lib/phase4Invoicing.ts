@@ -67,6 +67,13 @@ export function getMonthlyCooldownDaysRemaining(latestInvoice: Invoice | null): 
   return Math.max(0, Math.ceil(MONTHLY_INVOICE_COOLDOWN_DAYS - elapsedDays));
 }
 
+/** Precise cooldown end timestamp (ms) for a live-ticking countdown. */
+export function getMonthlyCooldownEndTime(latestInvoice: Invoice | null): number | null {
+  if (!latestInvoice?.created_at) return null;
+  const createdMs = new Date(latestInvoice.created_at).getTime();
+  return createdMs + MONTHLY_INVOICE_COOLDOWN_DAYS * 24 * 60 * 60 * 1000;
+}
+
 export async function getInvoicesForService(
   quotationId: string,
   serviceId: string,
@@ -180,6 +187,7 @@ export type ServiceInvoiceEligibility = {
   canGenerate: boolean;
   reason: "completed" | "payment_pending" | "cooldown" | null;
   cooldownDaysRemaining?: number;
+  cooldownEndsAt?: number;
 };
 export function getServiceInvoiceEligibility(
   quotationId: string,
@@ -224,6 +232,8 @@ export function getServiceInvoiceEligibility(
   const cooldownDaysRemaining =
     service.billing_type === "monthly" ? getMonthlyCooldownDaysRemaining(latestInvoice) : 0;
   const inCooldown = cooldownDaysRemaining > 0;
+  const cooldownEndsAt =
+    service.billing_type === "monthly" ? getMonthlyCooldownEndTime(latestInvoice) : null;
 
   return {
     completed,
@@ -236,6 +246,7 @@ export function getServiceInvoiceEligibility(
           ? "cooldown"
           : null,
     cooldownDaysRemaining: inCooldown ? cooldownDaysRemaining : undefined,
+    cooldownEndsAt: inCooldown && cooldownEndsAt ? cooldownEndsAt : undefined,
   };
 }
 

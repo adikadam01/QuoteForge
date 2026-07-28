@@ -3,7 +3,7 @@ import { useMemo } from "react";
 
 import { Card, CardContent } from "@/components/ui/card";
 import { Checkbox } from "@/components/ui/checkbox";
-
+import CountdownTimer from "@/components/ui/CountdownTimer";
 import type { QuotationServiceBlock } from "@/lib/quotationServiceBlocks";
 import type { ServiceInvoiceEligibility } from "@/lib/phase4Invoicing";
 
@@ -97,9 +97,9 @@ export default function InvoiceServiceSelector({
                                             </span>
                                         )}
 
-                                        {inCooldown && (
-                                            <span className="text-xs px-2 py-1 rounded-full bg-blue-100 text-blue-700">
-                                                Available in {eligibility?.cooldownDaysRemaining} day{eligibility?.cooldownDaysRemaining === 1 ? '' : 's'}
+                                        {inCooldown && eligibility?.cooldownEndsAt && (
+                                            <span className="text-xs px-2 py-1 rounded-full bg-blue-100 text-blue-700 tabular-nums">
+                                                <CountdownTimer endsAt={eligibility.cooldownEndsAt} />
                                             </span>
                                         )}
 

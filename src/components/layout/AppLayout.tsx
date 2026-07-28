@@ -189,7 +189,7 @@ export function AppLayout({ children }: { children: ReactNode }) {
           <div className="flex items-center gap-3">
             {businessProfile.logo_url || brandKit?.logo_url ? (
               <img
-                src={businessProfile.logo_url || brandKit?.logo_url || "/favicon.ico"}
+                src={businessProfile.logo_url || brandKit?.logo_url || "/Logo.jpg.jpeg"}
                 alt="Logo"
                 className="w-10 h-10 object-contain rounded-lg"
               />
