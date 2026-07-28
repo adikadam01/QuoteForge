@@ -1760,8 +1760,215 @@ export default function QuotationBuilder() {
                   )}
                 </CardContent>
               </Card>
+            </div>
+          </div>
 
+          {/* ===== Services Selection ===== */}
+          <div className="mt-6 grid grid-cols-1 lg:grid-cols-9 gap-6">
+
+            {/* Left */}
+            <div className="lg:col-span-5 space-y-6">
+              <Card className="relative rounded-2xl border border-border/60 shadow-sm hover:shadow-xl transition-shadow duration-300 overflow-hidden">
+                {/* Thick left accent bar */}
+                <div className="absolute left-0 top-0 bottom-0 w-1.5 bg-foreground" />
+
+                <CardHeader className="pl-8 pb-5 border-b border-border/50">
+                  <div className="flex items-baseline gap-4 mb-4">
+                    <span className="font-heading text-4xl font-bold text-foreground/10 leading-none select-none">
+                      02
+                    </span>
+                    <CardTitle className="text-xl font-heading font-bold text-foreground leading-tight">
+                      Services Selection
+                    </CardTitle>
+                  </div>
+
+                  <div
+                    className={`flex flex-wrap gap-2 overflow-hidden transition-[max-height] duration-300 ${showAllCategoryChips ? "max-h-[500px]" : "max-h-[76px]"
+                      }`}
+                  >
+                    <Button
+                      type="button"
+                      variant={categoryChipFilter === "all" ? "default" : "outline"}
+                      size="sm"
+                      onClick={() => setCategoryChipFilter("all")}
+                      className={`rounded-full h-8 px-3 shrink-0 ${categoryChipFilter === "all" ? "bg-[#111111] text-white hover:bg-black/80" : ""
+                        }`}
+                    >
+                      All
+                    </Button>
+                    {categoriesInUse.map((cat) => (
+                      <Button
+                        key={cat}
+                        type="button"
+                        variant={categoryChipFilter === cat ? "default" : "outline"}
+                        size="sm"
+                        onClick={() => setCategoryChipFilter(categoryChipFilter === cat ? "all" : cat)}
+                        className={`rounded-full h-8 px-3 shrink-0 whitespace-nowrap ${categoryChipFilter === cat ? "bg-[#111111] text-white hover:bg-black/80" : ""
+                          }`}
+                      >
+                        {cat}
+                      </Button>
+                    ))}
+                  </div>
+
+                  {categoriesInUse.length > 0 && (
+                    <button
+                      type="button"
+                      onClick={() => setShowAllCategoryChips((v) => !v)}
+                      className="mt-2 text-xs font-semibold text-accent hover:underline"
+                    >
+                      {showAllCategoryChips ? "Show less" : "Show more"}
+                    </button>
+                  )}
+                </CardHeader>
+                <CardContent className="pl-8 pt-6 space-y-6">
+                  {services.length > 0 ? (
+                    Object.keys(groupedFilteredServices).length > 0 ? (
+                      <div
+                        className="space-y-3 overflow-y-auto pr-2 scrollbar-modern"
+                        style={{
+                          maxHeight: rightColumnHeight ? `${Math.max(rightColumnHeight, 220)}px` : undefined,
+                          minHeight: 220,
+                        }}
+                      >
+                        {Object.entries(groupedFilteredServices).map(([category, categoryServices]) => {
+                          const isOpen = openCategories.has(category) || categoryChipFilter === category;
+                          const selectedCount = categoryServices.filter((s) =>
+                            serviceBlocks.some((b) => b.service_id === s.id)
+                          ).length;
+
+                          return (
+                            <div key={category} className="rounded-2xl border border-border/60 bg-card overflow-hidden">
+                              <button
+                                type="button"
+                                onClick={() => toggleCategory(category)}
+                                className="w-full flex items-center justify-between p-5 hover:bg-muted/40 transition-colors duration-200"
+                              >
+                                <div className="flex items-center gap-2">
+                                  <Tag className="w-3.5 h-3.5 text-accent" strokeWidth={2.5} />
+                                  <p className="text-xs uppercase tracking-wide text-accent font-bold">{category}</p>
+                                  {selectedCount > 0 && (
+                                    <span className="flex items-center justify-center min-w-[18px] h-[18px] px-1 rounded-full bg-accent text-accent-foreground text-[10px] font-bold">
+                                      {selectedCount}
+                                    </span>
+                                  )}
+                                </div>
+                                <ChevronDown
+                                  className={`w-4 h-4 text-muted-foreground transition-transform duration-200 ${isOpen ? "rotate-180" : ""}`}
+                                />
+                              </button>
+
+                              {isOpen && (
+                                <div className="px-5 pb-5 flex flex-wrap gap-2">
+                                  {categoryServices.map((service) => {
+                                    const checked = serviceBlocks.some((b) => b.service_id === service.id);
+                                    return (
+                                      <button
+                                        key={service.id}
+                                        type="button"
+                                        onClick={() => addOrRemoveServiceAsBlock(service.id, !checked)}
+                                        title={service.description || service.name}
+                                        className={`inline-flex items-center gap-1.5 pl-3 pr-2 py-1.5 rounded-full text-sm font-medium transition-all duration-200 ${checked
+                                          ? "bg-accent text-accent-foreground shadow-sm"
+                                          : "bg-secondary/60 text-foreground hover:bg-secondary"
+                                          }`}
+                                      >
+                                        {service.name}
+                                        <span
+                                          className={`flex items-center justify-center w-4 h-4 rounded-full text-[10px] font-bold transition-transform duration-200 ${checked ? "bg-accent-foreground/20" : "bg-foreground/10"
+                                            }`}
+                                        >
+                                          {checked ? "×" : "+"}
+                                        </span>
+                                      </button>
+                                    );
+                                  })}
+                                </div>
+                              )}
+                            </div>
+                          );
+                        })}
+                      </div>
+                    ) : (
+                      <p className="text-center text-muted-foreground py-8">
+                        {serviceSearch
+                          ? `No services found for "${serviceSearch}"`
+                          : "No services available."}
+                      </p>
+                    )
+                  ) : (
+                    <p className="text-center text-muted-foreground py-8">
+                      No services available.
+                    </p>
+                  )}
+                </CardContent>
+              </Card>
+
+              {serviceBlocks.length > 0 && (
+                <Card className="relative rounded-2xl border border-border/60 shadow-sm hover:shadow-xl transition-shadow duration-300 overflow-hidden">
+                  {/* Thick left accent bar */}
+                  <div className="absolute left-0 top-0 bottom-0 w-1.5 bg-foreground" />
+
+                  <CardHeader className="pl-8 pb-4 border-b border-border/50">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-baseline gap-4">
+                        <span className="font-heading text-4xl font-bold text-foreground/10 leading-none select-none">
+                          ✓
+                        </span>
+                        <CardTitle className="text-lg font-heading font-bold text-foreground leading-tight">
+                          Selected Services Overview
+                        </CardTitle>
+                      </div>
+                      <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">
+                        {serviceBlocks.length} {serviceBlocks.length === 1 ? "service" : "services"}
+                      </span>
+                    </div>
+                  </CardHeader>
+
+                  <CardContent className="pl-8 pt-4 pb-5 space-y-2">
+                    {serviceBlocks.map((b, idx) => (
+                      <div
+                        key={`${b.service_id}-overview-${idx}`}
+                        className="flex items-center justify-between gap-3 rounded-xl border border-border/50 bg-card px-4 py-3 hover:bg-muted/30 transition-colors"
+                      >
+                        <div className="min-w-0 flex-1">
+                          <p className="text-sm font-semibold text-foreground truncate">
+                            {b.service_name || "Service"}
+                          </p>
+                          <div className="flex items-center gap-2 mt-1">
+                            {b.category ? (
+                              <span className="text-[10px] uppercase tracking-wide text-accent font-bold">
+                                {b.category}
+                              </span>
+                            ) : null}
+                            <span className="text-[10px] uppercase tracking-wide text-muted-foreground capitalize">
+                              {(b.billing_type || "one_time").replace("_", " ")}
+                            </span>
+                          </div>
+                        </div>
+                        <div className="text-right shrink-0">
+                          <p className="text-sm font-bold text-foreground">
+                            {currency === "INR" ? "₹" : "$"}{Number(b.price || 0).toLocaleString()}
+                          </p>
+                          {Number((b as any).discount_percent) > 0 ? (
+                            <p className="text-[10px] text-red-600 font-medium">
+                              -{(b as any).discount_percent}% off
+                            </p>
+                          ) : null}
+                        </div>
+                      </div>
+                    ))}
+                  </CardContent>
+                </Card>
+              )}
+            </div>
+
+            <div ref={rightColumnRef} className="w-[500px] space-y-6">
+            </div>
+
+            <div ref={rightColumnRef} className="w-[500px] space-y-6">
               <Card className="relative rounded-2xl border-2 shadow-sm hover:shadow-xl transition-shadow duration-300 overflow-hidden">
+                {/* Thick left accent bar */}
                 <div className="absolute left-0 top-0 bottom-0 w-1.5 bg-foreground" />
 
                 <CardHeader className="pl-8 pb-5 border-b border-border/50">
@@ -2222,8 +2429,8 @@ export default function QuotationBuilder() {
                   })}
                 </CardContent>
               </Card>
-
               <Card className="relative lg:sticky lg:top-6 rounded-2xl border border-border/60 overflow-hidden shadow-sm hover:shadow-xl transition-shadow duration-300">
+                {/* Thick left accent bar */}
                 <div className="absolute left-0 top-0 bottom-0 w-1.5 bg-foreground" />
 
                 <CardHeader className="pl-8 pb-4 border-b border-border/50">
@@ -2265,169 +2472,6 @@ export default function QuotationBuilder() {
                   </div>
                 </CardContent>
               </Card>
-            </div>
-          </div>
-
-          {/* ===== Services Selection ===== */}
-          <div className="mt-6 grid grid-cols-1 lg:grid-cols-9 gap-6">
-
-            {/* Left */}
-            <div className="lg:col-span-5 space-y-6">
-              <Card className="relative rounded-2xl border border-border/60 shadow-sm hover:shadow-xl transition-shadow duration-300 overflow-hidden">
-                {/* Thick left accent bar */}
-                <div className="absolute left-0 top-0 bottom-0 w-1.5 bg-foreground" />
-
-                <CardHeader className="pl-8 pb-5 border-b border-border/50">
-                  <div className="flex items-baseline gap-4 mb-4">
-                    <span className="font-heading text-4xl font-bold text-foreground/10 leading-none select-none">
-                      02
-                    </span>
-                    <CardTitle className="text-xl font-heading font-bold text-foreground leading-tight">
-                      Services Selection
-                    </CardTitle>
-                  </div>
-
-                  <div
-                    className={`flex flex-wrap gap-2 overflow-hidden transition-[max-height] duration-300 ${showAllCategoryChips ? "max-h-[500px]" : "max-h-[76px]"
-                      }`}
-                  >
-                    <Button
-                      type="button"
-                      variant={categoryChipFilter === "all" ? "default" : "outline"}
-                      size="sm"
-                      onClick={() => setCategoryChipFilter("all")}
-                      className={`rounded-full h-8 px-3 shrink-0 ${categoryChipFilter === "all" ? "bg-[#111111] text-white hover:bg-black/80" : ""
-                        }`}
-                    >
-                      All
-                    </Button>
-                    {categoriesInUse.map((cat) => (
-                      <Button
-                        key={cat}
-                        type="button"
-                        variant={categoryChipFilter === cat ? "default" : "outline"}
-                        size="sm"
-                        onClick={() => setCategoryChipFilter(categoryChipFilter === cat ? "all" : cat)}
-                        className={`rounded-full h-8 px-3 shrink-0 whitespace-nowrap ${categoryChipFilter === cat ? "bg-[#111111] text-white hover:bg-black/80" : ""
-                          }`}
-                      >
-                        {cat}
-                      </Button>
-                    ))}
-                  </div>
-
-                  {categoriesInUse.length > 0 && (
-                    <button
-                      type="button"
-                      onClick={() => setShowAllCategoryChips((v) => !v)}
-                      className="mt-2 text-xs font-semibold text-accent hover:underline"
-                    >
-                      {showAllCategoryChips ? "Show less" : "Show more"}
-                    </button>
-                  )}
-                </CardHeader>
-                <CardContent className="pl-8 pt-6 space-y-6">
-                  {services.length > 0 ? (
-                    Object.keys(groupedFilteredServices).length > 0 ? (
-                      <div
-                        className="space-y-3 overflow-y-auto pr-2 scrollbar-modern"
-                        style={{
-                          maxHeight: rightColumnHeight ? `${Math.max(rightColumnHeight, 220)}px` : undefined,
-                          minHeight: 220,
-                        }}
-                      >
-                        {Object.entries(groupedFilteredServices).map(([category, categoryServices]) => {
-                          const isOpen = openCategories.has(category) || categoryChipFilter === category;
-                          const selectedCount = categoryServices.filter((s) =>
-                            serviceBlocks.some((b) => b.service_id === s.id)
-                          ).length;
-
-                          return (
-                            <div key={category} className="rounded-2xl border border-border/60 bg-card overflow-hidden">
-                              <button
-                                type="button"
-                                onClick={() => toggleCategory(category)}
-                                className="w-full flex items-center justify-between p-5 hover:bg-muted/40 transition-colors duration-200"
-                              >
-                                <div className="flex items-center gap-2">
-                                  <Tag className="w-3.5 h-3.5 text-accent" strokeWidth={2.5} />
-                                  <p className="text-xs uppercase tracking-wide text-accent font-bold">{category}</p>
-                                  {selectedCount > 0 && (
-                                    <span className="flex items-center justify-center min-w-[18px] h-[18px] px-1 rounded-full bg-accent text-accent-foreground text-[10px] font-bold">
-                                      {selectedCount}
-                                    </span>
-                                  )}
-                                </div>
-                                <ChevronDown
-                                  className={`w-4 h-4 text-muted-foreground transition-transform duration-200 ${isOpen ? "rotate-180" : ""}`}
-                                />
-                              </button>
-
-                              {isOpen && (
-                                <div className="px-5 pb-5 flex flex-wrap gap-2">
-                                  {categoryServices.map((service) => {
-                                    const checked = serviceBlocks.some((b) => b.service_id === service.id);
-                                    return (
-                                      <button
-                                        key={service.id}
-                                        type="button"
-                                        onClick={() => addOrRemoveServiceAsBlock(service.id, !checked)}
-                                        title={service.description || service.name}
-                                        className={`inline-flex items-center gap-1.5 pl-3 pr-2 py-1.5 rounded-full text-sm font-medium transition-all duration-200 ${checked
-                                          ? "bg-accent text-accent-foreground shadow-sm"
-                                          : "bg-secondary/60 text-foreground hover:bg-secondary"
-                                          }`}
-                                      >
-                                        {service.name}
-                                        <span
-                                          className={`flex items-center justify-center w-4 h-4 rounded-full text-[10px] font-bold transition-transform duration-200 ${checked ? "bg-accent-foreground/20" : "bg-foreground/10"
-                                            }`}
-                                        >
-                                          {checked ? "×" : "+"}
-                                        </span>
-                                      </button>
-                                    );
-                                  })}
-                                </div>
-                              )}
-                            </div>
-                          );
-                        })}
-                      </div>
-                    ) : (
-                      <p className="text-center text-muted-foreground py-8">
-                        {serviceSearch
-                          ? `No services found for "${serviceSearch}"`
-                          : "No services available."}
-                      </p>
-                    )
-                  ) : (
-                    <p className="text-center text-muted-foreground py-8">
-                      No services available.
-                    </p>
-                  )}
-                </CardContent>
-              </Card>
-
-              {serviceBlocks.length > 0 && (
-                <div className="space-y-4">
-                  {/* Section header */}
-                  <div className="flex items-center justify-between px-1">
-                    <div className="flex items-center gap-3">
-                      <span className="font-heading text-2xl font-bold text-foreground/15 leading-none select-none">
-                        ✓
-                      </span>
-                      <h3 className="text-base font-heading font-bold text-foreground">
-                        Selected Services Overview
-                      </h3>
-                    </div>
-                    <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">
-                      {serviceBlocks.length}{" "}
-                      {serviceBlocks.length === 1 ? "service" : "services"}
-                    </span>
-                  </div>
-                </div>
-              )}
             </div>
           </div>
         </>
