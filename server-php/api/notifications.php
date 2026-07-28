@@ -23,11 +23,11 @@ if (
 
     $id = $matches[1];
 
-$stmt = $pdo->prepare("
-    UPDATE notifications
-    SET is_read = true
-    WHERE id = ?
-");
+    $stmt = $pdo->prepare("
+        UPDATE notifications
+        SET is_read = true
+        WHERE id = ?
+    ");
 
     $stmt->execute([$id]);
 
@@ -133,27 +133,17 @@ if ($path === "/notifications/check-due-dates" && $method === "GET") {
     exit;
 }
 
-// DELETE /notifications/:id
-if (
-    preg_match('#^/notifications/([\w\-]+)$#', $path, $matches)
-    && $method === "DELETE"
-) {
-
-    $id = $matches[1];
-
-    $stmt = $pdo->prepare("
-        DELETE FROM notifications
-        WHERE id = ?
-    ");
-
-    $stmt->execute([$id]);
-
-    jsonResponse([
-        "success" => true
-    ]);
-
-    exit;
-}
+// -----------------------------------------------------------------------
+// IMPORTANT: these two literal-path DELETE routes MUST be checked BEFORE
+// the generic "DELETE /notifications/:id" route below. That route's regex
+// (`[\w\-]+`) matches ANY word/hyphen string — including the literal words
+// "clear-read" and "all" — so if it ran first it would swallow these
+// requests, treat "clear-read"/"all" as if they were a notification id,
+// delete zero rows (no row has that id), and still report success. That
+// was the exact bug: "Clear notifications" appeared to work (optimistic
+// UI + fake success response) but nothing was actually deleted, so a
+// refresh brought everything back.
+// -----------------------------------------------------------------------
 
 // DELETE /notifications/clear-read
 // Removes every notification already marked as read — this is what
@@ -190,6 +180,31 @@ if ($path === "/notifications/all" && $method === "DELETE") {
     exit;
 }
 
+// DELETE /notifications/:id
+// Generic single-notification delete — must stay LAST among the DELETE
+// routes so the more specific literal-path routes above get first crack
+// at matching "clear-read" and "all".
+if (
+    preg_match('#^/notifications/([\w\-]+)$#', $path, $matches)
+    && $method === "DELETE"
+) {
+
+    $id = $matches[1];
+
+    $stmt = $pdo->prepare("
+        DELETE FROM notifications
+        WHERE id = ?
+    ");
+
+    $stmt->execute([$id]);
+
+    jsonResponse([
+        "success" => true
+    ]);
+
+    exit;
+}
+
 jsonResponse([
     "error" => "Notifications route not found"
-],404);
+], 404);
