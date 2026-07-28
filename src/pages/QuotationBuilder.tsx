@@ -1905,60 +1905,116 @@ export default function QuotationBuilder() {
               </Card>
 
               {serviceBlocks.length > 0 && (
-                <Card className="relative rounded-2xl border border-border/60 shadow-sm hover:shadow-xl transition-shadow duration-300 overflow-hidden">
+                <Card className="relative rounded-2xl border-2 border-foreground shadow-sm hover:shadow-xl transition-shadow duration-300 overflow-hidden">
                   {/* Thick left accent bar */}
                   <div className="absolute left-0 top-0 bottom-0 w-1.5 bg-foreground" />
 
-                  <CardHeader className="pl-8 pb-4 border-b border-border/50">
+                  <CardHeader className="pl-8 pb-4 border-b border-border/50 bg-foreground">
                     <div className="flex items-center justify-between">
                       <div className="flex items-baseline gap-4">
-                        <span className="font-heading text-4xl font-bold text-foreground/10 leading-none select-none">
+                        <span className="font-heading text-4xl font-bold text-background/15 leading-none select-none">
                           ✓
                         </span>
-                        <CardTitle className="text-lg font-heading font-bold text-foreground leading-tight">
+                        <CardTitle className="text-lg font-heading font-bold text-background leading-tight">
                           Selected Services Overview
                         </CardTitle>
                       </div>
-                      <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">
+                      <span className="text-xs font-semibold text-background/70 uppercase tracking-wide">
                         {serviceBlocks.length} {serviceBlocks.length === 1 ? "service" : "services"}
                       </span>
                     </div>
                   </CardHeader>
 
-                  <CardContent className="pl-8 pt-4 pb-5 space-y-2">
-                    {serviceBlocks.map((b, idx) => (
-                      <div
-                        key={`${b.service_id}-overview-${idx}`}
-                        className="flex items-center justify-between gap-3 rounded-xl border border-border/50 bg-card px-4 py-3 hover:bg-muted/30 transition-colors"
-                      >
-                        <div className="min-w-0 flex-1">
-                          <p className="text-sm font-semibold text-foreground truncate">
-                            {b.service_name || "Service"}
-                          </p>
-                          <div className="flex items-center gap-2 mt-1">
-                            {b.category ? (
-                              <span className="text-[10px] uppercase tracking-wide text-accent font-bold">
-                                {b.category}
-                              </span>
+                  <CardContent className="pl-8 pr-5 pt-5 pb-6 space-y-3">
+                    {serviceBlocks.map((b, idx) => {
+                      const discountedPrice = Math.max(0, b.price - Number((b as any).discount_amount || 0));
+                      const hasDiscount = Number((b as any).discount_percent) > 0;
+
+                      return (
+                        <div
+                          key={`${b.service_id}-overview-${idx}`}
+                          className="rounded-2xl border-2 border-border/70 bg-card px-5 py-4 hover:border-foreground transition-colors duration-200"
+                        >
+                          {/* Top row: name, category, price */}
+                          <div className="flex items-start justify-between gap-4">
+                            <div className="min-w-0 flex-1">
+                              <div className="flex items-center gap-2">
+                                <span className="font-heading text-2xl font-bold text-foreground/10 leading-none select-none">
+                                  {String(idx + 1).padStart(2, "0")}
+                                </span>
+                                <p className="text-base font-heading font-bold text-foreground truncate">
+                                  {b.service_name || "Service"}
+                                </p>
+                              </div>
+                              <div className="flex flex-wrap items-center gap-2 mt-2 ml-8">
+                                {b.category ? (
+                                  <span className="text-[10px] uppercase tracking-wide font-bold px-2 py-0.5 rounded-full bg-foreground text-background">
+                                    {b.category}
+                                  </span>
+                                ) : null}
+                                <span className="text-[10px] uppercase tracking-wide font-bold px-2 py-0.5 rounded-full border border-border/70 text-muted-foreground">
+                                  {(b.billing_type || "one_time").replace("_", " ")}
+                                </span>
+                                {b.billing_type === "monthly" ? (
+                                  <span className="text-[10px] uppercase tracking-wide font-bold px-2 py-0.5 rounded-full border border-border/70 text-muted-foreground">
+                                    {b.duration_months || 1} {(b.duration_months || 1) === 1 ? "month" : "months"}
+                                  </span>
+                                ) : null}
+                                {b.billing_type === "milestone" ? (
+                                  <span className="text-[10px] uppercase tracking-wide font-bold px-2 py-0.5 rounded-full border border-border/70 text-muted-foreground">
+                                    {(b.milestone_template || []).length} milestones
+                                  </span>
+                                ) : null}
+                              </div>
+                            </div>
+
+                            <div className="text-right shrink-0">
+                              {hasDiscount ? (
+                                <>
+                                  <p className="text-xs text-muted-foreground line-through">
+                                    {currency === "INR" ? "₹" : "$"}
+                                    {Number(b.price || 0).toLocaleString()}
+                                  </p>
+                                  <p className="text-lg font-heading font-bold text-foreground">
+                                    {currency === "INR" ? "₹" : "$"}
+                                    {discountedPrice.toLocaleString()}
+                                  </p>
+                                </>
+                              ) : (
+                                <p className="text-lg font-heading font-bold text-foreground">
+                                  {currency === "INR" ? "₹" : "$"}
+                                  {Number(b.price || 0).toLocaleString()}
+                                </p>
+                              )}
+                            </div>
+                          </div>
+
+                          {/* Bottom row: extra details */}
+                          <div className="ml-8 mt-3 pt-3 border-t border-dashed border-border/60 flex flex-wrap items-center gap-x-5 gap-y-1.5">
+                            {b.billing_type === "monthly" && b.monthly_amount ? (
+                              <div className="text-xs text-muted-foreground">
+                                <span className="font-semibold text-foreground">
+                                  {currency === "INR" ? "₹" : "$"}
+                                  {Number(b.monthly_amount).toLocaleString()}
+                                </span>
+                                {" "}/ month
+                              </div>
                             ) : null}
-                            <span className="text-[10px] uppercase tracking-wide text-muted-foreground capitalize">
-                              {(b.billing_type || "one_time").replace("_", " ")}
-                            </span>
+                            {b.timeline ? (
+                              <div className="text-xs text-muted-foreground">
+                                Timeline: <span className="font-semibold text-foreground">{b.timeline}</span>
+                              </div>
+                            ) : null}
+                            {hasDiscount ? (
+                              <div className="text-xs font-semibold text-foreground bg-muted px-2 py-0.5 rounded-full">
+                                -{(b as any).discount_percent}% saved {currency === "INR" ? "₹" : "$"}
+                                {Number((b as any).discount_amount || 0).toLocaleString()}
+                              </div>
+                            ) : null}
                           </div>
                         </div>
-                        <div className="text-right shrink-0">
-                          <p className="text-sm font-bold text-foreground">
-                            {currency === "INR" ? "₹" : "$"}
-                            {Number(b.price || 0).toLocaleString()}
-                          </p>
-                          {Number((b as any).discount_percent) > 0 ? (
-                            <p className="text-[10px] text-red-600 font-medium">
-                              -{(b as any).discount_percent}% off
-                            </p>
-                          ) : null}
-                        </div>
-                      </div>
-                    ))}
+                      );
+                    })}
                   </CardContent>
                 </Card>
               )}
