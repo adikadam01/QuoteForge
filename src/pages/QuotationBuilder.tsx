@@ -1903,6 +1903,67 @@ export default function QuotationBuilder() {
                   )}
                 </CardContent>
               </Card>
+
+              {serviceBlocks.length > 0 && (
+                <Card className="relative rounded-2xl border border-border/60 shadow-sm hover:shadow-xl transition-shadow duration-300 overflow-hidden">
+                  {/* Thick left accent bar */}
+                  <div className="absolute left-0 top-0 bottom-0 w-1.5 bg-foreground" />
+
+                  <CardHeader className="pl-8 pb-4 border-b border-border/50">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-baseline gap-4">
+                        <span className="font-heading text-4xl font-bold text-foreground/10 leading-none select-none">
+                          ✓
+                        </span>
+                        <CardTitle className="text-lg font-heading font-bold text-foreground leading-tight">
+                          Selected Services Overview
+                        </CardTitle>
+                      </div>
+                      <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">
+                        {serviceBlocks.length} {serviceBlocks.length === 1 ? "service" : "services"}
+                      </span>
+                    </div>
+                  </CardHeader>
+
+                  <CardContent className="pl-8 pt-4 pb-5 space-y-2">
+                    {serviceBlocks.map((b, idx) => (
+                      <div
+                        key={`${b.service_id}-overview-${idx}`}
+                        className="flex items-center justify-between gap-3 rounded-xl border border-border/50 bg-card px-4 py-3 hover:bg-muted/30 transition-colors"
+                      >
+                        <div className="min-w-0 flex-1">
+                          <p className="text-sm font-semibold text-foreground truncate">
+                            {b.service_name || "Service"}
+                          </p>
+                          <div className="flex items-center gap-2 mt-1">
+                            {b.category ? (
+                              <span className="text-[10px] uppercase tracking-wide text-accent font-bold">
+                                {b.category}
+                              </span>
+                            ) : null}
+                            <span className="text-[10px] uppercase tracking-wide text-muted-foreground capitalize">
+                              {(b.billing_type || "one_time").replace("_", " ")}
+                            </span>
+                          </div>
+                        </div>
+                        <div className="text-right shrink-0">
+                          <p className="text-sm font-bold text-foreground">
+                            {currency === "INR" ? "₹" : "$"}{Number(b.price || 0).toLocaleString()}
+                          </p>
+                          {Number((b as any).discount_percent) > 0 ? (
+                            <p className="text-[10px] text-red-600 font-medium">
+                              -{(b as any).discount_percent}% off
+                            </p>
+                          ) : null}
+                        </div>
+                      </div>
+                    ))}
+                  </CardContent>
+                </Card>
+              )}
+            </div>
+
+            <div ref={rightColumnRef} className="w-[500px] space-y-6">
             </div>
 
             <div ref={rightColumnRef} className="w-[500px] space-y-6">
