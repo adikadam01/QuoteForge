@@ -117,26 +117,23 @@ export function NotificationBell() {
                 <div className="absolute right-0 mt-2 w-[360px] max-h-[480px] rounded-2xl border border-border/60 bg-card shadow-xl overflow-hidden z-50 animate-in fade-in slide-in-from-top-2 duration-200">
                     <div className="flex items-center justify-between px-4 py-3 border-b border-border/50 gap-3">
                         <p className="font-heading font-bold text-sm text-foreground">Notifications</p>
-                        <div className="flex items-center gap-3 shrink-0">
-                            {unreadCount > 0 && (
-                                <button
-                                    type="button"
-                                    onClick={() => markAllNotificationsAsRead()}
-                                    className="text-[11px] uppercase tracking-wide text-accent font-semibold hover:underline"
-                                >
-                                    Mark all as read
-                                </button>
-                            )}
-                            {readCount > 0 && (
-                                <button
-                                    type="button"
-                                    onClick={handleClearNotifications}
-                                    className="text-[11px] uppercase tracking-wide text-muted-foreground font-semibold hover:underline hover:text-destructive transition-colors"
-                                >
-                                    Clear notifications
-                                </button>
-                            )}
-                        </div>
+                        {unreadCount > 0 ? (
+                            <button
+                                type="button"
+                                onClick={() => markAllNotificationsAsRead()}
+                                className="text-[11px] uppercase tracking-wide text-accent font-semibold hover:underline shrink-0"
+                            >
+                                Mark all as read
+                            </button>
+                        ) : readCount > 0 ? (
+                            <button
+                                type="button"
+                                onClick={handleClearNotifications}
+                                className="text-[11px] uppercase tracking-wide text-muted-foreground font-semibold hover:underline hover:text-destructive transition-colors shrink-0"
+                            >
+                                Clear notifications
+                            </button>
+                        ) : null}
                     </div>
 
                     <div className="overflow-y-auto scrollbar-modern" style={{ maxHeight: 420 }}>
