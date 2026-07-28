@@ -76,8 +76,10 @@ type AppContextType = {
 
   notifications: Notification[];
   refreshNotifications: () => Promise<void>;
-  markNotificationAsRead: (id: string) => Promise<void>;   // ← add this line
+  markNotificationAsRead: (id: string) => Promise<void>;
   markAllNotificationsAsRead: () => Promise<void>;
+  deleteNotification: (id: string) => Promise<void>;
+  clearReadNotifications: () => Promise<void>;
   services: Service[];
   addService: (service: Omit<Service, "id" | "created_at">) => Promise<void>;
   termsConditions: any[];
@@ -681,6 +683,32 @@ export function AppProvider({ children }: { children: ReactNode }) {
     }
   };
 
+
+  const deleteNotification = async (id: string) => {
+    const previous = notifications;
+    // Optimistic removal — the item disappears immediately.
+    setNotifications((prev) => prev.filter((n) => n.id !== id));
+    try {
+      await repo.deleteNotification(id);
+    } catch (err) {
+      if (import.meta.env.DEV) console.error("Failed to delete notification", err);
+      // Roll back on failure so we don't lose track of a real notification.
+      setNotifications(previous);
+    }
+  };
+
+  const clearReadNotifications = async () => {
+    const previous = notifications;
+    // Optimistic removal — every read notification disappears immediately.
+    setNotifications((prev) => prev.filter((n) => !n.is_read));
+    try {
+      await repo.clearReadNotifications();
+    } catch (err) {
+      if (import.meta.env.DEV) console.error("Failed to clear read notifications", err);
+      setNotifications(previous);
+    }
+  };
+
   const createReceipt = async (receipt: import('@/lib/types').Receipt) => {
     await repo.createReceipt(receipt);
     await refreshReceipts();
@@ -920,6 +948,8 @@ export function AppProvider({ children }: { children: ReactNode }) {
         refreshNotifications,
         markNotificationAsRead,
         markAllNotificationsAsRead,
+        deleteNotification,
+        clearReadNotifications,
       }}
     >
       {children}

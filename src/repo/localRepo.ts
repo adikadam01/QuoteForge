@@ -237,6 +237,16 @@ export function createLocalRepo(): Repository {
       });
     },
 
+    async createRazorpayOrder(invoiceId: string) {
+      // Payment gateway integration isn't available in local-only mode.
+      throw new Error("Online payments aren't available in local (offline) mode.");
+    },
+
+    async setInvoicePaymentIntent(invoiceId: string, method: 'Cash' | 'Cheque') {
+      // Payment gateway integration isn't available in local-only mode.
+      throw new Error("Payment intent tracking isn't available in local (offline) mode.");
+    },
+
     async listInvoiceItems() {
       return await getArray<InvoiceItem>(KEY.invoiceItems);
     },
@@ -313,6 +323,11 @@ export function createLocalRepo(): Repository {
       });
     },
 
+    async getReceipt(id: string) {
+      const all = await getArray<import('@/lib/types').Receipt>(KEY.receipts);
+      return all.find((r) => r.id === id) || null;
+    },
+
     async listNotifications() {
       return await getArray<Notification>(KEY.notifications);
     },
@@ -326,6 +341,45 @@ export function createLocalRepo(): Repository {
         );
       });
     },
+    async markAllNotificationsRead() {
+      return withLock(async () => {
+        const list = await getArray<Notification>(KEY.notifications);
+        await setArray(
+          KEY.notifications,
+          list.map((n) => ({ ...n, is_read: true }))
+        );
+      });
+    },
+
+    async createNotification(notif: Omit<Notification, "created_at" | "is_read">) {
+      return withLock(async () => {
+        const list = await getArray<Notification>(KEY.notifications);
+        const row = {
+          ...notif,
+          is_read: false,
+          created_at: new Date().toISOString(),
+        } as Notification;
+        await setArray(KEY.notifications, [row, ...list]);
+      });
+    },
+
+    async checkDueDateNotifications() {
+      // No backend to scan due dates against in local-only mode; no-op.
+      return { success: true, notifications_created: 0 };
+    },
+    async deleteNotification(id: string) {
+      return withLock(async () => {
+        const list = await getArray<Notification>(KEY.notifications);
+        await setArray(KEY.notifications, list.filter((n) => n.id !== id));
+      });
+    },
+
+    async clearReadNotifications() {
+      return withLock(async () => {
+        const list = await getArray<Notification>(KEY.notifications);
+        await setArray(KEY.notifications, list.filter((n) => !n.is_read));
+      });
+    },
 
     async listQuotationPointTemplates() {
       return await getArray<QuotationPointTemplateRow>(KEY.quotationPointTemplates);
@@ -337,7 +391,6 @@ export function createLocalRepo(): Repository {
         await setArray(KEY.quotationPointTemplates, [row, ...list]);
       });
     },
-
     async updateQuotationPointTemplate(row: QuotationPointTemplateRow) {
       return withLock(async () => {
         const list = await getArray<QuotationPointTemplateRow>(KEY.quotationPointTemplates);

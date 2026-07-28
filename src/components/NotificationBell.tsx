@@ -1,10 +1,27 @@
 import { useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { Bell, CheckCircle2, XCircle, CreditCard, Clock, X, Trash2 } from "lucide-react";
+import { Bell, CheckCircle2, XCircle, CreditCard, Clock, X } from "lucide-react";
 import { useApp } from "@/contexts/AppContext";
 import { cn } from "@/lib/utils";
 
-// ... timeAgo unchanged ...
+function timeAgo(dateStr: string): string {
+    // Postgres often returns naive timestamps with no timezone marker (e.g.
+    // "2026-07-22 04:10:27.18287"). JS's Date parser then wrongly assumes
+    // local time instead of UTC, causing a several-hour offset. Force UTC
+    // interpretation by appending "Z" if no timezone info is already present.
+    const hasTimezone = /Z$|[+-]\d{2}:?\d{2}$/.test(dateStr);
+    const isoSafe = hasTimezone ? dateStr : `${dateStr.replace(" ", "T")}Z`;
+
+    const diffMs = Date.now() - new Date(isoSafe).getTime();
+    const mins = Math.floor(diffMs / 60000);
+    if (mins < 1) return "just now";
+    if (mins < 60) return `${mins} minute${mins === 1 ? "" : "s"} ago`;
+    const hrs = Math.floor(mins / 60);
+    if (hrs < 24) return `${hrs} hour${hrs === 1 ? "" : "s"} ago`;
+    const days = Math.floor(hrs / 24);
+    if (days < 7) return `${days} day${days === 1 ? "" : "s"} ago`;
+    return new Date(isoSafe).toLocaleDateString("en-IN", { day: "2-digit", month: "short" });
+}
 
 export function NotificationBell() {
     const {
@@ -22,7 +39,42 @@ export function NotificationBell() {
     const unreadCount = notifications.filter((n) => !n.is_read).length;
     const readCount = notifications.filter((n) => n.is_read).length;
 
-    // ... existing effects unchanged ...
+    // Close on outside click
+    useEffect(() => {
+        if (!open) return;
+        const handler = (e: MouseEvent) => {
+            if (containerRef.current && !containerRef.current.contains(e.target as Node)) {
+                setOpen(false);
+            }
+        };
+        document.addEventListener("mousedown", handler);
+        return () => document.removeEventListener("mousedown", handler);
+    }, [open]);
+
+    // Light polling so new notifications show up without a manual refresh.
+    useEffect(() => {
+        const interval = setInterval(() => {
+            refreshNotifications().catch(() => { });
+        }, 8000);
+        return () => clearInterval(interval);
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, []);
+
+    // Also refresh immediately whenever the tab regains focus/visibility.
+    useEffect(() => {
+        const handleVisibility = () => {
+            if (document.visibilityState === "visible") {
+                refreshNotifications().catch(() => { });
+            }
+        };
+        document.addEventListener("visibilitychange", handleVisibility);
+        window.addEventListener("focus", handleVisibility);
+        return () => {
+            document.removeEventListener("visibilitychange", handleVisibility);
+            window.removeEventListener("focus", handleVisibility);
+        };
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, []);
 
     const handleNotificationClick = async (id: string, quotationId: string | null, isRead: boolean, invoiceId?: string | null) => {
         if (!isRead) {

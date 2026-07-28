@@ -194,6 +194,12 @@ export function createApiRepo(): Repository {
             request<void>("/notifications/read-all", { method: "PUT" }),
         createNotification: (notif) =>
             request<void>("/notifications", { method: "POST", body: JSON.stringify(notif) }),
+
+        deleteNotification: (id: string) =>
+            request<void>(`/notifications/${id}`, { method: "DELETE" }),
+        clearReadNotifications: () =>
+            request<void>("/notifications/clear-read", { method: "DELETE" }),
+        
         listWorkflowInvoices: () => request("/workflow-invoices"),
         createWorkflowInvoice: (inv) => request<void>("/workflow-invoices", { method: "POST", body: JSON.stringify(inv) }),
         updateWorkflowInvoice: (inv) => request<void>(`/workflow-invoices/${inv.id}`, { method: "PUT", body: JSON.stringify(inv) }),

@@ -58,6 +58,8 @@ export interface Repository {
   checkDueDateNotifications(): Promise<{ success: boolean; notifications_created: number }>;
   markAllNotificationsRead(): Promise<void>;
   createNotification(notif: Omit<Notification, "created_at" | "is_read">): Promise<void>;
+  deleteNotification(id: string): Promise<void>;
+  clearReadNotifications(): Promise<void>;
 
 
   // Phase 4 workflow entities
