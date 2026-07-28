@@ -108,6 +108,9 @@ export default function ProfessionalQuotationDocument({
         }, prepared specifically for ${currentClient?.business_name || currentClient?.name || "the client"
         }. The scope, deliverables, and detailed breakdown are outlined on the following pages of this proposal.`;
 
+    console.log("payment_terms_text:", quotation.payment_terms_text);
+    console.log("quotation:", quotation);
+
     return (
         <div
             data-quotation-doc
