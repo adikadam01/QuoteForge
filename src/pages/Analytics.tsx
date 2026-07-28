@@ -358,6 +358,7 @@ import {
   Pie,
   PieChart,
   Cell,
+  Sector,
 } from 'recharts';
 
 import {
@@ -370,6 +371,7 @@ import {
 
 export default function Analytics() {
   const { quotations, currency, receipts, clients } = useApp();
+  const [activeStatusIndex, setActiveStatusIndex] = useState<number | null>(null);
 
   const liveQuotes = quotations.filter((q) => !q.is_template);
 
@@ -502,10 +504,10 @@ export default function Analytics() {
   }, [liveQuotes]);
 
   const STATUS_META: Record<string, { label: string; color: string }> = {
-    draft: { label: 'Draft', color: '#e4e4e7' },
+    draft: { label: 'Draft', color: '#f4f4f5' },
     sent: { label: 'Sent', color: '#a1a1aa' },
-    accepted: { label: 'Accepted', color: '#52525b' },
-    invoiced: { label: 'Invoiced', color: '#18181b' },
+    accepted: { label: 'Accepted', color: '#3f3f46' },
+    invoiced: { label: 'Invoiced', color: '#000000' },
     declined: { label: 'Declined', color: '#71717a' },
     expired: { label: 'Expired', color: '#d4d4d8' },
   };
@@ -533,6 +535,34 @@ export default function Analytics() {
     value: { label: 'Count', color: 'hsl(var(--primary))' },
     revenue: { label: 'Revenue', color: 'hsl(var(--primary))' },
   } as const;
+
+  const renderActiveDonutShape = (props: any) => {
+    const { cx, cy, innerRadius, outerRadius, startAngle, endAngle, fill, payload, value } = props;
+    return (
+      <g>
+        <Sector
+          cx={cx}
+          cy={cy}
+          innerRadius={innerRadius}
+          outerRadius={outerRadius + 10}
+          startAngle={startAngle}
+          endAngle={endAngle}
+          fill={fill}
+          style={{ filter: 'drop-shadow(0 6px 14px rgba(0,0,0,0.25))', transition: 'all 300ms ease-out' }}
+        />
+        <Sector
+          cx={cx}
+          cy={cy}
+          innerRadius={outerRadius + 14}
+          outerRadius={outerRadius + 17}
+          startAngle={startAngle}
+          endAngle={endAngle}
+          fill={fill}
+          opacity={0.35}
+        />
+      </g>
+    );
+  };
 
   const kpis = [
     { label: 'Quotations Created', value: totalCreated, icon: BarChart3 },
@@ -812,61 +842,96 @@ export default function Analytics() {
           </CardHeader>
 
           <CardContent className="pt-5 flex-1 flex flex-col min-h-0">
-            <ChartContainer
-              config={{ value: { label: 'Quotations', color: 'hsl(var(--primary))' } }}
-              className="h-[300px] w-full"
-            >
-              <PieChart>
-                <ChartTooltip
-                  content={
-                    <ChartTooltipContent
-                      formatter={(value, _name, item) => {
-                        const p = item?.payload as { name?: string } | undefined;
-                        return (
-                          <div className="flex flex-1 justify-between leading-none items-center gap-4 min-w-[140px]">
-                            <span className="text-muted-foreground">{p?.name}</span>
-                            <span className="font-mono font-semibold tabular-nums text-foreground">
-                              {value}
-                            </span>
-                          </div>
-                        );
-                      }}
-                    />
-                  }
-                />
-                <Pie
-                  data={statusDistribution}
-                  dataKey="value"
-                  nameKey="name"
-                  innerRadius={62}
-                  outerRadius={100}
-                  paddingAngle={2}
-                  cornerRadius={4}
-                  animationDuration={900}
-                  animationEasing="ease-out"
-                  stroke="hsl(var(--background))"
-                  strokeWidth={2}
-                >
-                  {statusDistribution.map((entry) => (
-                    <Cell key={entry.status} fill={entry.fill} />
-                  ))}
-                </Pie>
-              </PieChart>
-            </ChartContainer>
+            <div className="relative h-[300px] w-full">
+              <ChartContainer
+                config={{ value: { label: 'Quotations', color: 'hsl(var(--primary))' } }}
+                className="h-full w-full"
+              >
+                <PieChart>
+                  <ChartTooltip
+                    content={
+                      <ChartTooltipContent
+                        formatter={(value, _name, item) => {
+                          const p = item?.payload as { name?: string } | undefined;
+                          return (
+                            <div className="flex flex-1 justify-between leading-none items-center gap-4 min-w-[140px]">
+                              <span className="text-muted-foreground">{p?.name}</span>
+                              <span className="font-mono font-semibold tabular-nums text-foreground">
+                                {value}
+                              </span>
+                            </div>
+                          );
+                        }}
+                      />
+                    }
+                  />
+                  <Pie
+                    data={statusDistribution}
+                    dataKey="value"
+                    nameKey="name"
+                    innerRadius={68}
+                    outerRadius={102}
+                    paddingAngle={3}
+                    cornerRadius={6}
+                    animationBegin={0}
+                    animationDuration={1000}
+                    animationEasing="ease-out"
+                    stroke="hsl(var(--background))"
+                    strokeWidth={2}
+                    activeIndex={activeStatusIndex ?? undefined}
+                    activeShape={renderActiveDonutShape}
+                    onMouseEnter={(_, index) => setActiveStatusIndex(index)}
+                    onMouseLeave={() => setActiveStatusIndex(null)}
+                  >
+                    {statusDistribution.map((entry, index) => (
+                      <Cell
+                        key={entry.status}
+                        fill={entry.fill}
+                        style={{
+                          cursor: 'pointer',
+                          opacity: activeStatusIndex === null || activeStatusIndex === index ? 1 : 0.35,
+                          transition: 'opacity 250ms ease-out',
+                        }}
+                      />
+                    ))}
+                  </Pie>
+                </PieChart>
+              </ChartContainer>
+
+              {/* Center total — sits inside the donut hole */}
+              <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
+                <span className="font-heading font-bold text-3xl text-foreground tabular-nums">
+                  {activeStatusIndex !== null
+                    ? statusDistribution[activeStatusIndex]?.value
+                    : liveQuotes.length}
+                </span>
+                <span className="text-xs text-muted-foreground mt-0.5">
+                  {activeStatusIndex !== null ? statusDistribution[activeStatusIndex]?.name : 'Total'}
+                </span>
+              </div>
+            </div>
 
             <div className="mt-4 flex flex-wrap gap-x-4 gap-y-2 text-xs border-t border-border/50 pt-3">
-              {statusDistribution.map((entry) => (
-                <span key={entry.status} className="flex items-center gap-1.5 text-muted-foreground">
+              {statusDistribution.map((entry, index) => (
+                <button
+                  key={entry.status}
+                  type="button"
+                  onMouseEnter={() => setActiveStatusIndex(index)}
+                  onMouseLeave={() => setActiveStatusIndex(null)}
+                  className={`flex items-center gap-1.5 transition-opacity duration-200 ${activeStatusIndex === null || activeStatusIndex === index ? 'opacity-100' : 'opacity-40'
+                    }`}
+                >
                   <span
                     className="w-2.5 h-2.5 rounded-full shrink-0"
                     style={{ backgroundColor: entry.fill }}
                   />
-                  <span className="font-medium text-foreground">{entry.value}</span> {entry.name}
-                </span>
+                  <span className="font-medium text-foreground">{entry.value}</span>
+                  <span className="text-muted-foreground">{entry.name}</span>
+                </button>
               ))}
             </div>
           </CardContent>
-        </Card>
+                  </Card>
       </div>
     </div>
   );
