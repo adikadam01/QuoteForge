@@ -7,14 +7,26 @@ export const DEFAULT_SCOPE = `The agency will provide the services listed below 
 engagement. Any task not explicitly mentioned in this scope shall be
 considered out of scope unless agreed upon in writing.`;
 
-export const DEFAULT_PAYMENT_TERMS = `• Advance payment requirement (e.g. 50% before project start)
-• Remaining payment timeline
-• Mode of payment
-• Late payment policy
+// export const DEFAULT_PAYMENT_TERMS = `• Advance payment requirement (e.g. 50% before project start)
+// • Remaining payment timeline
+// • Mode of payment
+// • Late payment policy
 
-An advance payment of the agreed percentage is required to initiate the project.
-The remaining balance must be cleared within the agreed number of days of delivery.
-Delayed payments may result in work being paused until dues are cleared.`;
+// An advance payment of the agreed percentage is required to initiate the project.
+// The remaining balance must be cleared within the agreed number of days of delivery.
+// Delayed payments may result in work being paused until dues are cleared.`;
+
+export const DEFAULT_PAYMENT_TERMS = `• Payment shall be made as per the agreed project or service schedule.
+
+• Payments may be structured as advance, milestone-based, recurring, or upon project completion, depending on the nature of the service.
+
+• All invoices must be settled within the due date mentioned on the invoice unless otherwise agreed in writing.
+
+• Payments can be made through the approved payment methods provided by the company.
+
+• Delayed payments may lead to suspension of ongoing work, withholding of deliverables, or additional charges where applicable.
+
+• Ownership and final deliverables may remain with the company until all outstanding payments have been received in full.`;
 
 export const DEFAULT_TERMS_CONDITIONS = `• Revisions policy
 • Ownership & usage rights
