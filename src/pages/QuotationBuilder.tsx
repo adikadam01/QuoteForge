@@ -1909,8 +1909,7 @@ export default function QuotationBuilder() {
                   {/* Thick left accent bar */}
                   <div className="absolute left-0 top-0 bottom-0 w-1.5 bg-foreground" />
 
-                  <CardHeader className="pl-8 pb-4 border-b border-border/50 bg-gray-100">
-
+                  <CardHeader className="pl-8 pb-4 border-b border-border/50 bg-foreground">
                     <div className="flex items-center justify-between">
                       <div className="flex items-baseline gap-4">
                         <span className="font-heading text-4xl font-bold text-background/15 leading-none select-none">
