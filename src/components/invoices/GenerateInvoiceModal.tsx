@@ -17,7 +17,7 @@ import { Card } from '@/components/ui/card';
 import { ReceiptText, Lock, CheckCircle2 } from 'lucide-react';
 import InvoiceServiceSelector from "./InvoiceServiceSelector"; ``
 
-const { invoices, invoiceItems } = useApp();
+
 
 type Props = {
   open: boolean;
