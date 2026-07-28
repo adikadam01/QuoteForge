@@ -65,8 +65,9 @@ export function AppLayout({ children }: { children: ReactNode }) {
   }, [user, loading, navigate]);
 
   // Keep favicon in sync with the configured company logo.
+  // Keep favicon in sync with the configured company logo.
   useEffect(() => {
-    const href = brandKit?.logo_url || "/Logo.jpg.jpeg";
+    const href = brandKit?.logo_url || "/Logo.jpg.jpeg";  // ← no /public/
     const head = document.head;
 
     const ensureLink = (rel: string) => {
@@ -77,12 +78,14 @@ export function AppLayout({ children }: { children: ReactNode }) {
         head.appendChild(link);
       }
       link.href = href;
+      // Force browsers that cache aggressively to notice the change
+      link.type = href.endsWith(".svg") ? "image/svg+xml" : "image/jpeg";
     };
 
     ensureLink("icon");
     ensureLink("shortcut icon");
   }, [brandKit?.logo_url]);
-
+  
   if (loading) {
     const circumference = 2 * Math.PI * 45;
     return (
@@ -189,7 +192,7 @@ export function AppLayout({ children }: { children: ReactNode }) {
           <div className="flex items-center gap-3">
             {businessProfile.logo_url || brandKit?.logo_url ? (
               <img
-                src={businessProfile.logo_url || brandKit?.logo_url || "/Logo.jpg.jpeg"}
+                src={businessProfile.logo_url || brandKit?.logo_url || "/public/Logo.jpg.jpeg"}
                 alt="Logo"
                 className="w-10 h-10 object-contain rounded-lg"
               />
