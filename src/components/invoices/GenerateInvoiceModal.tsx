@@ -98,6 +98,8 @@ export function GenerateInvoiceModal({
 
   const [selectedServiceIds, setSelectedServiceIds] = useState<string[]>([]);
 
+  const { invoices, invoiceItems } = useApp();
+
   const getGeneratedCountForService = (serviceId: string) =>
     invoices.filter((inv) => {
       if (inv.quotation_id !== quotation.id) return false;
