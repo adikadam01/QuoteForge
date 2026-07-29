@@ -161,7 +161,19 @@ export function ReceiptDocument({
                     <h2 className="doc-value" style={{ fontSize: '18px', marginBottom: '8px' }}>{companyName}</h2>
                     <div style={{ fontSize: '12px', color: '#6b7280', whiteSpace: 'pre-wrap' }}>
                         {brandKit?.address && <div>{brandKit.address}</div>}
-                        <div style={{ marginTop: '4px' }}>{[brandKit?.email, brandKit?.phone, brandKit?.website].filter(Boolean).join(" • ")}</div>
+                        <div style={{ marginTop: "4px" }}>
+                            {brandKit?.email && (
+                                <div>{brandKit.email}</div>
+                            )}
+
+                            {brandKit?.phone && (
+                                <div>{brandKit.phone}</div>
+                            )}
+
+                            {brandKit?.website && (
+                                <div>{brandKit.website}</div>
+                            )}
+                        </div>
                     </div>
                 </div>
 
