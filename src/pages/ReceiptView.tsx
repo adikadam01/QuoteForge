@@ -68,7 +68,7 @@ export default function ReceiptView() {
       } - ${receipt.receipt_number}`;
   }, [receipt, client]);
 
-  
+
   const handleDownloadPdf = async () => {
     if (!receipt || !invoice) return;
 

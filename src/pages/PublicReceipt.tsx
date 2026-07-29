@@ -119,6 +119,13 @@ export default function PublicReceipt() {
     const client = receipt?.client || invoice?.client || null;
     const quotation = invoice?.quotation || null;
 
+    useEffect(() => {
+        if (!receipt) return;
+
+        document.title = `${client?.business_name || client?.name || "Client"
+            } - ${receipt.receipt_number}`;
+    }, [receipt, client]);
+
     const handleDownloadPdf = async () => {
         if (!receipt) return;
         try {
