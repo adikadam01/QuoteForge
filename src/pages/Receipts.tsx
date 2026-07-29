@@ -357,6 +357,24 @@ export default function Receipts() {
                         setSearchQuery(e.target.value)
                     }
                 />
+
+                {statusFilter === 'paid' && (
+                    <div className="flex gap-2 flex-wrap items-center border-l border-border/60 pl-3 ml-1">
+                        {(['all', 'Online', 'Cash', 'Cheque'] as const).map((m) => (
+                            <button
+                                key={m}
+                                onClick={() => setPaidMethodFilter(m)}
+                                className={`px-3 h-9 rounded-lg border text-xs font-semibold transition-all ${paidMethodFilter === m
+                                    ? 'bg-emerald-600 text-white border-emerald-600 shadow-sm'
+                                    : 'bg-background border-border/70 text-muted-foreground hover:border-emerald-400/50 hover:text-foreground'
+                                    }`}
+                                type="button"
+                            >
+                                {m === 'all' ? 'ALL' : m.toUpperCase()}
+                            </button>
+                        ))}
+                    </div>
+                )}
             </div>
 
             {/* <select
@@ -370,23 +388,7 @@ export default function Receipts() {
                 <option value="online">Online</option>
             </select> */}
 
-            {statusFilter === 'paid' && (
-                <div className="flex gap-2 flex-wrap items-center border-l border-border/60 pl-3 ml-1">
-                    {(['all', 'Online', 'Cash', 'Cheque'] as const).map((m) => (
-                        <button
-                            key={m}
-                            onClick={() => setPaidMethodFilter(m)}
-                            className={`px-3 h-9 rounded-lg border text-xs font-semibold transition-all ${paidMethodFilter === m
-                                ? 'bg-emerald-600 text-white border-emerald-600 shadow-sm'
-                                : 'bg-background border-border/70 text-muted-foreground hover:border-emerald-400/50 hover:text-foreground'
-                                }`}
-                            type="button"
-                        >
-                            {m === 'all' ? 'ALL' : m.toUpperCase()}
-                        </button>
-                    ))}
-                </div>
-            )}
+
 
             {/* Loading */}
 
