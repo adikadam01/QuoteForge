@@ -215,8 +215,6 @@ import { Input } from "@/components/ui/input";
 import { useApp } from "@/contexts/AppContext";
 import { formatCurrency } from "@/lib/types";
 
-const [statusFilter, setStatusFilter] = useState<'all' | 'draft' | 'sent' | 'paid'>('all');
-const [paidMethodFilter, setPaidMethodFilter] = useState<'all' | 'Online' | 'Cash' | 'Cheque'>('all');
 export default function Receipts() {
     const {
         currency,
@@ -224,6 +222,7 @@ export default function Receipts() {
         invoices,
     } = useApp();
 
+    const [paidMethodFilter, setPaidMethodFilter] = useState<'all' | 'Online' | 'Cash' | 'Cheque'>('all');
     const [searchQuery, setSearchQuery] = useState("");
     const [paymentFilter, setPaymentFilter] = useState("all");
 
@@ -245,13 +244,11 @@ export default function Receipts() {
                 receipt.payment_method ??
                 invoice?.payment_method ??
                 ""
-            )
-                .trim()
-                .toLowerCase();
+            ).trim();
 
             if (
-                paymentFilter !== "all" &&
-                paymentMethod !== paymentFilter
+                paidMethodFilter !== "all" &&
+                paymentMethod !== paidMethodFilter
             ) {
                 return false;
             }
@@ -272,7 +269,7 @@ export default function Receipts() {
                     .includes(q)
             );
         });
-    }, [receipts, invoices, searchQuery]);
+    }, [receipts, invoices, searchQuery, paidMethodFilter]);
 
     // ---------- Catalog-level stats (mirrors the Invoices page pattern) ----------
     const totalReceipts = receipts.length;
@@ -358,23 +355,21 @@ export default function Receipts() {
                     }
                 />
 
-                {statusFilter === 'paid' && (
-                    <div className="flex gap-2 flex-wrap items-center border-l border-border/60 pl-3 ml-1">
-                        {(['all', 'Online', 'Cash', 'Cheque'] as const).map((m) => (
-                            <button
-                                key={m}
-                                onClick={() => setPaidMethodFilter(m)}
-                                className={`px-3 h-9 rounded-lg border text-xs font-semibold transition-all ${paidMethodFilter === m
+                <div className="flex gap-2 flex-wrap items-center border-l border-border/60 pl-3 ml-1">
+                    {(['all', 'Online', 'Cash', 'Cheque'] as const).map((m) => (
+                        <button
+                            key={m}
+                            onClick={() => setPaidMethodFilter(m)}
+                            className={`px-3 h-9 rounded-lg border text-xs font-semibold transition-all ${paidMethodFilter === m
                                     ? 'bg-emerald-600 text-white border-emerald-600 shadow-sm'
                                     : 'bg-background border-border/70 text-muted-foreground hover:border-emerald-400/50 hover:text-foreground'
-                                    }`}
-                                type="button"
-                            >
-                                {m === 'all' ? 'ALL' : m.toUpperCase()}
-                            </button>
-                        ))}
-                    </div>
-                )}
+                                }`}
+                            type="button"
+                        >
+                            {m === 'all' ? 'ALL' : m.toUpperCase()}
+                        </button>
+                    ))}
+                </div>
             </div>
 
             {/* <select
