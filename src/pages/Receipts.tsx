@@ -210,12 +210,13 @@
 import { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import { Search, ReceiptText, Wallet, CalendarCheck, TrendingUp } from "lucide-react";
-
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { useApp } from "@/contexts/AppContext";
 import { formatCurrency } from "@/lib/types";
 
+const [statusFilter, setStatusFilter] = useState<'all' | 'draft' | 'sent' | 'paid'>('all');
+const [paidMethodFilter, setPaidMethodFilter] = useState<'all' | 'Online' | 'Cash' | 'Cheque'>('all');
 export default function Receipts() {
     const {
         currency,
@@ -358,7 +359,7 @@ export default function Receipts() {
                 />
             </div>
 
-            <select
+            {/* <select
                 value={paymentFilter}
                 onChange={(e) => setPaymentFilter(e.target.value)}
                 className="rounded-xl border border-border/70 px-3 py-2 bg-background"
@@ -367,7 +368,25 @@ export default function Receipts() {
                 <option value="cash">Cash</option>
                 <option value="cheque">Cheque</option>
                 <option value="online">Online</option>
-            </select>
+            </select> */}
+
+            {statusFilter === 'paid' && (
+                <div className="flex gap-2 flex-wrap items-center border-l border-border/60 pl-3 ml-1">
+                    {(['all', 'Online', 'Cash', 'Cheque'] as const).map((m) => (
+                        <button
+                            key={m}
+                            onClick={() => setPaidMethodFilter(m)}
+                            className={`px-3 h-9 rounded-lg border text-xs font-semibold transition-all ${paidMethodFilter === m
+                                ? 'bg-emerald-600 text-white border-emerald-600 shadow-sm'
+                                : 'bg-background border-border/70 text-muted-foreground hover:border-emerald-400/50 hover:text-foreground'
+                                }`}
+                            type="button"
+                        >
+                            {m === 'all' ? 'ALL' : m.toUpperCase()}
+                        </button>
+                    ))}
+                </div>
+            )}
 
             {/* Loading */}
 
