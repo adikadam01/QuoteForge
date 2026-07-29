@@ -22,7 +22,7 @@
     background: white;
     margin: 0 auto;
     box-sizing: border-box;
-    padding: 24mm 20mm;
+    padding: 18mm 18mm 16mm;
     /* Mandatory margins */
     position: relative;
     font-family: 'Inter', system-ui, -apple-system, sans-serif;
@@ -115,7 +115,7 @@
     width: 100%;
     display: flex;
     justify-content: flex-end;
-    margin-top: 32px;
+    margin-top: 16px;
 }
 
 .doc-summary-box {
@@ -137,15 +137,16 @@
 }
 
 .doc-footer {
-    margin-top: auto;
-    padding-top: 32px;
+    margin-top: 16px;
+    padding-top: 16px;
     border-top: 1px solid #e5e7eb;
 }
 
 .doc-totals-box {
-    width: 340px;
-    background-color: #f8fafc;
-    padding: 24px;
-    border-radius: 12px;
+    width: 320px;
+    padding: 14px 16px;
+    border-radius: 10px;
+    background: #f8fafc;
     border: 1px solid #e2e8f0;
+    background-color: #f8fafc;
 }

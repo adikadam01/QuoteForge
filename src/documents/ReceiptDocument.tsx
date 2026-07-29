@@ -136,7 +136,7 @@ export function ReceiptDocument({
     return (
         <div className="document-container flex flex-col">
             {/* Header */}
-            <div style={{ display: 'flex', justifyContent: 'space-between', borderBottom: '1px solid #e5e7eb', paddingBottom: '24px', marginBottom: '32px' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', borderBottom: '1px solid #e5e7eb', paddingBottom: '24px', marginBottom: '20px' }}>
                 <div style={{ maxWidth: '50%' }}>
                     <div style={{ marginBottom: '12px' }}>
                         {brandKit?.logo_url ? (
@@ -221,7 +221,7 @@ export function ReceiptDocument({
             </div>
 
             {/* Meta & Summary Box */}
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '48px', marginBottom: '32px' }}>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '28px', marginBottom: '32px' }}>
                 <div>
                     <div className="doc-label" style={{ marginBottom: '12px', borderBottom: '1px solid #f3f4f6', paddingBottom: '4px' }}>Received From</div>
                     <div className="doc-value" style={{ fontSize: '16px', marginBottom: '4px' }}>{c?.business_name || c?.name || '—'}</div>
@@ -274,35 +274,91 @@ export function ReceiptDocument({
             </table>
 
             {/* Totals Section */}
-            <div className="doc-totals no-break" style={{ marginBottom: '24px' }}>
-                <div className="doc-totals-box">
-                    <div className="doc-totals-row" style={{ color: '#6b7280' }}>
-                        <span>Invoice Amount</span>
-                        <span className="doc-value">{formatCurrency(invoiceTotal, cur)}</span>
-                    </div>
-                    <div className="doc-totals-row" style={{ color: '#6b7280', borderBottom: '1px solid #e5e7eb', paddingBottom: '8px' }}>
-                        <span>Total Paid</span>
-                        <span className="doc-value">{formatCurrency(totalPaid, cur)}</span>
-                    </div>
-                    <div className="doc-totals-row" style={{ paddingTop: '8px' }}>
-                        <span style={{ fontWeight: 700, fontSize: '16px' }}>Balance Due</span>
-                        <span style={{ fontWeight: 700, fontSize: '18px' }}>{formatCurrency(balanceDue, cur)}</span>
-                    </div>
+            <div
+                className="doc-totals-box no-break"
+                style={{
+                    marginLeft: "auto",
+                    width: "320px",
+                    marginBottom: "6px",
+                }}
+            >
+                <div className="doc-totals-row" style={{ color: "#6b7280" }}>
+                    <span>Invoice Amount</span>
+                    <span className="doc-value">{formatCurrency(invoiceTotal, cur)}</span>
+                </div>
+
+                <div
+                    className="doc-totals-row"
+                    style={{
+                        color: "#6b7280",
+                        borderBottom: "1px solid #e5e7eb",
+                        paddingBottom: "8px",
+                    }}
+                >
+                    <span>Total Paid</span>
+                    <span className="doc-value">{formatCurrency(totalPaid, cur)}</span>
+                </div>
+
+                <div
+                    className="doc-totals-row"
+                    style={{ paddingTop: "8px" }}
+                >
+                    <span style={{ fontWeight: 700, fontSize: "16px" }}>
+                        Balance Due
+                    </span>
+
+                    <span style={{ fontWeight: 700, fontSize: "18px" }}>
+                        {formatCurrency(balanceDue, cur)}
+                    </span>
                 </div>
             </div>
 
             {/* Footer */}
             <div className="doc-footer mt-auto no-break">
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end' }}>
-                    <div style={{ fontSize: '12px', color: '#6b7280' }}>
-                        <div style={{ fontWeight: 700, color: '#111827', marginBottom: '4px' }}>Thank you for your business!</div>
-                        <div>If you have any questions, please contact us at:</div>
-                        <div style={{ fontWeight: 600, color: '#111827', lineHeight: '1.6' }}>8956183973</div>
-                        <div style={{ opacity: 0.7, fontSize: '10px', marginTop: '12px' }}>This is a system-generated receipt. No signature required.</div>
+                    <div style={{ fontSize: "11px", color: "#6b7280" }}>
+                        <div
+                            style={{
+                                fontWeight: 700,
+                                color: "#111827",
+                                marginBottom: "2px",
+                            }}
+                        >
+                            Thank you for your business!
+                        </div>
+
+                        <div>
+                            Contact:{" "}
+                            <span
+                                style={{
+                                    fontWeight: 600,
+                                    color: "#111827",
+                                }}
+                            >
+                                8956183973
+                            </span>
+                        </div>
+
+                        <div
+                            style={{
+                                fontSize: "9px",
+                                opacity: 0.7,
+                                marginTop: "6px",
+                            }}
+                        >
+                            System-generated receipt.
+                        </div>
                     </div>
 
                     <div style={{ textAlign: 'center' }}>
-                        <div style={{ height: '48px', width: '160px', borderBottom: '1px solid #d1d5db', marginBottom: '8px' }}></div>
+                        <div
+                            style={{
+                                height: '28px',
+                                width: '140px',
+                                borderBottom: '1px solid #d1d5db',
+                                marginBottom: '4px'
+                            }}
+                        ></div>
                         <div className="doc-label">Authorized Signature</div>
                     </div>
                 </div>
