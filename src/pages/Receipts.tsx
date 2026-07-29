@@ -241,10 +241,12 @@ export default function Receipts() {
             if (!q) return true;
 
             const paymentMethod = (
-                receipt.payment_method ||
-                invoice?.payment_method ||
+                receipt.payment_method ??
+                invoice?.payment_method ??
                 ""
-            ).toLowerCase();
+            )
+                .trim()
+                .toLowerCase();
 
             if (
                 paymentFilter !== "all" &&
@@ -357,15 +359,13 @@ export default function Receipts() {
             </div>
 
             <select
-                className="rounded-xl border border-border/70 px-3 py-2 bg-background"
                 value={paymentFilter}
                 onChange={(e) => setPaymentFilter(e.target.value)}
+                className="rounded-xl border border-border/70 px-3 py-2 bg-background"
             >
                 <option value="all">All Payments</option>
                 <option value="cash">Cash</option>
                 <option value="cheque">Cheque</option>
-                <option value="upi">UPI</option>
-                <option value="bank transfer">Bank Transfer</option>
                 <option value="online">Online</option>
             </select>
 
