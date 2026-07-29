@@ -151,10 +151,21 @@ export function ReceiptLayout({
               <div>
                 <h2 className="text-xl font-bold text-gray-900 leading-tight">{companyName}</h2>
                 <div className="text-sm text-gray-500 space-y-1 mt-1 leading-relaxed">
-                  {brandKit?.address && <p className="whitespace-pre-wrap">{brandKit.address}</p>}
-                  <p>
-                    {[brandKit?.email, brandKit?.phone, brandKit?.website].filter(Boolean).join(" • ")}
-                  </p>
+                  {brandKit?.address && (
+                    <p className="whitespace-pre-wrap">{brandKit.address}</p>
+                  )}
+
+                  {brandKit?.email && (
+                    <p>{brandKit.email}</p>
+                  )}
+
+                  {brandKit?.phone && (
+                    <p>{brandKit.phone}</p>
+                  )}
+
+                  {brandKit?.website && (
+                    <p>{brandKit.website}</p>
+                  )}
                 </div>
               </div>
             </div>
