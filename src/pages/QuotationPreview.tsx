@@ -457,13 +457,26 @@ export default function QuotationPreview() {
 
                       const a = document.createElement("a");
 
-                      const clientName =
-                        quotation.client?.business_name ||
-                        quotation.client?.name ||
-                        "Client";
+                      const customer =
+                        (quotation.client?.business_name ||
+                          quotation.client?.name ||
+                          "Client")
+                          .replace(/[\\/:*?"<>|]/g, "")
+                          .trim();
+
+                      const quotationNo =
+                        quotation.quotation_number?.startsWith("QT-")
+                          ? quotation.quotation_number
+                          : `QT-${quotation.quotation_number?.slice(-4) || quotation.id.slice(-4)}`;
+
+                      const DOWNLOAD_COUNT_KEY = `qf_quotation_download_count_${quotation.id}`;
+                      const previousCount = Number(localStorage.getItem(DOWNLOAD_COUNT_KEY) || "0");
+                      localStorage.setItem(DOWNLOAD_COUNT_KEY, String(previousCount + 1));
+
+                      const suffix = previousCount > 0 ? ` (${previousCount})` : "";
 
                       a.href = url;
-                      a.download = `${clientName} - ${quotation.quotation_number}.pdf`;
+                      a.download = `${customer} - ${quotationNo}${suffix}.pdf`;
 
                       document.body.appendChild(a);
                       a.click();

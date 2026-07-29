@@ -66,9 +66,15 @@ export default function ReceiptView() {
     try {
       const { printDocument } = await import('@/lib/printer');
       const { ReceiptDocument } = await import('@/documents/ReceiptDocument');
-      const safe = (receipt.receipt_number || receipt.id).replace(/[^a-zA-Z0-9-_]/g, '_');
-      const clientName = (client?.name || client?.business_name || 'Client').replace(/[^a-zA-Z0-9-_]/g, '_');
-      const dateStr = (receipt.payment_date || new Date().toISOString()).slice(0, 10);
+      const customer =
+        (client?.business_name || client?.name || "Client")
+          .replace(/[\\/:*?"<>|]/g, "")
+          .trim();
+
+      const receiptNo =
+        receipt.receipt_number
+          ? `RCPT-${receipt.receipt_number.slice(-4)}`
+          : `RCPT-${receipt.id.slice(-4)}`;
 
       await printDocument(
         <ReceiptDocument
@@ -79,7 +85,9 @@ export default function ReceiptView() {
           quotation={quotation}
           invoiceItems={invoiceItems}
         />,
-        { title: `Receipt_${safe}_${clientName}_${dateStr}` }
+        {
+          title: `${customer} - ${receiptNo}`
+        }
       );
     } catch (err) {
       console.error('Print failed', err);
@@ -132,7 +140,7 @@ export default function ReceiptView() {
               const publicUrl = `${window.location.origin}/public/receipt/${receipt.id}`;
               try {
                 await navigator.clipboard.writeText(publicUrl);
-                toast({ title: "Link copied to clipboard" });
+                toast({ title: "Link copied to clipboard!" });
               } catch {
                 window.prompt("Copy receipt link:", publicUrl);
               }

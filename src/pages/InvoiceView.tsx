@@ -222,23 +222,26 @@ export default function InvoiceView() {
         invoice.client?.name ||
         "Client";
 
-      const safeClientName = clientName
-        .replace(/[^a-zA-Z0-9-_ ]/g, "")
-        .trim();
+      const customer =
+        (invoice.client?.business_name ||
+          invoice.client?.name ||
+          "Client")
+          .replace(/[\\/:*?"<>|]/g, "")
+          .trim();
 
-      const safeInvoiceNumber = invoice.invoice_number
-        .replace(/[^a-zA-Z0-9-_]/g, "_");
+      const invoiceNo =
+        invoice.invoice_number?.startsWith("INV-")
+          ? invoice.invoice_number
+          : `INV-${invoice.invoice_number?.slice(-4) || invoice.id.slice(-4)}`;
 
-      // Track how many times this specific invoice has been downloaded so repeat
-      // downloads get "(1)", "(2)", etc. instead of silently overwriting/duplicating.
       const DOWNLOAD_COUNT_KEY = `qf_invoice_download_count_${invoice.id}`;
       const previousCount = Number(localStorage.getItem(DOWNLOAD_COUNT_KEY) || "0");
-      const nextCount = previousCount + 1;
-      localStorage.setItem(DOWNLOAD_COUNT_KEY, String(nextCount));
+      localStorage.setItem(DOWNLOAD_COUNT_KEY, String(previousCount + 1));
 
       const suffix = previousCount > 0 ? ` (${previousCount})` : "";
-      const fileName = `${safeClientName}_${safeInvoiceNumber.slice(-6)}${suffix}.pdf`;
 
+      const fileName = `${customer} - ${invoiceNo}${suffix}.pdf`;
+      
       // Acquire the save handle FIRST, immediately on click, while the user
       // gesture is still active — do this before any slow async PDF work,
       // otherwise Chrome throws "Must be handling a user gesture".
