@@ -21,6 +21,16 @@ type Props = {
   items?: InvoiceItem[];
 };
 
+Font.register({
+  family: "Noto Sans",
+  fonts: [
+    {
+      src: "/fonts/NotoSans-Regular.ttf",
+      fontWeight: "normal",
+    },
+  ],
+});
+
 const styles = StyleSheet.create({
   // page: {
   //   fontFamily: "Helvetica",
@@ -33,7 +43,7 @@ const styles = StyleSheet.create({
   // },
 
   page: {
-    fontFamily: "Helvetica",
+    fontFamily: "Noto Sans",
     fontSize: 10,
     color: "#111827",
     backgroundColor: "#ffffff",
@@ -59,7 +69,8 @@ const styles = StyleSheet.create({
   },
   companyName: {
     fontSize: 13,
-    fontFamily: "Helvetica-Bold",
+    fontFamily: "Noto Sans",
+    fontWeight: "bold",
     color: "#111827",
     marginBottom: 4,
   },
@@ -86,7 +97,8 @@ const styles = StyleSheet.create({
   },
   docTitle: {
     fontSize: 19,
-    fontFamily: "Helvetica-Bold",
+    fontFamily: "Noto Sans",
+    fontWeight: "bold",
     color: "#111827",
     marginBottom: 3,
   },
@@ -114,11 +126,13 @@ const styles = StyleSheet.create({
   vValue: {
     fontSize: 9.5,
     color: "#111827",
-    fontFamily: "Helvetica-Bold",
+    fontFamily: "Noto Sans",
+    fontWeight: "bold",
   },
   statusPill: {
     fontSize: 9,
-    fontFamily: "Helvetica-Bold",
+    fontFamily: "Noto Sans",
+    fontWeight: "bold",
     textTransform: "uppercase",
     letterSpacing: 0.5,
   },
@@ -147,7 +161,8 @@ const styles = StyleSheet.create({
   },
   sectionTitle: {
     fontSize: 8.5,
-    fontFamily: "Helvetica-Bold",
+    fontFamily: "Noto Sans",
+    fontWeight: "bold",
     color: "#6B7280",
     textTransform: "uppercase",
     letterSpacing: 1,
@@ -155,7 +170,8 @@ const styles = StyleSheet.create({
   },
   strong: {
     fontSize: 11,
-    fontFamily: "Helvetica-Bold",
+    fontFamily: "Noto Sans",
+    fontWeight: "bold",
     color: "#111827",
     marginBottom: 2,
   },
@@ -198,7 +214,8 @@ const styles = StyleSheet.create({
   colMAmount: { width: "25%", textAlign: "right" },
   tableHeaderText: {
     fontSize: 8.5,
-    fontFamily: "Helvetica-Bold",
+    fontFamily: "Noto Sans",
+    fontWeight: "bold",
     color: "#6B7280",
     textTransform: "uppercase",
     letterSpacing: 0.5,
@@ -239,12 +256,14 @@ const styles = StyleSheet.create({
   },
   totalLabel: {
     fontSize: 10,
-    fontFamily: "Helvetica-Bold",
+    fontFamily: "Noto Sans",
+    fontWeight: "bold",
     color: "#111827",
   },
   totalValue: {
     fontSize: 10,
-    fontFamily: "Helvetica-Bold",
+    fontFamily: "Noto Sans",
+    fontWeight: "bold",
   },
   amountDueBox: {
     flexDirection: "row",
@@ -255,12 +274,14 @@ const styles = StyleSheet.create({
   },
   amountDueLabel: {
     fontSize: 10,
-    fontFamily: "Helvetica-Bold",
+    fontFamily: "Noto Sans",
+    fontWeight: "bold",
     color: "#111827",
   },
   amountDueValue: {
     fontSize: 13,
-    fontFamily: "Helvetica-Bold",
+    fontFamily: "Noto Sans",
+    fontWeight: "bold",
   },
 
   // ---------- Footer grid (Payment info / Details) ----------
@@ -300,7 +321,8 @@ const styles = StyleSheet.create({
   },
   thankYouText: {
     fontSize: 10,
-    fontFamily: "Helvetica-Bold",
+    fontFamily: "Noto Sans",
+    fontWeight: "bold",
     color: "#111827",
     letterSpacing: 0.5,
   },
