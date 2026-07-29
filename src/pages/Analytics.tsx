@@ -339,7 +339,7 @@
 // }
 
 
-import { useMemo, useState } from 'react';
+import { useMemo, useRef, useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { ChartContainer, ChartTooltip, ChartTooltipContent } from '@/components/ui/chart';
@@ -369,9 +369,40 @@ import {
   BarChart3,
 } from 'lucide-react';
 
+function useAnimatedNumber(target: number, durationMs = 350) {
+  const [value, setValue] = useState(target);
+  const rafRef = useRef<number>();
+  const fromRef = useRef(target);
+
+  useEffect(() => {
+    fromRef.current = value;
+    const startTime = performance.now();
+    const from = fromRef.current;
+    const delta = target - from;
+
+    const tick = (now: number) => {
+      const elapsed = now - startTime;
+      const t = Math.min(1, elapsed / durationMs);
+      // ease-out-cubic
+      const eased = 1 - Math.pow(1 - t, 3);
+      setValue(from + delta * eased);
+      if (t < 1) rafRef.current = requestAnimationFrame(tick);
+    };
+
+    rafRef.current = requestAnimationFrame(tick);
+    return () => {
+      if (rafRef.current) cancelAnimationFrame(rafRef.current);
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [target]);
+
+  return value;
+}
+
 export default function Analytics() {
   const { quotations, currency, receipts, clients } = useApp();
   const [activeStatusIndex, setActiveStatusIndex] = useState<number | null>(null);
+  const animatedExpand = useAnimatedNumber(activeStatusIndex !== null ? 1 : 0, 280);
 
   const liveQuotes = quotations.filter((q) => !q.is_template);
 
@@ -537,28 +568,32 @@ export default function Analytics() {
   } as const;
 
   const renderActiveDonutShape = (props: any) => {
-    const { cx, cy, innerRadius, outerRadius, startAngle, endAngle, fill, payload, value } = props;
+    const { cx, cy, innerRadius, outerRadius, startAngle, endAngle, fill } = props;
+    const grow = animatedExpand * 12;
+    const ringGap = animatedExpand * 6;
+    const ringOpacity = animatedExpand * 0.4;
+
     return (
       <g>
         <Sector
           cx={cx}
           cy={cy}
           innerRadius={innerRadius}
-          outerRadius={outerRadius + 10}
+          outerRadius={outerRadius + grow}
           startAngle={startAngle}
           endAngle={endAngle}
-          fill={fill}
-          style={{ filter: 'drop-shadow(0 6px 14px rgba(0,0,0,0.25))', transition: 'all 300ms ease-out' }}
+          fill={`url(#donutGradient-${fill.replace('#', '')})`}
+          style={{ filter: `drop-shadow(0 ${4 + grow * 0.6}px ${10 + grow}px rgba(0,0,0,${0.15 + animatedExpand * 0.15}))` }}
         />
         <Sector
           cx={cx}
           cy={cy}
-          innerRadius={outerRadius + 14}
-          outerRadius={outerRadius + 17}
+          innerRadius={outerRadius + grow + ringGap}
+          outerRadius={outerRadius + grow + ringGap + 3}
           startAngle={startAngle}
           endAngle={endAngle}
           fill={fill}
-          opacity={0.35}
+          opacity={ringOpacity}
         />
       </g>
     );
@@ -848,6 +883,19 @@ export default function Analytics() {
                 className="h-full w-full"
               >
                 <PieChart>
+                  <defs>
+                    {statusDistribution.map((entry) => (
+                      <linearGradient
+                        key={entry.status}
+                        id={`donutGradient-${entry.fill.replace('#', '')}`}
+                        x1="0" y1="0" x2="0" y2="1"
+                      >
+                        <stop offset="0%" stopColor={entry.fill} stopOpacity={1} />
+                        <stop offset="100%" stopColor={entry.fill} stopOpacity={0.72} />
+                      </linearGradient>
+                    ))}
+                  </defs>
+
                   <ChartTooltip
                     content={
                       <ChartTooltipContent
@@ -871,10 +919,10 @@ export default function Analytics() {
                     nameKey="name"
                     innerRadius={68}
                     outerRadius={102}
-                    paddingAngle={3}
-                    cornerRadius={6}
-                    animationBegin={0}
-                    animationDuration={1000}
+                    paddingAngle={3.5}
+                    cornerRadius={8}
+                    animationBegin={100}
+                    animationDuration={1100}
                     animationEasing="ease-out"
                     stroke="hsl(var(--background))"
                     strokeWidth={2}
@@ -886,11 +934,11 @@ export default function Analytics() {
                     {statusDistribution.map((entry, index) => (
                       <Cell
                         key={entry.status}
-                        fill={entry.fill}
+                        fill={`url(#donutGradient-${entry.fill.replace('#', '')})`}
                         style={{
                           cursor: 'pointer',
-                          opacity: activeStatusIndex === null || activeStatusIndex === index ? 1 : 0.35,
-                          transition: 'opacity 250ms ease-out',
+                          opacity: activeStatusIndex === null || activeStatusIndex === index ? 1 : 0.3,
+                          transition: 'opacity 400ms cubic-bezier(0.22, 1, 0.36, 1)',
                         }}
                       />
                     ))}
@@ -898,40 +946,55 @@ export default function Analytics() {
                 </PieChart>
               </ChartContainer>
 
-              {/* Center total — sits inside the donut hole */}
+              {/* Center total — crossfades smoothly between total and hovered segment */}
               <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
-                <span className="font-heading font-bold text-3xl text-foreground tabular-nums">
-                  {activeStatusIndex !== null
-                    ? statusDistribution[activeStatusIndex]?.value
-                    : liveQuotes.length}
-                </span>
-                <span className="text-xs text-muted-foreground mt-0.5">
-                  {activeStatusIndex !== null ? statusDistribution[activeStatusIndex]?.name : 'Total'}
-                </span>
+                <div
+                  key={activeStatusIndex ?? 'total'}
+                  className="flex flex-col items-center animate-in fade-in zoom-in-95 duration-300"
+                >
+                  <span className="font-heading font-bold text-4xl text-foreground tabular-nums tracking-tight">
+                    {activeStatusIndex !== null
+                      ? statusDistribution[activeStatusIndex]?.value
+                      : liveQuotes.length}
+                  </span>
+                  <span className="text-xs text-muted-foreground mt-1 uppercase tracking-wide font-medium">
+                    {activeStatusIndex !== null ? statusDistribution[activeStatusIndex]?.name : 'Total Quotations'}
+                  </span>
+                </div>
               </div>
             </div>
 
-            <div className="mt-4 flex flex-wrap gap-x-4 gap-y-2 text-xs border-t border-border/50 pt-3">
-              {statusDistribution.map((entry, index) => (
-                <button
-                  key={entry.status}
-                  type="button"
-                  onMouseEnter={() => setActiveStatusIndex(index)}
-                  onMouseLeave={() => setActiveStatusIndex(null)}
-                  className={`flex items-center gap-1.5 transition-opacity duration-200 ${activeStatusIndex === null || activeStatusIndex === index ? 'opacity-100' : 'opacity-40'
-                    }`}
-                >
-                  <span
-                    className="w-2.5 h-2.5 rounded-full shrink-0"
-                    style={{ backgroundColor: entry.fill }}
-                  />
-                  <span className="font-medium text-foreground">{entry.value}</span>
-                  <span className="text-muted-foreground">{entry.name}</span>
-                </button>
-              ))}
+            <div className="mt-4 flex flex-wrap gap-x-1 gap-y-1.5 text-xs border-t border-border/50 pt-3">
+              {statusDistribution.map((entry, index) => {
+                const isActive = activeStatusIndex === index;
+                return (
+                  <button
+                    key={entry.status}
+                    type="button"
+                    onMouseEnter={() => setActiveStatusIndex(index)}
+                    onMouseLeave={() => setActiveStatusIndex(null)}
+                    className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-full transition-all duration-300 ease-out ${isActive
+                        ? 'bg-secondary shadow-sm scale-[1.03]'
+                        : activeStatusIndex !== null
+                          ? 'opacity-40'
+                          : 'opacity-100 hover:bg-secondary/50'
+                      }`}
+                  >
+                    <span
+                      className="w-2.5 h-2.5 rounded-full shrink-0 transition-transform duration-300"
+                      style={{
+                        backgroundColor: entry.fill,
+                        transform: isActive ? 'scale(1.3)' : 'scale(1)',
+                      }}
+                    />
+                    <span className="font-semibold text-foreground">{entry.value}</span>
+                    <span className="text-muted-foreground">{entry.name}</span>
+                  </button>
+                );
+              })}
             </div>
           </CardContent>
-                  </Card>
+        </Card>
       </div>
     </div>
   );
