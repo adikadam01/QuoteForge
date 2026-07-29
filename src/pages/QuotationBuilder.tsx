@@ -248,8 +248,19 @@ export default function QuotationBuilder() {
   // Add Client Dialog
   const [isAddClientOpen, setIsAddClientOpen] = useState(false);
   const [clientSelectOpen, setClientSelectOpen] = useState(false);
+  const [clientSearchQuery, setClientSearchQuery] = useState("");
 
   const titleSuggestions = useMemo(() => dedupeTitles((quotations || []).map((q) => q.title || "")).slice(0, 30), [quotations]);
+
+  const filteredClientsForSelect = useMemo(() => {
+    const q = clientSearchQuery.trim().toLowerCase();
+    if (!q) return clients;
+    return clients.filter((c) => {
+      const name = (c.name || "").toLowerCase();
+      const business = (c.business_name || "").toLowerCase();
+      return name.includes(q) || business.includes(q);
+    });
+  }, [clients, clientSearchQuery]);
 
   const openAddClientDialog = useCallback(() => {
     setClientSelectOpen(false);
@@ -1572,7 +1583,10 @@ export default function QuotationBuilder() {
                     </div>
                     <Select
                       open={clientSelectOpen}
-                      onOpenChange={setClientSelectOpen}
+                      onOpenChange={(open) => {
+                        setClientSelectOpen(open);
+                        if (!open) setClientSearchQuery("");
+                      }}
                       value={formData.client_id || undefined}
                       onValueChange={(value) => setFormData((p) => ({ ...p, client_id: value }))}
                     >
@@ -1604,11 +1618,32 @@ export default function QuotationBuilder() {
                           <UserPlus className="w-4 h-4 scrollbar-modern" /> + Add New Client
                         </div>
                         <div className="h-px bg-muted my-1" />
-                        {clients.map((client) => (
-                          <SelectItem key={client.id} value={client.id}>
-                            {client.name} {client.business_name && `- ${client.business_name}`}
-                          </SelectItem>
-                        ))}
+
+                        {/* Search box — filters by client name AND business/company name,
+                            since Radix's built-in typeahead only matches the start of an
+                            item's visible label and can't search "inside" it. */}
+                        <div className="px-1 pb-1.5 sticky top-0 bg-popover z-10">
+                          <Input
+                            value={clientSearchQuery}
+                            onChange={(e) => setClientSearchQuery(e.target.value)}
+                            onKeyDown={(e) => e.stopPropagation()}
+                            placeholder="Search by name or company..."
+                            className="h-8 rounded-lg text-sm"
+                            autoFocus
+                          />
+                        </div>
+
+                        {filteredClientsForSelect.length > 0 ? (
+                          filteredClientsForSelect.map((client) => (
+                            <SelectItem key={client.id} value={client.id}>
+                              {client.name} {client.business_name && `- ${client.business_name}`}
+                            </SelectItem>
+                          ))
+                        ) : (
+                          <div className="px-2 py-3 text-sm text-muted-foreground text-center">
+                            No clients match "{clientSearchQuery}"
+                          </div>
+                        )}
                       </SelectContent>
                     </Select>
                   </div>
