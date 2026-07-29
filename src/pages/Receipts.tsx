@@ -224,6 +224,7 @@ export default function Receipts() {
     } = useApp();
 
     const [searchQuery, setSearchQuery] = useState("");
+    const [paymentFilter, setPaymentFilter] = useState("all");
 
     const filtered = useMemo(() => {
         const q = searchQuery.trim().toLowerCase();
@@ -238,6 +239,19 @@ export default function Receipts() {
                 receipt.client;
 
             if (!q) return true;
+
+            const paymentMethod = (
+                receipt.payment_method ||
+                invoice?.payment_method ||
+                ""
+            ).toLowerCase();
+
+            if (
+                paymentFilter !== "all" &&
+                paymentMethod !== paymentFilter
+            ) {
+                return false;
+            }
 
             return (
                 receipt.receipt_number?.toLowerCase().includes(q) ||
@@ -329,7 +343,7 @@ export default function Receipts() {
 
             {/* Search */}
 
-            <div className="relative max-w-md">
+            <div className="flex gap-3 max-w-2xl">
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
 
                 <Input
@@ -341,6 +355,19 @@ export default function Receipts() {
                     }
                 />
             </div>
+
+            <select
+                className="rounded-xl border border-border/70 px-3 py-2 bg-background"
+                value={paymentFilter}
+                onChange={(e) => setPaymentFilter(e.target.value)}
+            >
+                <option value="all">All Payments</option>
+                <option value="cash">Cash</option>
+                <option value="cheque">Cheque</option>
+                <option value="upi">UPI</option>
+                <option value="bank transfer">Bank Transfer</option>
+                <option value="online">Online</option>
+            </select>
 
             {/* Loading */}
 
