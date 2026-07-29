@@ -921,7 +921,8 @@ export default function InvoiceView() {
                     client_id: invoice.client_id,
                     type: "payment_received",
                     title: "Payment received",
-                    message: `Invoice ${invoice.invoice_number} was marked paid via ${method}.`,
+                    message: `Invoice ${invoice.invoice_number} of ${invoice.client?.business_name || invoice.client?.name || "Client"
+                      } was marked paid via ${method}.`,
                   });
                   await refreshNotifications();
                 } catch {
