@@ -19,12 +19,31 @@ import type { Invoice, InvoiceItem, InvoiceStatus } from "@/lib/types";
 import { assertInvoiceEditable, isInvoiceEditable } from "@/lib/invoiceLock";
 import { formatCurrency } from "@/lib/types";
 import { nowIso } from "@/lib/dates";
+import { getQuotationInvoiceStatus } from "@/lib/phase4Invoicing";
 
 export default function InvoiceView() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const { toast } = useToast();
-  const { brandKit, currency, clients, quotations, getInvoiceById, listInvoiceItemsByInvoice, updateInvoice, refreshInvoices, refreshInvoiceItems, receipts, createReceipt, refreshReceipts, refreshNotifications } = useApp();
+  const {
+    brandKit,
+    currency,
+    clients,
+    quotations,
+
+    invoices,          // <-- ADD
+    invoiceItems,      // <-- ADD
+
+    getInvoiceById,
+    listInvoiceItemsByInvoice,
+    updateInvoice,
+    refreshInvoices,
+    refreshInvoiceItems,
+    receipts,
+    createReceipt,
+    refreshReceipts,
+    refreshNotifications
+  } = useApp();
 
   const [editDueDate, setEditDueDate] = useState("");
   const [editNotes, setEditNotes] = useState("");
@@ -87,6 +106,14 @@ export default function InvoiceView() {
   const invCurrency = invoice?.currency || currency;
   const isEditable = isInvoiceEditable(invoice);
   const linkedQuotation = invoice?.quotation_id ? quotations.find((q) => q.id === invoice.quotation_id) : invoice?.quotation;
+  const quotationInvoiceStatus =
+    linkedQuotation
+      ? getQuotationInvoiceStatus(
+        linkedQuotation,
+        invoices,
+        invoiceItems
+      )
+      : null;
   const quotationStatus = (invoice?.quotation?.status || linkedQuotation?.status || 'draft');
   const quotationIsDraft = quotationStatus === 'draft';
 
@@ -241,7 +268,7 @@ export default function InvoiceView() {
       const suffix = previousCount > 0 ? ` (${previousCount})` : "";
 
       const fileName = `${customer} - ${invoiceNo}${suffix}.pdf`;
-      
+
       // Acquire the save handle FIRST, immediately on click, while the user
       // gesture is still active — do this before any slow async PDF work,
       // otherwise Chrome throws "Must be handling a user gesture".
@@ -719,7 +746,8 @@ export default function InvoiceView() {
                 </Button>
               ) : null}
 
-              {invoice.type === 'milestone' && invoice.invoice_status === 'paid' ? (
+              {quotationInvoiceStatus?.hasInvoiceableServicesRemaining &&
+                invoice.invoice_status === 'paid' ? (
                 <Button
                   variant="outline"
                   className="w-full gap-2 rounded-xl"
@@ -741,7 +769,9 @@ export default function InvoiceView() {
                 </Button>
               ) : null}
 
-              {invoice.type === "monthly" && invoice.invoice_status === "paid" ? (
+              {invoice.type === "monthly" &&
+                invoice.invoice_status === "paid" &&
+                !quotationInvoiceStatus?.hasInvoiceableServicesRemaining ? (
                 <Button
                   variant="outline"
                   className="w-full gap-2 rounded-xl"

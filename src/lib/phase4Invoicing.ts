@@ -250,6 +250,37 @@ export function getServiceInvoiceEligibility(
   };
 }
 
+export type QuotationInvoiceStatus = {
+  hasInvoiceableServicesRemaining: boolean;
+  allCompleted: boolean;
+  allRemainingServicesBlocked: boolean;
+};
+
+export function getQuotationInvoiceStatus(
+  quotation: Quotation,
+  invoices: Invoice[],
+  invoiceItems: InvoiceItem[]
+): QuotationInvoiceStatus {
+  const services = getQuotationServiceBlocks(quotation);
+
+  const eligibility = services.map(service =>
+    getServiceInvoiceEligibility(
+      quotation.id,
+      service,
+      invoices,
+      invoiceItems
+    )
+  );
+
+  return {
+    hasInvoiceableServicesRemaining: eligibility.some(e => e.canGenerate),
+    allCompleted: eligibility.every(e => e.completed),
+    allRemainingServicesBlocked:
+      !eligibility.some(e => e.canGenerate) &&
+      !eligibility.every(e => e.completed),
+  };
+}
+
 
 export type GenerateInvoicePlan =
   | {
