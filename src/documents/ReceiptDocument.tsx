@@ -52,23 +52,32 @@ export function ReceiptDocument({
 
         if (invoiceItems.length > 0) {
 
-            return invoiceItems.map((item) => ({
+            return invoiceItems.map((item) => {
 
-                name: item.name,
+                const desc = item.description || "";
 
-                desc: item.description || "",
+                const isMonthly =
+                    /^Month\s+\d+\s+of\s+\d+/i.test(desc);
 
-                amount: Number(item.total || 0),
+                const isMilestone =
+                    /\(\s*\d+(\.\d+)?\s*%\s*\)/.test(desc);
 
-                type:
-                    item.description?.toLowerCase().includes("milestone")
-                        ? "Milestone"
-                        : item.description?.toLowerCase().includes("month")
-                            ? "Monthly"
-                            : "Service",
+                return {
 
-            }));
+                    name: item.name,
 
+                    desc,
+
+                    amount: Number(item.total || 0),
+
+                    type: isMonthly
+                        ? "Monthly"
+                        : isMilestone
+                            ? "Milestone"
+                            : "One-Time",
+
+                };
+            });
         }
 
         // -------- Fallback for very old invoices --------
@@ -100,7 +109,9 @@ export function ReceiptDocument({
                             ? "Monthly"
                             : block.billing_type === "milestone"
                                 ? "Milestone"
-                                : "Service",
+                                : block.billing_type === "one_time"
+                                    ? "One-Time"
+                                    : "Service",
 
                 });
 

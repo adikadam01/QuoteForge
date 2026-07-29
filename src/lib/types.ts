@@ -339,9 +339,14 @@ export interface InvoiceItem {
   invoice_id: string;
   quotation_id: string | null;
   service_id: string | null;
+
   name: string;
   description: string | null;
+
   pricing_model: PricingModel;
+
+  billing_type?: BillingType;
+
   quantity: number;
   unit_price: number;
   total: number;
