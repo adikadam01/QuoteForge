@@ -222,9 +222,9 @@ export default function Receipts() {
         invoices,
     } = useApp();
 
+
     const [paidMethodFilter, setPaidMethodFilter] = useState<'all' | 'Online' | 'Cash' | 'Cheque'>('all');
     const [searchQuery, setSearchQuery] = useState("");
-    const [paymentFilter, setPaymentFilter] = useState("all");
 
     const filtered = useMemo(() => {
         const q = searchQuery.trim().toLowerCase();
@@ -238,11 +238,10 @@ export default function Receipts() {
                 invoice?.client ||
                 receipt.client;
 
-            if (!q) return true;
-
+            // Apply payment method filter FIRST
             const paymentMethod = (
-                receipt.payment_method ??
-                invoice?.payment_method ??
+                receipt.payment_method ||
+                invoice?.payment_method ||
                 ""
             ).trim();
 
@@ -253,22 +252,17 @@ export default function Receipts() {
                 return false;
             }
 
+            // Then apply search
+            if (!q) return true;
+
             return (
                 receipt.receipt_number?.toLowerCase().includes(q) ||
-
-                invoice?.invoice_number
-                    ?.toLowerCase()
-                    .includes(q) ||
-
-                client?.name
-                    ?.toLowerCase()
-                    .includes(q) ||
-
-                client?.business_name
-                    ?.toLowerCase()
-                    .includes(q)
+                invoice?.invoice_number?.toLowerCase().includes(q) ||
+                client?.name?.toLowerCase().includes(q) ||
+                client?.business_name?.toLowerCase().includes(q)
             );
         });
+
     }, [receipts, invoices, searchQuery, paidMethodFilter]);
 
     // ---------- Catalog-level stats (mirrors the Invoices page pattern) ----------
@@ -361,8 +355,8 @@ export default function Receipts() {
                             key={m}
                             onClick={() => setPaidMethodFilter(m)}
                             className={`px-3 h-9 rounded-lg border text-xs font-semibold transition-all ${paidMethodFilter === m
-                                    ? 'bg-emerald-600 text-white border-emerald-600 shadow-sm'
-                                    : 'bg-background border-border/70 text-muted-foreground hover:border-emerald-400/50 hover:text-foreground'
+                                ? 'bg-emerald-600 text-white border-emerald-600 shadow-sm'
+                                : 'bg-background border-border/70 text-muted-foreground hover:border-emerald-400/50 hover:text-foreground'
                                 }`}
                             type="button"
                         >
