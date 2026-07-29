@@ -336,8 +336,14 @@ const styles = StyleSheet.create({
 });
 
 function formatCurrency(amount: number | null | undefined, currency: string): string {
-  if (amount === null || amount === undefined) return `${currency} 0.00`;
-  return `${currency} ${Number(amount).toFixed(2)}`;
+  const value = Number(amount ?? 0);
+
+  return new Intl.NumberFormat("en-IN", {
+    style: "currency",
+    currency,
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  }).format(value);
 }
 
 function formatDate(dateStr: string | null | undefined): string {
