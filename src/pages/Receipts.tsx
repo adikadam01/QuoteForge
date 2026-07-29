@@ -433,9 +433,8 @@ export default function Receipts() {
                                             </p>
 
                                             <span className="inline-block mt-1 text-xs font-medium text-green-700 bg-green-100 rounded-full px-2.5 py-0.5">
-                                                Paid
+                                                Paid by {receipt.payment_method || invoice?.payment_method || "Unknown"}
                                             </span>
-
                                         </div>
 
                                     </div>
