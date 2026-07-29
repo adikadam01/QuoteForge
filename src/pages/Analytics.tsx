@@ -369,7 +369,7 @@ import {
   BarChart3,
 } from 'lucide-react';
 
-function useAnimatedNumber(target: number, durationMs = 350) {
+function useAnimatedNumber(target: number, durationMs = 480) {
   const [value, setValue] = useState(target);
   const rafRef = useRef<number>();
   const fromRef = useRef(target);
@@ -383,8 +383,11 @@ function useAnimatedNumber(target: number, durationMs = 350) {
     const tick = (now: number) => {
       const elapsed = now - startTime;
       const t = Math.min(1, elapsed / durationMs);
-      // ease-out-cubic
-      const eased = 1 - Math.pow(1 - t, 3);
+      // ease-in-out-cubic — smooth acceleration and deceleration on both
+      // ends, instead of ease-out-cubic which jumps hard on the first frame.
+      const eased = t < 0.5
+        ? 4 * t * t * t
+        : 1 - Math.pow(-2 * t + 2, 3) / 2;
       setValue(from + delta * eased);
       if (t < 1) rafRef.current = requestAnimationFrame(tick);
     };
@@ -569,9 +572,9 @@ export default function Analytics() {
 
   const renderActiveDonutShape = (props: any) => {
     const { cx, cy, innerRadius, outerRadius, startAngle, endAngle, fill } = props;
-    const grow = animatedExpand * 12;
-    const ringGap = animatedExpand * 6;
-    const ringOpacity = animatedExpand * 0.4;
+    const grow = animatedExpand * 7;
+    const ringGap = animatedExpand * 4;
+    const ringOpacity = animatedExpand * 0.35;
 
     return (
       <g>
@@ -937,8 +940,8 @@ export default function Analytics() {
                         fill={`url(#donutGradient-${entry.fill.replace('#', '')})`}
                         style={{
                           cursor: 'pointer',
-                          opacity: activeStatusIndex === null || activeStatusIndex === index ? 1 : 0.3,
-                          transition: 'opacity 400ms cubic-bezier(0.22, 1, 0.36, 1)',
+                          opacity: activeStatusIndex === null || activeStatusIndex === index ? 1 : 0.35,
+                          transition: 'opacity 480ms cubic-bezier(0.4, 0, 0.2, 1)',
                         }}
                       />
                     ))}
@@ -950,7 +953,7 @@ export default function Analytics() {
               <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
                 <div
                   key={activeStatusIndex ?? 'total'}
-                  className="flex flex-col items-center animate-in fade-in zoom-in-95 duration-300"
+                  className="flex flex-col items-center animate-in fade-in zoom-in-95 duration-500"
                 >
                   <span className="font-heading font-bold text-4xl text-foreground tabular-nums tracking-tight">
                     {activeStatusIndex !== null
@@ -974,10 +977,10 @@ export default function Analytics() {
                     onMouseEnter={() => setActiveStatusIndex(index)}
                     onMouseLeave={() => setActiveStatusIndex(null)}
                     className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-full transition-all duration-300 ease-out ${isActive
-                        ? 'bg-secondary shadow-sm scale-[1.03]'
-                        : activeStatusIndex !== null
-                          ? 'opacity-40'
-                          : 'opacity-100 hover:bg-secondary/50'
+                      ? 'bg-secondary shadow-sm scale-[1.03]'
+                      : activeStatusIndex !== null
+                        ? 'opacity-40'
+                        : 'opacity-100 hover:bg-secondary/50'
                       }`}
                   >
                     <span
