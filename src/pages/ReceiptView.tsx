@@ -60,6 +60,15 @@ export default function ReceiptView() {
   //   const qStatus = (invoice?.quotation?.status || 'draft');
   //   if (qStatus === 'draft') return;
 
+
+  useEffect(() => {
+    if (!receipt || !client) return;
+
+    document.title = `${client.business_name || client.name || "Client"
+      } - ${receipt.receipt_number}`;
+  }, [receipt, client]);
+
+  
   const handleDownloadPdf = async () => {
     if (!receipt || !invoice) return;
 
